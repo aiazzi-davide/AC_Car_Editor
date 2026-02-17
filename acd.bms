@@ -1,0 +1,24 @@
+# Assetto Corsa data.acd unpacker script for QuickBMS
+# This script unpacks Assetto Corsa's data.acd files
+# Usage: quickbms acd.bms data.acd output_folder
+
+# Get the number of files
+get FILES long
+
+# Process each file
+for i = 0 < FILES
+    # Read filename length
+    get NAMESZ long
+    
+    # Read filename
+    getdstring NAME NAMESZ
+    
+    # Read file offset
+    get OFFSET long
+    
+    # Read file size
+    get SIZE long
+    
+    # Extract the file
+    log NAME OFFSET SIZE
+next i

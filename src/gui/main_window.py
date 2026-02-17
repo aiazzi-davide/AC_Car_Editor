@@ -182,7 +182,7 @@ class MainWindow(QMainWindow):
             )
             return
         
-        self.car_manager = CarFileManager(cars_path)
+        self.car_manager = CarFileManager(cars_path, self.config_manager)
         cars = self.car_manager.get_car_list()
         
         self.car_list.clear()
@@ -321,11 +321,15 @@ class MainWindow(QMainWindow):
                 if not result:
                     reply = QMessageBox.question(
                         self,
-                        "Unpacking Not Supported",
-                        f"Cannot unpack data.acd for '{self.current_car}'.\n\n"
-                        "This file uses Assetto Corsa's custom binary format which is not yet supported.\n"
-                        "You need to unpack it using Assetto Corsa's own tools first.\n\n"
-                        "Do you want to try editing anyway (if data folder exists)?",
+                        "Unpacking Failed",
+                        f"Failed to unpack data.acd for '{self.current_car}'.\n\n"
+                        "The file uses Assetto Corsa's custom format.\n\n"
+                        "To unpack it automatically, install QuickBMS:\n"
+                        "1. Download QuickBMS from http://aluigi.altervista.org/quickbms.htm\n"
+                        "2. Download the AC unpacker script (acd.bms)\n"
+                        "3. Place both in the application folder or a 'tools' subfolder\n\n"
+                        "Alternatively, use Content Manager to unpack the car first.\n\n"
+                        "Do you want to try editing anyway?",
                         QMessageBox.Yes | QMessageBox.No,
                         QMessageBox.No
                     )

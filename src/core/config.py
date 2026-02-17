@@ -73,3 +73,12 @@ class ConfigManager:
     def get_backup_path(self):
         """Get backup folder path"""
         return self.config.get('backup_path', 'backups')
+    
+    def get_quickbms_path(self):
+        """Get QuickBMS executable path"""
+        return self.config.get('quickbms_path', None)
+    
+    def set_quickbms_path(self, path):
+        """Set QuickBMS executable path"""
+        self.config['quickbms_path'] = path
+        self.save_config()
