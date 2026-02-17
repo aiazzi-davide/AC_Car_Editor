@@ -137,6 +137,7 @@ class CarEditorDialog(QDialog):
         self.wastegate.setRange(0, 5.0)
         self.wastegate.setDecimals(2)
         self.wastegate.setSingleStep(0.1)
+        self.wastegate.setSuffix(" bar")
         turbo_layout.addRow("Wastegate:", self.wastegate)
         
         turbo_group.setLayout(turbo_layout)

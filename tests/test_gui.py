@@ -19,7 +19,9 @@ class TestCarEditorDialog(unittest.TestCase):
     
     def setUp(self):
         """Set up test fixtures"""
-        self.test_data_dir = 'tests/test_data/test_car/data'
+        # Get test data directory relative to this test file
+        test_dir = os.path.dirname(__file__)
+        self.test_data_dir = os.path.join(test_dir, 'test_data', 'test_car', 'data')
         self.test_engine_ini = os.path.join(self.test_data_dir, 'engine.ini')
         
         # Create temporary copy for testing
