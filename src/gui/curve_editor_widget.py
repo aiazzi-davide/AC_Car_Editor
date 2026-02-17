@@ -40,6 +40,7 @@ class CurveEditorWidget(QWidget):
         self.selected_point_index = None
         self.dragging = False
         self.zoom_factor = 1.1  # Zoom factor for mouse wheel
+        self.drag_axis_limits = None  # Store axis limits during drag to prevent auto-scaling
         
         # Axis labels (can be customized)
         self.x_label = "X"
@@ -195,6 +196,11 @@ class CurveEditorWidget(QWidget):
         self.ax.grid(True, alpha=0.3)
         # Removed legend as requested
         
+        # Restore axis limits if dragging to prevent auto-scaling
+        if self.drag_axis_limits is not None:
+            self.ax.set_xlim(self.drag_axis_limits['xlim'])
+            self.ax.set_ylim(self.drag_axis_limits['ylim'])
+        
         self.figure.tight_layout()
         self.canvas.draw()
         
@@ -229,6 +235,12 @@ class CurveEditorWidget(QWidget):
             self.dragging = True
             self.remove_point_btn.setEnabled(True)
             
+            # Store current axis limits to prevent auto-scaling during drag
+            self.drag_axis_limits = {
+                'xlim': self.ax.get_xlim(),
+                'ylim': self.ax.get_ylim()
+            }
+            
             # Disable toolbar navigation to prevent graph panning during drag
             if hasattr(self.toolbar, 'mode') and self.toolbar.mode:
                 self.toolbar.mode = ''
@@ -242,6 +254,7 @@ class CurveEditorWidget(QWidget):
         """Handle mouse release event."""
         if self.dragging:
             self.dragging = False
+            self.drag_axis_limits = None  # Clear stored limits after drag completes
             self.curve_changed.emit()
             
     def on_mouse_move(self, event):
