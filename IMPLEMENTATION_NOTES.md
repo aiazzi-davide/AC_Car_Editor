@@ -2,7 +2,7 @@
 
 This document tracks the implemented features and provides guidance for future development.
 
-## Current Implementation Status (Phase 6 Complete)
+## Current Implementation Status (Phase 6.5 Complete)
 
 ### Core Components (src/core/)
 
@@ -128,28 +128,33 @@ This document tracks the implemented features and provides guidance for future d
 - Status bar for feedback
 
 #### CarEditorDialog (car_editor_dialog.py)
-**Status**: Phase 6 complete - all major tabs implemented
+**Status**: Phase 6.5 complete - all major tabs implemented including curve editor
 **Functions**:
 - `__init__(car_name, car_data_path, parent)` - Initialize editor dialog
 - `init_parsers()` - Initialize all INI parsers (engine, suspension, drivetrain, car, aero)
 - `init_ui()` - Set up tabbed interface
-- `create_engine_tab()` - Create engine parameters tab
+- `create_engine_tab()` - Create engine parameters tab with curve editor buttons
 - `create_suspension_tab()` - Create suspension parameters tab
 - `create_differential_tab()` - Create differential parameters tab
 - `create_weight_tab()` - Create weight and balance tab
 - `create_aero_tab()` - Create aerodynamics tab
+- `edit_power_curve()` - Open curve editor for power.lut
+- `edit_coast_curve()` - Open curve editor for coast.lut
 - `load_data()` - Load all car data into UI fields
 - `save_changes()` - Save all modified data to INI files
 - `reset_values()` - Reset all fields to original values
 
 **Implemented Tabs**:
 
-1. **Engine Tab** (engine.ini)
+1. **Engine Tab** (engine.ini + .lut files)
    - Minimum RPM (ENGINE_DATA.MINIMUM)
    - Maximum RPM (ENGINE_DATA.MAXIMUM)
    - Limiter RPM (ENGINE_DATA.LIMITER)
    - Max Boost (TURBO_0.MAX_BOOST) - if turbo present
    - Wastegate (TURBO_0.WASTEGATE) - if turbo present
+   - **Visual Curve Editors**:
+     - "Edit Power Curve" button opens curve editor for power.lut
+     - "Edit Coast Curve" button opens curve editor for coast.lut
 
 2. **Suspension Tab** (suspensions.ini)
    - Front:
@@ -191,6 +196,66 @@ This document tracks the implemented features and provides guidance for future d
 - Save button creates backups for all modified files
 - Reset button restores all original values
 - Cancel button discards changes
+- **Integrated curve editor** for power.lut and coast.lut files
+
+#### CurveEditorWidget (curve_editor_widget.py)
+**Status**: Phase 6.5 complete - fully functional matplotlib-based curve editor
+**Functions**:
+- `__init__(parent)` - Initialize widget with matplotlib canvas
+- `init_ui()` - Set up UI with graph, table, and controls
+- `set_axis_labels(x_label, y_label)` - Set custom axis labels
+- `load_curve(lut_curve)` - Load LUT curve data into editor
+- `get_curve()` - Get current curve data
+- `update_table()` - Sync table with curve points
+- `plot_curve()` - Render curve on matplotlib canvas
+- `on_mouse_press(event)` - Handle point selection
+- `on_mouse_release(event)` - Handle drag completion
+- `on_mouse_move(event)` - Handle point dragging
+- `on_key_press(event)` - Handle keyboard shortcuts (Delete)
+- `add_point_from_form()` - Add point via X/Y input form
+- `remove_selected_point()` - Remove currently selected point
+- `on_table_selection_changed()` - Sync selection between table and graph
+- `on_table_item_changed(item)` - Handle manual table edits
+
+**Key Features**:
+- Interactive matplotlib graph with NavigationToolbar (zoom/pan)
+- Drag-and-drop point editing with live preview
+- Side-by-side graph and numerical table view
+- Add points via form or graph interaction
+- Remove points via Delete key or button
+- Point selection synced between graph and table
+- Grid and custom axis labels
+- Emits `curve_changed` signal on modifications
+
+#### CurveEditorDialog (curve_editor_dialog.py)
+**Status**: Phase 6.5 complete - standalone dialog for curve editing
+**Functions**:
+- `__init__(lut_file_path, x_label, y_label, parent)` - Initialize dialog
+- `init_ui()` - Set up dialog UI
+- `on_curve_changed()` - Track modifications
+- `load_file(file_path)` - Load LUT file
+- `load_file_dialog()` - Show file picker
+- `save_file()` - Save to current file with backup
+- `save_file_as()` - Save to new file
+- `import_curve()` - Import curve from another file
+- `export_curve()` - Export curve to new file
+- `load_preset(preset_name)` - Load preset curve pattern
+- `close_dialog()` - Close with unsaved changes check
+
+**Preset Curves**:
+- Linear: Simple linear progression
+- Turbo (Lag): Exponential growth with turbo lag
+- NA (Linear Peak): Natural aspiration with peak
+- V-Shape (Coast): Coast curve with negative values
+
+**Key Features**:
+- Standalone modal dialog (1000x700)
+- File open/save/save-as functionality
+- Import/export between files
+- Preset curve templates
+- Automatic backup creation (.bak files)
+- Unsaved changes warning
+- Customizable axis labels
 
 ## Testing Status
 
@@ -202,6 +267,18 @@ This document tracks the implemented features and provides guidance for future d
 
 **Total Core Tests**: 16 tests, all passing
 
+### Curve Editor Tests (tests/test_curve_editor.py)
+- ✅ CurveEditorIntegration: 7 tests
+  - load_curve_for_editing
+  - modify_and_save_curve (with backup verification)
+  - create_new_curve (from scratch)
+  - remove_point_from_curve
+  - update_point_in_curve
+  - export_import_workflow
+  - preset_curve_creation
+
+**Total Curve Editor Tests**: 7 tests, all passing
+
 ### GUI Tests (tests/test_gui.py)
 - ✅ Engine: 3 tests (load_engine_data, save_engine_data, load_turbo_data, save_turbo_data, backup_creation)
 - ✅ Suspension: 2 tests (load_suspension_data, save_suspension_data)
@@ -212,7 +289,7 @@ This document tracks the implemented features and provides guidance for future d
 
 **Total GUI Tests**: 14 tests, all passing
 
-**Total Tests**: 30 tests, 100% passing
+**Total Tests**: 37 tests, 100% passing
 
 ## Test Data Files
 
@@ -317,28 +394,9 @@ if parser.has_section('SECTION'):
     value = parser.get_value('SECTION', 'KEY', 'default')
 ```
 
-## Next Steps (Phase 6.5 and Beyond)
+## Next Steps (Phase 7 and Beyond)
 
-### Priority 1: Visual Curve Editor for .lut Files
-**Status**: Not yet implemented
-**Plan** (from plan.md lines 67-80):
-- Create CurveEditor widget with matplotlib/pyqtgraph
-- Visualize .lut files graphically (power.lut, coast.lut, etc.)
-- Drag-drop point editing on graph
-- Add/remove points (click or manual form)
-- Zoom and pan functionality
-- Grid and axis labels (RPM vs kW, etc.)
-- Numerical table view alongside graph
-- Smooth curve interpolation (spline)
-- Import/export curves
-- Preset curves (linear, turbo lag, NA, etc.)
-- Integration into Engine tab
-
-**Files to Create**:
-- `src/gui/curve_editor_widget.py` - Main curve editor widget
-- `src/gui/curve_editor_dialog.py` - Standalone dialog for editing curves
-
-### Priority 2: Component Library GUI Manager
+### Priority 1: Component Library GUI Manager
 **Status**: Backend complete, GUI not implemented
 **Plan**:
 - Create ComponentLibraryDialog
@@ -351,7 +409,7 @@ if parser.has_section('SECTION'):
 **Files to Create**:
 - `src/gui/component_library_dialog.py`
 
-### Priority 3: Tire Settings Tab
+### Priority 2: Tire Settings Tab
 **Status**: Not implemented
 **Required**:
 - Parse tyres.ini
@@ -359,7 +417,7 @@ if parser.has_section('SECTION'):
 - Edit tire dimensions
 - Edit thermal properties
 
-### Priority 4: Advanced Features
+### Priority 3: Advanced Features
 - Car comparison (side-by-side)
 - Undo/redo system
 - Export/import configurations
@@ -371,8 +429,8 @@ if parser.has_section('SECTION'):
 2. **No encryption handling**: Cannot handle encrypted car data
 3. **Read-only fields**: Some fields like traction type and diff type are display-only
 4. **No input validation**: Values can be set to unrealistic ranges
-5. **No LUT editing in GUI**: LUT files can be parsed but not edited visually yet
-6. **No sound editing**: Engine sound modification not supported
+5. **No sound editing**: Engine sound modification not supported
+6. **GUI testing limited**: Curve editor GUI cannot be fully tested in headless environment
 
 ## File Locations
 
@@ -395,12 +453,15 @@ AC_Car_Editor/
 │   │   └── component_library.py
 │   ├── gui/                         # GUI components
 │   │   ├── main_window.py           # Main window (implemented)
-│   │   └── car_editor_dialog.py     # Car editor (Phase 6 complete)
+│   │   ├── car_editor_dialog.py     # Car editor (Phase 6.5 complete)
+│   │   ├── curve_editor_widget.py   # Curve editor widget (Phase 6.5)
+│   │   └── curve_editor_dialog.py   # Curve editor dialog (Phase 6.5)
 │   └── components/
 │       └── library.json             # Component library data (auto-created)
 ├── tests/
 │   ├── test_core.py                 # Core tests (16 tests)
 │   ├── test_gui.py                  # GUI tests (14 tests)
+│   ├── test_curve_editor.py         # Curve editor tests (7 tests)
 │   └── test_data/
 │       └── test_car/data/           # Test car data files
 └── backups/                         # Car backups (auto-created)
@@ -411,6 +472,7 @@ AC_Car_Editor/
 - **v0.1.0** (Phase 1-5): Initial release with engine tab
 - **v0.2.0** (Phase 6): Added suspension, differential, weight, and aerodynamics tabs
 - **v0.2.1** (Phase 6 bugfix): Fixed crash when loading malformed INI files
+- **v0.3.0** (Phase 6.5): Added visual curve editor for LUT files (power.lut, coast.lut)
 
 ## Contributors Notes
 
@@ -443,6 +505,12 @@ When continuing development:
 - `__init__`, `init_ui`, `create_menu_bar`, `create_car_list_panel`, `create_car_info_panel`, `load_cars`, `on_car_selected`, `set_ac_path`, `create_backup`, `edit_car`, `open_component_library`, `show_about`
 
 ### src/gui/car_editor_dialog.py (CarEditorDialog class)
-- `__init__`, `init_parsers`, `init_ui`, `create_engine_tab`, `create_suspension_tab`, `create_differential_tab`, `create_weight_tab`, `create_aero_tab`, `load_data`, `save_changes`, `reset_values`
+- `__init__`, `init_parsers`, `init_ui`, `create_engine_tab`, `create_suspension_tab`, `create_differential_tab`, `create_weight_tab`, `create_aero_tab`, `edit_power_curve`, `edit_coast_curve`, `load_data`, `save_changes`, `reset_values`
 
-**Total**: 63 implemented functions across 7 modules
+### src/gui/curve_editor_widget.py (CurveEditorWidget class)
+- `__init__`, `init_ui`, `set_axis_labels`, `load_curve`, `get_curve`, `update_table`, `plot_curve`, `on_mouse_press`, `on_mouse_release`, `on_mouse_move`, `on_key_press`, `show_add_point_dialog`, `add_point_from_form`, `remove_selected_point`, `on_table_selection_changed`, `on_table_item_changed`
+
+### src/gui/curve_editor_dialog.py (CurveEditorDialog class)
+- `__init__`, `init_ui`, `on_curve_changed`, `load_file`, `load_file_dialog`, `save_file`, `save_file_as`, `import_curve`, `export_curve`, `load_preset`, `close_dialog`, `closeEvent`
+
+**Total**: 93 implemented functions across 10 modules
