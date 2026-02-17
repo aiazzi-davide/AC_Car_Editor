@@ -144,6 +144,44 @@ class TestCarFileManager(unittest.TestCase):
     def test_has_data_folder(self):
         """Test checking for data folder"""
         self.assertTrue(self.manager.has_data_folder('test_car'))
+    
+    def test_is_acd_encrypted(self):
+        """Test checking if ACD is encrypted"""
+        # Test with existing unencrypted ACD (ZIP)
+        acd_exists, is_encrypted = self.manager.is_acd_encrypted('test_car')
+        self.assertTrue(acd_exists)
+        self.assertFalse(is_encrypted)  # Should be unencrypted ZIP
+    
+    def test_unpack_data_acd(self):
+        """Test unpacking data.acd file"""
+        # Create a temp test environment
+        temp_dir = tempfile.mkdtemp()
+        try:
+            # Create test car folder structure
+            test_car_path = os.path.join(temp_dir, 'test_unpack_car')
+            os.makedirs(test_car_path)
+            
+            # Copy the test data.acd
+            src_acd = 'tests/test_data/test_car/data.acd'
+            dst_acd = os.path.join(test_car_path, 'data.acd')
+            shutil.copy(src_acd, dst_acd)
+            
+            # Create manager for temp directory
+            temp_manager = CarFileManager(temp_dir)
+            
+            # Unpack the ACD
+            result = temp_manager.unpack_data_acd('test_unpack_car', backup_existing=False)
+            self.assertTrue(result)
+            
+            # Verify data folder was created
+            self.assertTrue(temp_manager.has_data_folder('test_unpack_car'))
+            
+            # Verify files were extracted
+            data_path = temp_manager.get_car_data_path('test_unpack_car')
+            self.assertTrue(os.path.exists(os.path.join(data_path, 'test_unpack.txt')))
+            
+        finally:
+            shutil.rmtree(temp_dir)
 
 
 class TestComponentLibrary(unittest.TestCase):

@@ -159,6 +159,11 @@ class MainWindow(QMainWindow):
         self.backup_btn.clicked.connect(self.create_backup)
         button_layout.addWidget(self.backup_btn)
         
+        self.unpack_btn = QPushButton("Unpack data.acd")
+        self.unpack_btn.setEnabled(False)
+        self.unpack_btn.clicked.connect(self.unpack_data_acd)
+        button_layout.addWidget(self.unpack_btn)
+        
         button_layout.addStretch()
         
         layout.addLayout(button_layout)
@@ -212,17 +217,38 @@ class MainWindow(QMainWindow):
         details.append(f"Has data folder: {'Yes' if car_info['has_data_folder'] else 'No'}")
         details.append(f"Has data.acd: {'Yes' if car_info['has_data_acd'] else 'No'}")
         
+        # Check if ACD is encrypted
+        if car_info['has_data_acd']:
+            acd_exists, is_encrypted = self.car_manager.is_acd_encrypted(car_name)
+            if is_encrypted is not None:
+                if is_encrypted:
+                    details.append("data.acd: Encrypted (not supported)")
+                else:
+                    details.append("data.acd: Unencrypted (can unpack)")
+        
         self.car_details.setPlainText('\n'.join(details))
         
-        # Enable buttons if car has data folder
+        # Enable buttons based on car status
         can_edit = car_info['has_data_folder']
         self.edit_btn.setEnabled(can_edit)
         self.backup_btn.setEnabled(can_edit)
         
+        # Enable unpack button if has unencrypted ACD
+        can_unpack = False
+        if car_info['has_data_acd']:
+            acd_exists, is_encrypted = self.car_manager.is_acd_encrypted(car_name)
+            can_unpack = (acd_exists and is_encrypted is False)
+        self.unpack_btn.setEnabled(can_unpack)
+        
         if not can_edit:
-            self.statusBar.showMessage(
-                f"Car '{car_name}' has no unpacked data folder. Cannot edit."
-            )
+            if can_unpack:
+                self.statusBar.showMessage(
+                    f"Car '{car_name}' has no data folder. Use 'Unpack data.acd' to extract files."
+                )
+            else:
+                self.statusBar.showMessage(
+                    f"Car '{car_name}' has no unpacked data folder. Cannot edit."
+                )
         else:
             self.statusBar.showMessage(f"Selected car: {car_name}")
         
@@ -262,6 +288,72 @@ class MainWindow(QMainWindow):
                 "Backup Failed",
                 "Failed to create backup. Check console for details."
             )
+    
+    def unpack_data_acd(self):
+        """Unpack data.acd file for current car"""
+        if not self.current_car:
+            return
+        
+        # Check if ACD is encrypted
+        acd_exists, is_encrypted = self.car_manager.is_acd_encrypted(self.current_car)
+        
+        if not acd_exists:
+            QMessageBox.warning(
+                self,
+                "No data.acd File",
+                f"Car '{self.current_car}' does not have a data.acd file."
+            )
+            return
+        
+        if is_encrypted:
+            QMessageBox.warning(
+                self,
+                "Encrypted File",
+                "This data.acd file is encrypted and cannot be unpacked.\n\n"
+                "Encrypted files use Kunos proprietary encryption and are not supported."
+            )
+            return
+        
+        # Check if data folder already exists
+        has_data = self.car_manager.has_data_folder(self.current_car)
+        
+        if has_data:
+            reply = QMessageBox.question(
+                self,
+                "Data Folder Exists",
+                f"Car '{self.current_car}' already has a data folder.\n\n"
+                "Unpacking will replace the existing folder. A backup will be created.\n\n"
+                "Continue?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+            if reply != QMessageBox.Yes:
+                return
+        
+        # Unpack the ACD
+        self.statusBar.showMessage("Unpacking data.acd...")
+        result = self.car_manager.unpack_data_acd(self.current_car, backup_existing=True)
+        
+        if result:
+            QMessageBox.information(
+                self,
+                "Unpack Successful",
+                f"Successfully unpacked data.acd for '{self.current_car}'.\n\n"
+                "The car can now be edited."
+            )
+            self.statusBar.showMessage("Unpack successful")
+            
+            # Refresh car info display
+            item = self.car_list.currentItem()
+            if item:
+                self.on_car_selected(item, None)
+        else:
+            QMessageBox.warning(
+                self,
+                "Unpack Failed",
+                "Failed to unpack data.acd. Check console for details."
+            )
+            self.statusBar.showMessage("Unpack failed")
             
     def edit_car(self):
         """Open car editor"""

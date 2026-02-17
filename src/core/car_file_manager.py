@@ -4,8 +4,9 @@ Car File Manager for handling Assetto Corsa car files and folders
 
 import os
 import shutil
+import zipfile
 from pathlib import Path
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any, Tuple
 from datetime import datetime
 
 
@@ -211,3 +212,95 @@ class CarFileManager:
             Full path to LUT file
         """
         return os.path.join(self.get_car_data_path(car_name), lut_name)
+    
+    def is_acd_encrypted(self, car_name: str) -> Tuple[bool, Optional[bool]]:
+        """
+        Check if data.acd file is encrypted
+        
+        Args:
+            car_name: Car folder name
+            
+        Returns:
+            Tuple of (acd_exists, is_encrypted)
+            - acd_exists: True if data.acd exists
+            - is_encrypted: True if encrypted, False if unencrypted (ZIP), None if file doesn't exist
+        """
+        acd_path = os.path.join(self.get_car_path(car_name), 'data.acd')
+        
+        if not os.path.exists(acd_path):
+            return (False, None)
+        
+        try:
+            # Check if it's a valid ZIP file (unencrypted ACD)
+            # ZIP files start with PK magic bytes (0x50 0x4B)
+            with open(acd_path, 'rb') as f:
+                magic = f.read(2)
+                if magic == b'PK':
+                    # It's a ZIP file (unencrypted)
+                    return (True, False)
+                else:
+                    # It's encrypted
+                    return (True, True)
+        except Exception as e:
+            print(f"Error checking ACD file: {e}")
+            return (True, None)
+    
+    def unpack_data_acd(self, car_name: str, backup_existing: bool = True) -> bool:
+        """
+        Unpack data.acd file to data/ folder
+        
+        Only works with unencrypted ACD files (ZIP format).
+        Encrypted ACD files are not supported.
+        
+        Args:
+            car_name: Car folder name
+            backup_existing: If True, backup existing data folder before unpacking
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        acd_path = os.path.join(self.get_car_path(car_name), 'data.acd')
+        data_path = self.get_car_data_path(car_name)
+        
+        # Check if ACD file exists
+        acd_exists, is_encrypted = self.is_acd_encrypted(car_name)
+        
+        if not acd_exists:
+            print(f"No data.acd file found for car: {car_name}")
+            return False
+        
+        if is_encrypted is None:
+            print(f"Could not determine if data.acd is encrypted for car: {car_name}")
+            return False
+        
+        if is_encrypted:
+            print(f"data.acd is encrypted for car: {car_name}. Encrypted files are not supported.")
+            return False
+        
+        try:
+            # Backup existing data folder if requested
+            if backup_existing and os.path.exists(data_path):
+                backup_path = self.create_backup(car_name)
+                if backup_path:
+                    print(f"Existing data folder backed up to: {backup_path}")
+            
+            # Remove existing data folder if it exists
+            if os.path.exists(data_path):
+                shutil.rmtree(data_path)
+            
+            # Create data folder
+            os.makedirs(data_path, exist_ok=True)
+            
+            # Extract ZIP archive
+            with zipfile.ZipFile(acd_path, 'r') as zip_ref:
+                zip_ref.extractall(data_path)
+            
+            print(f"Successfully unpacked data.acd for car: {car_name}")
+            return True
+            
+        except zipfile.BadZipFile:
+            print(f"data.acd is not a valid ZIP file (may be encrypted): {car_name}")
+            return False
+        except Exception as e:
+            print(f"Error unpacking data.acd: {e}")
+            return False
