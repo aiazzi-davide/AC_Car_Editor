@@ -190,8 +190,10 @@ class CurveEditorWidget(QWidget):
             # Use cubic spline interpolation for smooth curve
             # Need at least 4 points for cubic spline
             try:
-                # Create interpolation function
-                f = interpolate.interp1d(x_vals, y_vals, kind='cubic', fill_value='extrapolate')
+                # Create interpolation function with boundary clamping
+                # bounds_error=False ensures we stay within data range
+                f = interpolate.interp1d(x_vals, y_vals, kind='cubic', 
+                                        bounds_error=False, fill_value=(y_vals[0], y_vals[-1]))
                 
                 # Generate smooth curve points
                 x_min, x_max = min(x_vals), max(x_vals)
@@ -202,8 +204,16 @@ class CurveEditorWidget(QWidget):
                 self.ax.plot(x_smooth, y_smooth, 'b-', linewidth=2, alpha=0.7)
             except Exception as e:
                 # Fallback to linear if spline fails
-                print(f"Spline interpolation failed: {e}")
+                print(f"Spline interpolation failed: {e}. Using linear interpolation.")
                 self.ax.plot(x_vals, y_vals, 'b-', linewidth=2)
+                # Show warning to user (only once per session)
+                if not hasattr(self, '_spline_warning_shown'):
+                    self._spline_warning_shown = True
+                    QMessageBox.warning(
+                        self, "Smooth Curve Warning",
+                        "Spline interpolation failed. Using linear interpolation instead.\n\n"
+                        "This may happen if the data points are not suitable for smooth curves."
+                    )
         else:
             # Plot linear curve
             self.ax.plot(x_vals, y_vals, 'b-', linewidth=2)

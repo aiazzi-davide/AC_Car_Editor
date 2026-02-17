@@ -28,7 +28,7 @@ Creare un'applicazione desktop Windows in Python con PyQt5/6 che permetta di mod
 - [x] Implementare parser per file .lut (lookup tables con coppie X|Y)
 - [x] Implementare writer per file .lut (mantenendo formato originale)
 - [x] Implementare classe LUTCurve per gestire curve (add/remove/edit points, interpolazione)
-- [ ] Implementare funzione unpack data.acd non criptato (ricerca tool QuickBMS o implementazione custom)
+- [x] Implementare funzione unpack data.acd non criptato (ricerca tool QuickBMS o implementazione custom)
 - [x] Implementare backup automatico prima delle modifiche
 
 ### Fase 3: Sistema Componenti Pre-Built 🟠 PARTIALLY COMPLETED
@@ -72,11 +72,11 @@ Creare un'applicazione desktop Windows in Python con PyQt5/6 che permetta di mod
 - [x] Implementare zoom e pan del grafico
 - [x] Implementare griglia e labels assi (es: RPM vs kW per power.lut)
 - [x] Implementare anteprima valori numerici tabella affianco al grafico
-- [ ] Implementare smooth curve (interpolazione spline opzionale) - Future enhancement
+- [x] Implementare smooth curve (interpolazione spline opzionale)
 - [x] Implementare import/export curve da altri file .lut
 - [x] Implementare preset curve comuni (lineare, turbo lag, NA, etc.)
 - [x] Integrare editor curve nel tab "Motore" per power.lut e coast.lut
-- [ ] Supportare altri .lut (turbo.lut, ctrl.lut per elettronica, etc.) - Future enhancement
+- [x] Supportare altri .lut (turbo.lut, ctrl.lut per elettronica, damage.lut, etc.)
 
 ### Fase 7: Features Avanzate
 - [ ] Implementare sistema confronto auto (side-by-side comparison)
