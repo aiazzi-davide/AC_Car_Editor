@@ -213,7 +213,9 @@ class TestComponentLibrary(unittest.TestCase):
             self.assertTrue(os.path.exists(export_path))
             
             # Create a new library and import the component
-            temp_lib_path = tempfile.mktemp(suffix='.json')
+            temp_lib_file = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
+            temp_lib_path = temp_lib_file.name
+            temp_lib_file.close()
             new_library = ComponentLibrary(temp_lib_path)
             
             # Delete the existing engine components first to avoid conflicts

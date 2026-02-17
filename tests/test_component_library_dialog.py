@@ -29,7 +29,9 @@ class TestComponentLibraryDialog(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures"""
         # Create a temporary library for testing
-        self.temp_lib_file = tempfile.mktemp(suffix='.json')
+        temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
+        self.temp_lib_file = temp_file.name
+        temp_file.close()
         self.library = ComponentLibrary(self.temp_lib_file)
         
     def tearDown(self):
