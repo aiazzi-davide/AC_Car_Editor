@@ -10,12 +10,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
                               QTableWidget, QTableWidgetItem, QSplitter,
-                              QLabel, QSpinBox, QDoubleSpinBox, QMessageBox)
+                              QLabel, QSpinBox, QDoubleSpinBox, QMessageBox, QCheckBox)
 from PyQt5.QtCore import Qt, pyqtSignal
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
+import numpy as np
+from scipy import interpolate
 
 from core.lut_parser import LUTCurve
 
@@ -41,6 +43,7 @@ class CurveEditorWidget(QWidget):
         self.dragging = False
         self.zoom_factor = 1.1  # Zoom factor for mouse wheel
         self.drag_axis_limits = None  # Store axis limits during drag to prevent auto-scaling
+        self.smooth_curve = False  # Enable smooth curve interpolation
         
         # Axis labels (can be customized)
         self.x_label = "X"
@@ -77,6 +80,11 @@ class CurveEditorWidget(QWidget):
         self.remove_point_btn.clicked.connect(self.remove_selected_point)
         self.remove_point_btn.setEnabled(False)
         button_layout.addWidget(self.remove_point_btn)
+        
+        # Add smooth curve checkbox
+        self.smooth_curve_checkbox = QCheckBox("Smooth Curve (Spline)")
+        self.smooth_curve_checkbox.stateChanged.connect(self.on_smooth_curve_changed)
+        button_layout.addWidget(self.smooth_curve_checkbox)
         
         button_layout.addStretch()
         graph_layout.addLayout(button_layout)
@@ -177,12 +185,32 @@ class CurveEditorWidget(QWidget):
         x_vals = [p[0] for p in points]
         y_vals = [p[1] for p in points]
         
-        # Plot the curve (removed label - no legend)
-        self.ax.plot(x_vals, y_vals, 'b-', linewidth=2)
+        # Plot the curve
+        if self.smooth_curve and len(points) >= 4:
+            # Use cubic spline interpolation for smooth curve
+            # Need at least 4 points for cubic spline
+            try:
+                # Create interpolation function
+                f = interpolate.interp1d(x_vals, y_vals, kind='cubic', fill_value='extrapolate')
+                
+                # Generate smooth curve points
+                x_min, x_max = min(x_vals), max(x_vals)
+                x_smooth = np.linspace(x_min, x_max, 200)
+                y_smooth = f(x_smooth)
+                
+                # Plot smooth curve
+                self.ax.plot(x_smooth, y_smooth, 'b-', linewidth=2, alpha=0.7)
+            except Exception as e:
+                # Fallback to linear if spline fails
+                print(f"Spline interpolation failed: {e}")
+                self.ax.plot(x_vals, y_vals, 'b-', linewidth=2)
+        else:
+            # Plot linear curve
+            self.ax.plot(x_vals, y_vals, 'b-', linewidth=2)
         
-        # Plot the points
+        # Plot the data points
         if self.selected_point_index is not None:
-            # Highlight selected point (removed labels)
+            # Highlight selected point
             for i, (x, y) in enumerate(points):
                 if i == self.selected_point_index:
                     self.ax.plot(x, y, 'ro', markersize=10)
@@ -194,7 +222,6 @@ class CurveEditorWidget(QWidget):
         self.ax.set_xlabel(self.x_label)
         self.ax.set_ylabel(self.y_label)
         self.ax.grid(True, alpha=0.3)
-        # Removed legend as requested
         
         # Restore axis limits if dragging to prevent auto-scaling
         if self.drag_axis_limits is not None:
@@ -410,3 +437,8 @@ class CurveEditorWidget(QWidget):
         except ValueError:
             # Invalid number, revert
             self.update_table()
+    
+    def on_smooth_curve_changed(self, state):
+        """Handle smooth curve checkbox state change."""
+        self.smooth_curve = (state == Qt.Checked)
+        self.plot_curve()

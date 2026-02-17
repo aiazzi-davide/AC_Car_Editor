@@ -120,6 +120,9 @@ class CarEditorDialog(QDialog):
         self.aero_tab = self.create_aero_tab()
         self.tabs.addTab(self.aero_tab, "Aerodynamics")
         
+        self.advanced_tab = self.create_advanced_tab()
+        self.tabs.addTab(self.advanced_tab, "Advanced")
+        
         layout.addWidget(self.tabs)
         
         # Button bar
@@ -207,6 +210,11 @@ class CarEditorDialog(QDialog):
         coast_curve_btn = QPushButton("Edit Coast Curve (coast.lut)")
         coast_curve_btn.clicked.connect(self.edit_coast_curve)
         curve_layout.addWidget(coast_curve_btn)
+        
+        # Turbo curve button (if applicable)
+        turbo_curve_btn = QPushButton("Edit Turbo Curve (turbo.lut)")
+        turbo_curve_btn.clicked.connect(self.edit_turbo_curve)
+        curve_layout.addWidget(turbo_curve_btn)
         
         curve_group.setLayout(curve_layout)
         layout.addWidget(curve_group)
@@ -496,6 +504,39 @@ class CarEditorDialog(QDialog):
         layout.addStretch()
         
         return widget
+    
+    def create_advanced_tab(self):
+        """Create advanced settings tab with additional LUT files"""
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+        
+        # Additional curve editors group
+        curves_group = QGroupBox("Additional Curve Files")
+        curves_layout = QVBoxLayout()
+        
+        info_label = QLabel(
+            "Edit additional lookup table (LUT) files for advanced car tuning.\n"
+            "These files may not exist for all cars."
+        )
+        info_label.setWordWrap(True)
+        curves_layout.addWidget(info_label)
+        
+        # Control curve button
+        ctrl_curve_btn = QPushButton("Edit Control Curve (ctrl.lut)")
+        ctrl_curve_btn.clicked.connect(self.edit_ctrl_curve)
+        curves_layout.addWidget(ctrl_curve_btn)
+        
+        # Damage curve button
+        damage_curve_btn = QPushButton("Edit Damage Curve (damage.lut)")
+        damage_curve_btn.clicked.connect(self.edit_damage_curve)
+        curves_layout.addWidget(damage_curve_btn)
+        
+        curves_group.setLayout(curves_layout)
+        layout.addWidget(curves_group)
+        
+        layout.addStretch()
+        
+        return widget
         
     def load_data(self):
         """Load car data into UI fields"""
@@ -686,6 +727,72 @@ class CarEditorDialog(QDialog):
             lut_file_path=coast_lut_path if os.path.exists(coast_lut_path) else None,
             x_label="RPM",
             y_label="Torque (Nm)",
+            parent=self
+        )
+        dialog.exec_()
+    
+    def edit_turbo_curve(self):
+        """Open curve editor for turbo.lut"""
+        turbo_lut_path = os.path.join(self.car_data_path, 'turbo.lut')
+        
+        if not os.path.exists(turbo_lut_path):
+            reply = QMessageBox.question(
+                self, "File Not Found",
+                "turbo.lut file not found. Create a new one?",
+                QMessageBox.Yes | QMessageBox.No
+            )
+            if reply == QMessageBox.No:
+                return
+        
+        # Open curve editor dialog
+        dialog = CurveEditorDialog(
+            lut_file_path=turbo_lut_path if os.path.exists(turbo_lut_path) else None,
+            x_label="RPM",
+            y_label="Boost Pressure (bar)",
+            parent=self
+        )
+        dialog.exec_()
+    
+    def edit_ctrl_curve(self):
+        """Open curve editor for ctrl.lut"""
+        ctrl_lut_path = os.path.join(self.car_data_path, 'ctrl.lut')
+        
+        if not os.path.exists(ctrl_lut_path):
+            reply = QMessageBox.question(
+                self, "File Not Found",
+                "ctrl.lut file not found. Create a new one?",
+                QMessageBox.Yes | QMessageBox.No
+            )
+            if reply == QMessageBox.No:
+                return
+        
+        # Open curve editor dialog
+        dialog = CurveEditorDialog(
+            lut_file_path=ctrl_lut_path if os.path.exists(ctrl_lut_path) else None,
+            x_label="Input",
+            y_label="Output",
+            parent=self
+        )
+        dialog.exec_()
+    
+    def edit_damage_curve(self):
+        """Open curve editor for damage.lut"""
+        damage_lut_path = os.path.join(self.car_data_path, 'damage.lut')
+        
+        if not os.path.exists(damage_lut_path):
+            reply = QMessageBox.question(
+                self, "File Not Found",
+                "damage.lut file not found. Create a new one?",
+                QMessageBox.Yes | QMessageBox.No
+            )
+            if reply == QMessageBox.No:
+                return
+        
+        # Open curve editor dialog
+        dialog = CurveEditorDialog(
+            lut_file_path=damage_lut_path if os.path.exists(damage_lut_path) else None,
+            x_label="Impact Force",
+            y_label="Damage",
             parent=self
         )
         dialog.exec_()
