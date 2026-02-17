@@ -190,7 +190,65 @@ class TestComponentLibrary(unittest.TestCase):
         
     def test_search_components(self):
         """Test searching components"""
-        results = self.library.search_components('engine', 'default')
+        # Search for 'street' which should match multiple engine components
+        results = self.library.search_components('engine', 'street')
+        self.assertGreater(len(results), 0)
+        
+        # Search for 'turbo' tag
+        results = self.library.search_components('engine', 'turbo')
+        self.assertGreater(len(results), 0)
+    
+    def test_export_import_component(self):
+        """Test exporting and importing a single component"""
+        import tempfile
+        
+        # Export a component
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            export_path = f.name
+        
+        try:
+            # Export an engine component
+            result = self.library.export_component('engine', 'engine_na_street', export_path)
+            self.assertTrue(result)
+            self.assertTrue(os.path.exists(export_path))
+            
+            # Create a new library and import the component
+            temp_lib_path = tempfile.mktemp(suffix='.json')
+            new_library = ComponentLibrary(temp_lib_path)
+            
+            # Delete the existing engine components first to avoid conflicts
+            new_library.components['engine'] = []
+            
+            result = new_library.import_component(export_path)
+            self.assertTrue(result)
+            
+            # Verify the component was imported
+            imported = new_library.get_component('engine', 'engine_na_street')
+            self.assertIsNotNone(imported)
+            self.assertEqual(imported['name'], 'Street NA Engine')
+            
+            # Test overwrite functionality
+            result = new_library.import_component(export_path, overwrite=True)
+            self.assertTrue(result)
+            
+            # Cleanup
+            os.unlink(temp_lib_path)
+        finally:
+            if os.path.exists(export_path):
+                os.unlink(export_path)
+    
+    def test_filter_by_tags(self):
+        """Test filtering components by tags"""
+        # Filter engine components by 'turbo' tag
+        results = self.library.filter_by_tags('engine', ['turbo'])
+        self.assertGreater(len(results), 0)
+        
+        # Verify all results have the turbo tag
+        for component in results:
+            self.assertIn('turbo', component.get('tags', []))
+        
+        # Filter suspension by 'race' tag
+        results = self.library.filter_by_tags('suspension', ['race'])
         self.assertGreater(len(results), 0)
 
 
