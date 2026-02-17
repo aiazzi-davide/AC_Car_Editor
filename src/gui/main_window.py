@@ -20,6 +20,7 @@ from core.config import ConfigManager
 from core.car_file_manager import CarFileManager
 from core.component_library import ComponentLibrary
 from gui.car_editor_dialog import CarEditorDialog
+from gui.component_library_dialog import ComponentLibraryDialog
 
 
 class MainWindow(QMainWindow):
@@ -284,16 +285,9 @@ class MainWindow(QMainWindow):
         editor.exec_()
         
     def open_component_library(self):
-        """Open component library manager (placeholder)"""
-        QMessageBox.information(
-            self,
-            "Coming Soon",
-            "Component library manager will be implemented in future updates.\n\n"
-            "This will allow you to:\n"
-            "- Manage pre-built components\n"
-            "- Apply components to cars\n"
-            "- Import/export components"
-        )
+        """Open component library manager"""
+        dialog = ComponentLibraryDialog(self)
+        dialog.exec_()
         
     def show_about(self):
         """Show about dialog"""

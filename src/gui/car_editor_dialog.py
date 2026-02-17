@@ -17,6 +17,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from core.ini_parser import IniParser
 from core.lut_parser import LUTCurve
 from gui.curve_editor_dialog import CurveEditorDialog
+from gui.component_selector_dialog import ComponentSelectorDialog
 
 
 class CarEditorDialog(QDialog):
@@ -194,6 +195,12 @@ class CarEditorDialog(QDialog):
         turbo_group.setLayout(turbo_layout)
         layout.addWidget(turbo_group)
         
+        # Import from library button
+        import_btn = QPushButton("Import Engine from Library...")
+        import_btn.clicked.connect(self.import_engine_component)
+        import_btn.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; padding: 8px;")
+        layout.addWidget(import_btn)
+        
         # Curve editor group
         curve_group = QGroupBox("Power and Coast Curves")
         curve_layout = QVBoxLayout()
@@ -320,6 +327,12 @@ class CarEditorDialog(QDialog):
         rear_group.setLayout(rear_layout)
         layout.addWidget(rear_group)
         
+        # Import from library button
+        import_btn = QPushButton("Import Suspension from Library...")
+        import_btn.clicked.connect(self.import_suspension_component)
+        import_btn.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; padding: 8px;")
+        layout.addWidget(import_btn)
+        
         layout.addStretch()
         
         return widget
@@ -373,6 +386,12 @@ class CarEditorDialog(QDialog):
         
         diff_group.setLayout(diff_layout)
         layout.addWidget(diff_group)
+        
+        # Import from library button
+        import_btn = QPushButton("Import Differential from Library...")
+        import_btn.clicked.connect(self.import_differential_component)
+        import_btn.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; padding: 8px;")
+        layout.addWidget(import_btn)
         
         layout.addStretch()
         
@@ -492,6 +511,12 @@ class CarEditorDialog(QDialog):
         
         rear_group.setLayout(rear_layout)
         layout.addWidget(rear_group)
+        
+        # Import from library button
+        import_btn = QPushButton("Import Aero from Library...")
+        import_btn.clicked.connect(self.import_aero_component)
+        import_btn.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; padding: 8px;")
+        layout.addWidget(import_btn)
         
         layout.addStretch()
         
@@ -689,6 +714,214 @@ class CarEditorDialog(QDialog):
             parent=self
         )
         dialog.exec_()
+    
+    def import_engine_component(self):
+        """Import engine component from library"""
+        dialog = ComponentSelectorDialog('engine', self)
+        if dialog.exec_() == QDialog.Accepted:
+            component = dialog.get_selected_component()
+            if component:
+                self.apply_engine_component(component)
+    
+    def apply_engine_component(self, component):
+        """Apply engine component data to UI fields"""
+        data = component.get('data', {})
+        applied_fields = []
+        
+        # Apply MINIMUM
+        if 'MINIMUM' in data:
+            self.minimum_rpm.setValue(int(data['MINIMUM']))
+            applied_fields.append('Minimum RPM')
+        
+        # Apply MAXIMUM
+        if 'MAXIMUM' in data:
+            self.maximum_rpm.setValue(int(data['MAXIMUM']))
+            applied_fields.append('Maximum RPM')
+        
+        # Apply LIMITER
+        if 'LIMITER' in data:
+            self.limiter_rpm.setValue(int(data['LIMITER']))
+            applied_fields.append('Limiter RPM')
+        
+        # Apply turbo settings if present
+        if 'TURBO_MAX_BOOST' in data:
+            self.max_boost.setValue(float(data['TURBO_MAX_BOOST']))
+            applied_fields.append('Max Boost')
+        
+        if 'TURBO_WASTEGATE' in data:
+            self.wastegate.setValue(float(data['TURBO_WASTEGATE']))
+            applied_fields.append('Wastegate')
+        
+        # Show confirmation
+        component_name = component.get('name', 'Unknown')
+        fields_msg = '\n- '.join(applied_fields)
+        QMessageBox.information(
+            self,
+            "Component Applied",
+            f"Applied '{component_name}' to engine settings.\n\n"
+            f"Updated fields:\n- {fields_msg}\n\n"
+            "Remember to save changes to apply them to the car."
+        )
+    
+    def import_suspension_component(self):
+        """Import suspension component from library"""
+        dialog = ComponentSelectorDialog('suspension', self)
+        if dialog.exec_() == QDialog.Accepted:
+            component = dialog.get_selected_component()
+            if component:
+                self.apply_suspension_component(component)
+    
+    def apply_suspension_component(self, component):
+        """Apply suspension component data to UI fields"""
+        data = component.get('data', {})
+        applied_fields = []
+        
+        # Apply front suspension settings
+        if 'FRONT_SPRING_RATE' in data:
+            self.front_spring_rate.setValue(float(data['FRONT_SPRING_RATE']))
+            applied_fields.append('Front Spring Rate')
+        
+        if 'FRONT_DAMPER_FAST_BUMP' in data:
+            self.front_damper_fast_bump.setValue(float(data['FRONT_DAMPER_FAST_BUMP']))
+            applied_fields.append('Front Damper Fast Bump')
+        
+        if 'FRONT_DAMPER_FAST_REBOUND' in data:
+            self.front_damper_fast_rebound.setValue(float(data['FRONT_DAMPER_FAST_REBOUND']))
+            applied_fields.append('Front Damper Fast Rebound')
+        
+        if 'FRONT_DAMPER_SLOW_BUMP' in data:
+            self.front_damper_slow_bump.setValue(float(data['FRONT_DAMPER_SLOW_BUMP']))
+            applied_fields.append('Front Damper Slow Bump')
+        
+        if 'FRONT_DAMPER_SLOW_REBOUND' in data:
+            self.front_damper_slow_rebound.setValue(float(data['FRONT_DAMPER_SLOW_REBOUND']))
+            applied_fields.append('Front Damper Slow Rebound')
+        
+        # Apply rear suspension settings
+        if 'REAR_SPRING_RATE' in data:
+            self.rear_spring_rate.setValue(float(data['REAR_SPRING_RATE']))
+            applied_fields.append('Rear Spring Rate')
+        
+        if 'REAR_DAMPER_FAST_BUMP' in data:
+            self.rear_damper_fast_bump.setValue(float(data['REAR_DAMPER_FAST_BUMP']))
+            applied_fields.append('Rear Damper Fast Bump')
+        
+        if 'REAR_DAMPER_FAST_REBOUND' in data:
+            self.rear_damper_fast_rebound.setValue(float(data['REAR_DAMPER_FAST_REBOUND']))
+            applied_fields.append('Rear Damper Fast Rebound')
+        
+        if 'REAR_DAMPER_SLOW_BUMP' in data:
+            self.rear_damper_slow_bump.setValue(float(data['REAR_DAMPER_SLOW_BUMP']))
+            applied_fields.append('Rear Damper Slow Bump')
+        
+        if 'REAR_DAMPER_SLOW_REBOUND' in data:
+            self.rear_damper_slow_rebound.setValue(float(data['REAR_DAMPER_SLOW_REBOUND']))
+            applied_fields.append('Rear Damper Slow Rebound')
+        
+        # Show confirmation
+        component_name = component.get('name', 'Unknown')
+        fields_msg = '\n- '.join(applied_fields)
+        QMessageBox.information(
+            self,
+            "Component Applied",
+            f"Applied '{component_name}' to suspension settings.\n\n"
+            f"Updated fields:\n- {fields_msg}\n\n"
+            "Remember to save changes to apply them to the car."
+        )
+    
+    def import_differential_component(self):
+        """Import differential component from library"""
+        dialog = ComponentSelectorDialog('differential', self)
+        if dialog.exec_() == QDialog.Accepted:
+            component = dialog.get_selected_component()
+            if component:
+                self.apply_differential_component(component)
+    
+    def apply_differential_component(self, component):
+        """Apply differential component data to UI fields"""
+        data = component.get('data', {})
+        applied_fields = []
+        
+        # Apply differential type
+        if 'TYPE' in data:
+            diff_type = data['TYPE']
+            index = self.diff_type.findText(diff_type)
+            if index >= 0:
+                self.diff_type.setCurrentIndex(index)
+                applied_fields.append(f'Differential Type ({diff_type})')
+        
+        # Apply power setting
+        if 'POWER' in data:
+            self.diff_power.setValue(float(data['POWER']))
+            applied_fields.append('Power')
+        
+        # Apply coast setting
+        if 'COAST' in data:
+            self.diff_coast.setValue(float(data['COAST']))
+            applied_fields.append('Coast')
+        
+        # Apply preload setting
+        if 'PRELOAD' in data:
+            self.diff_preload.setValue(float(data['PRELOAD']))
+            applied_fields.append('Preload')
+        
+        # Show confirmation
+        component_name = component.get('name', 'Unknown')
+        fields_msg = '\n- '.join(applied_fields)
+        QMessageBox.information(
+            self,
+            "Component Applied",
+            f"Applied '{component_name}' to differential settings.\n\n"
+            f"Updated fields:\n- {fields_msg}\n\n"
+            "Remember to save changes to apply them to the car."
+        )
+    
+    def import_aero_component(self):
+        """Import aero component from library"""
+        dialog = ComponentSelectorDialog('aero', self)
+        if dialog.exec_() == QDialog.Accepted:
+            component = dialog.get_selected_component()
+            if component:
+                self.apply_aero_component(component)
+    
+    def apply_aero_component(self, component):
+        """Apply aero component data to UI fields"""
+        data = component.get('data', {})
+        applied_fields = []
+        
+        # Apply drag coefficient
+        if 'DRAG_COEFF' in data:
+            self.drag_coeff.setValue(float(data['DRAG_COEFF']))
+            applied_fields.append('Drag Coefficient')
+        
+        # Apply front aero settings
+        if 'FRONT_LIFTCOEFF' in data:
+            self.front_lift_coeff.setValue(float(data['FRONT_LIFTCOEFF']))
+            applied_fields.append('Front Lift Coefficient')
+        
+        if 'FRONT_CL_GAIN' in data:
+            self.front_cl_gain.setValue(float(data['FRONT_CL_GAIN']))
+            applied_fields.append('Front CL Gain')
+        
+        # Apply rear aero settings
+        if 'REAR_LIFTCOEFF' in data:
+            self.rear_lift_coeff.setValue(float(data['REAR_LIFTCOEFF']))
+            applied_fields.append('Rear Lift Coefficient')
+        
+        if 'REAR_CL_GAIN' in data:
+            self.rear_cl_gain.setValue(float(data['REAR_CL_GAIN']))
+            applied_fields.append('Rear CL Gain')
+        
+        # Show confirmation
+        component_name = component.get('name', 'Unknown')
+        fields_msg = '\n- '.join(applied_fields)
+        QMessageBox.information(
+            self,
+            "Component Applied",
+            f"Applied '{component_name}' to aerodynamics settings.\n\n"
+            f"Updated fields:\n- {fields_msg}\n\n"
+            "Remember to save changes to apply them to the car."
+        )
     
     def save_changes(self):
         """Save changes to car files"""

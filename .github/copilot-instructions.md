@@ -44,7 +44,15 @@ Desktop PyQt5 application for modifying Assetto Corsa racing simulator car confi
 
 - JSON-based storage for reusable component configurations
 - Schema: `{id, name, description, tags, data}` where `data` contains INI key-value pairs
-- Planned feature: GUI manager not yet implemented
+- Full GUI manager implemented (`src/gui/component_library_dialog.py`)
+- Component import functionality integrated into CarEditorDialog tabs
+
+**ComponentSelectorDialog** (`src/gui/component_selector_dialog.py`)
+
+- Dialog for selecting and applying components from library to cars
+- Filters components by type (engine, suspension, differential, aero)
+- Preview component details before applying
+- Integrated via "Import from Library" buttons in CarEditorDialog tabs
 
 ## Critical Patterns
 
@@ -86,6 +94,36 @@ self.limiter_rpm.setSuffix(" RPM")  # User-visible unit label
 2. Manager-level: `CarFileManager.create_backup()` creates timestamped copies in `backups/` folder
 
 Both should be used - parser backups for immediate undo, manager backups for long-term preservation.
+
+### Component Import Pattern
+
+Components from the library can be applied to cars via "Import from Library" buttons in each tab:
+
+1. Button opens `ComponentSelectorDialog` filtered by component type
+2. User selects component from list and previews details
+3. On apply, corresponding `apply_*_component()` method maps component data to UI fields
+4. Component data keys (e.g., `MINIMUM`, `TURBO_MAX_BOOST`) match INI parameter names
+5. Only fields present in component data are updated - missing fields remain unchanged
+6. Confirmation dialog shows which fields were updated
+
+**Example implementation** (see `car_editor_dialog.py`):
+
+```python
+def import_engine_component(self):
+    """Import engine component from library"""
+    dialog = ComponentSelectorDialog('engine', self)
+    if dialog.exec_() == QDialog.Accepted:
+        component = dialog.get_selected_component()
+        if component:
+            self.apply_engine_component(component)
+
+def apply_engine_component(self, component):
+    """Apply engine component data to UI fields"""
+    data = component.get('data', {})
+    if 'MINIMUM' in data:
+        self.minimum_rpm.setValue(int(data['MINIMUM']))
+    # ... apply other fields
+```
 
 ## File Format Specifics
 
@@ -255,3 +293,33 @@ def test_save_with_backup(self):
 - AC modding wiki: https://assetto-corsa.fandom.com/wiki/Data_Format
 - INI file specs: Each car's data/\*.ini has different sections - inspect game files for schema
 - LUT curves: No official docs - reverse-engineered from game behavior
+
+## Examples Folder
+
+The `examples/` folder contains real Assetto Corsa car data for testing and reference:
+
+**Structure:**
+```
+examples/
+├── data/              # Complete unpacked car data folder
+│   ├── engine.ini
+│   ├── suspensions.ini
+│   ├── drivetrain.ini
+│   ├── power.lut
+│   ├── coast.lut
+│   └── ... (all AC car files)
+└── data.acd          # Original packed data.acd file
+```
+
+**Usage:**
+- **Testing parsers**: Real-world INI and LUT files for validation
+- **Reference data**: Example of correct AC file structure and values
+- **Development**: Use as template when implementing new features
+- **Unpacking tests**: data.acd file for testing unpacker functionality
+
+**Important Notes:**
+- Data is from a real AC car, representative of typical mod structure
+- All file formats follow AC conventions (case-sensitive keys, specific sections)
+- Use these files to understand expected ranges and parameter relationships
+- When adding new parser features, test against these files first
+
