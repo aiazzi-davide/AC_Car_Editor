@@ -5,7 +5,7 @@ Car File Manager for handling Assetto Corsa car files and folders
 import os
 import shutil
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from datetime import datetime
 
 
@@ -92,7 +92,7 @@ class CarFileManager:
         acd_path = os.path.join(self.get_car_path(car_name), 'data.acd')
         return os.path.exists(acd_path)
     
-    def get_car_info(self, car_name: str) -> Dict[str, any]:
+    def get_car_info(self, car_name: str) -> Dict[str, Any]:
         """
         Get basic car information
         
