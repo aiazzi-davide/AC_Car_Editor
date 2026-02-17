@@ -102,9 +102,7 @@ class CurveEditorDialog(QDialog):
         load_btn.clicked.connect(self.load_file_dialog)
         button_layout.addWidget(load_btn)
         
-        import_btn = QPushButton("Import...")
-        import_btn.clicked.connect(self.import_curve)
-        button_layout.addWidget(import_btn)
+        # Removed "Import..." button as it has the same function as "Load File..."
         
         export_btn = QPushButton("Export...")
         export_btn.clicked.connect(self.export_curve)

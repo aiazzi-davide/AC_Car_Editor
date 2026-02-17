@@ -20,6 +20,14 @@ import matplotlib.pyplot as plt
 from core.lut_parser import LUTCurve
 
 
+class CustomNavigationToolbar(NavigationToolbar):
+    """Custom toolbar with limited buttons."""
+    
+    # Only include home, back, forward, and save buttons
+    toolitems = [t for t in NavigationToolbar.toolitems if
+                 t[0] in ('Home', 'Back', 'Forward', 'Save')]
+
+
 class CurveEditorWidget(QWidget):
     """Interactive widget for editing LUT curves."""
     
@@ -31,6 +39,7 @@ class CurveEditorWidget(QWidget):
         self.curve = LUTCurve()
         self.selected_point_index = None
         self.dragging = False
+        self.zoom_factor = 1.1  # Zoom factor for mouse wheel
         
         # Axis labels (can be customized)
         self.x_label = "X"
@@ -54,18 +63,14 @@ class CurveEditorWidget(QWidget):
         self.canvas = FigureCanvas(self.figure)
         self.ax = self.figure.add_subplot(111)
         
-        # Add navigation toolbar for zoom/pan
-        self.toolbar = NavigationToolbar(self.canvas, self)
+        # Add custom navigation toolbar (without zoom/pan/configure buttons)
+        self.toolbar = CustomNavigationToolbar(self.canvas, self)
         
         graph_layout.addWidget(self.toolbar)
         graph_layout.addWidget(self.canvas)
         
-        # Control buttons
+        # Control buttons (removed "Add Point" button as requested)
         button_layout = QHBoxLayout()
-        
-        self.add_point_btn = QPushButton("Add Point")
-        self.add_point_btn.clicked.connect(self.show_add_point_dialog)
-        button_layout.addWidget(self.add_point_btn)
         
         self.remove_point_btn = QPushButton("Remove Point")
         self.remove_point_btn.clicked.connect(self.remove_selected_point)
@@ -90,18 +95,16 @@ class CurveEditorWidget(QWidget):
         self.table.itemChanged.connect(self.on_table_item_changed)
         table_layout.addWidget(self.table)
         
-        # Add point form
+        # Add point form (changed to integer spinboxes)
         form_layout = QHBoxLayout()
         form_layout.addWidget(QLabel("X:"))
-        self.x_input = QDoubleSpinBox()
+        self.x_input = QSpinBox()
         self.x_input.setRange(-999999, 999999)
-        self.x_input.setDecimals(2)
         form_layout.addWidget(self.x_input)
         
         form_layout.addWidget(QLabel("Y:"))
-        self.y_input = QDoubleSpinBox()
+        self.y_input = QSpinBox()
         self.y_input.setRange(-999999, 999999)
-        self.y_input.setDecimals(4)
         form_layout.addWidget(self.y_input)
         
         add_btn = QPushButton("Add")
@@ -121,8 +124,9 @@ class CurveEditorWidget(QWidget):
         self.canvas.mpl_connect('button_press_event', self.on_mouse_press)
         self.canvas.mpl_connect('button_release_event', self.on_mouse_release)
         self.canvas.mpl_connect('motion_notify_event', self.on_mouse_move)
+        self.canvas.mpl_connect('scroll_event', self.on_scroll)  # Mouse wheel zoom
         
-        # Connect key events for deletion
+        # Connect key events for deletion and zoom
         self.canvas.setFocusPolicy(Qt.StrongFocus)
         self.canvas.mpl_connect('key_press_event', self.on_key_press)
         
@@ -151,8 +155,9 @@ class CurveEditorWidget(QWidget):
         self.table.setRowCount(len(points))
         
         for i, (x, y) in enumerate(points):
-            self.table.setItem(i, 0, QTableWidgetItem(str(x)))
-            self.table.setItem(i, 1, QTableWidgetItem(str(y)))
+            # Round to integers for display
+            self.table.setItem(i, 0, QTableWidgetItem(str(int(round(x)))))
+            self.table.setItem(i, 1, QTableWidgetItem(str(int(round(y)))))
             
         self.table.itemChanged.connect(self.on_table_item_changed)
         
@@ -171,24 +176,24 @@ class CurveEditorWidget(QWidget):
         x_vals = [p[0] for p in points]
         y_vals = [p[1] for p in points]
         
-        # Plot the curve
-        self.ax.plot(x_vals, y_vals, 'b-', linewidth=2, label='Curve')
+        # Plot the curve (removed label - no legend)
+        self.ax.plot(x_vals, y_vals, 'b-', linewidth=2)
         
         # Plot the points
         if self.selected_point_index is not None:
-            # Highlight selected point
+            # Highlight selected point (removed labels)
             for i, (x, y) in enumerate(points):
                 if i == self.selected_point_index:
-                    self.ax.plot(x, y, 'ro', markersize=10, label='Selected')
+                    self.ax.plot(x, y, 'ro', markersize=10)
                 else:
                     self.ax.plot(x, y, 'go', markersize=8)
         else:
-            self.ax.plot(x_vals, y_vals, 'go', markersize=8, label='Points')
+            self.ax.plot(x_vals, y_vals, 'go', markersize=8)
             
         self.ax.set_xlabel(self.x_label)
         self.ax.set_ylabel(self.y_label)
         self.ax.grid(True, alpha=0.3)
-        self.ax.legend()
+        # Removed legend as requested
         
         self.figure.tight_layout()
         self.canvas.draw()
@@ -224,6 +229,10 @@ class CurveEditorWidget(QWidget):
             self.dragging = True
             self.remove_point_btn.setEnabled(True)
             
+            # Disable toolbar navigation to prevent graph panning during drag
+            if hasattr(self.toolbar, 'mode') and self.toolbar.mode:
+                self.toolbar.mode = ''
+            
             # Update table selection
             self.table.selectRow(nearest_idx)
             
@@ -243,9 +252,9 @@ class CurveEditorWidget(QWidget):
         if event.inaxes != self.ax:
             return
             
-        # Update point position
-        new_x = event.xdata
-        new_y = event.ydata
+        # Update point position (round to integer)
+        new_x = round(event.xdata)
+        new_y = round(event.ydata)
         
         self.curve.update_point(self.selected_point_index, new_x, new_y)
         self.curve.sort_points()
@@ -253,7 +262,7 @@ class CurveEditorWidget(QWidget):
         # Find new index after sorting
         points = self.curve.get_points()
         for i, (x, y) in enumerate(points):
-            if abs(x - new_x) < 0.001 and abs(y - new_y) < 0.001:
+            if abs(x - new_x) < 0.5 and abs(y - new_y) < 0.5:
                 self.selected_point_index = i
                 break
                 
@@ -264,16 +273,68 @@ class CurveEditorWidget(QWidget):
         """Handle key press events."""
         if event.key == 'delete' and self.selected_point_index is not None:
             self.remove_selected_point()
-            
-    def show_add_point_dialog(self):
-        """Show dialog to add a new point."""
-        # Just focus on the input fields
-        self.x_input.setFocus()
+        elif event.key == '+' or event.key == '=':
+            # Zoom in
+            self.zoom(self.zoom_factor)
+        elif event.key == '-' or event.key == '_':
+            # Zoom out
+            self.zoom(1 / self.zoom_factor)
+    
+    def on_scroll(self, event):
+        """Handle mouse wheel scroll for zooming."""
+        if event.inaxes != self.ax:
+            return
         
+        # Zoom in or out based on scroll direction
+        if event.button == 'up':
+            scale_factor = self.zoom_factor
+        elif event.button == 'down':
+            scale_factor = 1 / self.zoom_factor
+        else:
+            return
+        
+        # Get the current axis limits
+        xlim = self.ax.get_xlim()
+        ylim = self.ax.get_ylim()
+        
+        # Get mouse position in data coordinates
+        xdata = event.xdata
+        ydata = event.ydata
+        
+        # Calculate new limits centered on mouse position
+        new_width = (xlim[1] - xlim[0]) / scale_factor
+        new_height = (ylim[1] - ylim[0]) / scale_factor
+        
+        relx = (xlim[1] - xdata) / (xlim[1] - xlim[0])
+        rely = (ylim[1] - ydata) / (ylim[1] - ylim[0])
+        
+        self.ax.set_xlim([xdata - new_width * (1 - relx), xdata + new_width * relx])
+        self.ax.set_ylim([ydata - new_height * (1 - rely), ydata + new_height * rely])
+        
+        self.canvas.draw()
+    
+    def zoom(self, scale_factor):
+        """Zoom in or out by scale_factor."""
+        xlim = self.ax.get_xlim()
+        ylim = self.ax.get_ylim()
+        
+        # Calculate center of current view
+        xcenter = (xlim[0] + xlim[1]) / 2
+        ycenter = (ylim[0] + ylim[1]) / 2
+        
+        # Calculate new limits
+        new_width = (xlim[1] - xlim[0]) / scale_factor
+        new_height = (ylim[1] - ylim[0]) / scale_factor
+        
+        self.ax.set_xlim([xcenter - new_width / 2, xcenter + new_width / 2])
+        self.ax.set_ylim([ycenter - new_height / 2, ycenter + new_height / 2])
+        
+        self.canvas.draw()
+            
     def add_point_from_form(self):
         """Add a point from the form inputs."""
-        x = self.x_input.value()
-        y = self.y_input.value()
+        x = int(self.x_input.value())
+        y = int(self.y_input.value())
         
         self.curve.add_point(x, y)
         self.curve.sort_points()
@@ -318,7 +379,7 @@ class CurveEditorWidget(QWidget):
         col = item.column()
         
         try:
-            value = float(item.text())
+            value = int(item.text())  # Parse as integer
             
             points = self.curve.get_points()
             if row < len(points):
