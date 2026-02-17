@@ -53,23 +53,43 @@ class CarEditorDialog(QDialog):
         """Initialize INI and LUT parsers for car files"""
         engine_path = os.path.join(self.car_data_path, 'engine.ini')
         if os.path.exists(engine_path):
-            self.engine_ini = IniParser(engine_path)
+            try:
+                self.engine_ini = IniParser(engine_path)
+            except Exception as e:
+                print(f"Failed to load engine.ini: {e}")
+                self.engine_ini = None
         
         suspension_path = os.path.join(self.car_data_path, 'suspensions.ini')
         if os.path.exists(suspension_path):
-            self.suspension_ini = IniParser(suspension_path)
+            try:
+                self.suspension_ini = IniParser(suspension_path)
+            except Exception as e:
+                print(f"Failed to load suspensions.ini: {e}")
+                self.suspension_ini = None
         
         drivetrain_path = os.path.join(self.car_data_path, 'drivetrain.ini')
         if os.path.exists(drivetrain_path):
-            self.drivetrain_ini = IniParser(drivetrain_path)
+            try:
+                self.drivetrain_ini = IniParser(drivetrain_path)
+            except Exception as e:
+                print(f"Failed to load drivetrain.ini: {e}")
+                self.drivetrain_ini = None
         
         car_path = os.path.join(self.car_data_path, 'car.ini')
         if os.path.exists(car_path):
-            self.car_ini = IniParser(car_path)
+            try:
+                self.car_ini = IniParser(car_path)
+            except Exception as e:
+                print(f"Failed to load car.ini: {e}")
+                self.car_ini = None
         
         aero_path = os.path.join(self.car_data_path, 'aero.ini')
         if os.path.exists(aero_path):
-            self.aero_ini = IniParser(aero_path)
+            try:
+                self.aero_ini = IniParser(aero_path)
+            except Exception as e:
+                print(f"Failed to load aero.ini: {e}")
+                self.aero_ini = None
     
     def init_ui(self):
         """Initialize user interface"""

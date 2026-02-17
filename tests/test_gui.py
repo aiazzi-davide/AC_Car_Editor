@@ -220,6 +220,22 @@ class TestCarEditorDialog(unittest.TestCase):
         parser2 = IniParser(self.temp_aero_ini)
         self.assertEqual(parser2.get_value('SETTINGS', 'DRAG_COEFF'), '0.30')
         self.assertEqual(parser2.get_value('FRONT', 'LIFTCOEFF'), '-0.20')
+    
+    def test_malformed_ini_file(self):
+        """Test that malformed INI files don't crash the parser"""
+        # Get malformed test file
+        test_dir = os.path.dirname(__file__)
+        malformed_file = os.path.join(test_dir, 'test_data', 'test_car', 'data', 'malformed_suspensions.ini')
+        
+        # This should not raise an exception
+        parser = IniParser(malformed_file)
+        
+        # Parser should still be usable for sections that loaded correctly
+        self.assertTrue(parser.has_section('FRONT'))
+        self.assertEqual(parser.get_value('FRONT', 'SPRING_RATE'), '80000')
+        
+        # Sections after malformed lines may not be available
+        # but the parser should not crash
 
 
 def run_tests():

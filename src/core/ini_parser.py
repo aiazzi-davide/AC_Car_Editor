@@ -28,6 +28,11 @@ class IniParser:
         """Load INI file"""
         try:
             self.config.read(self.file_path, encoding='utf-8')
+        except configparser.ParsingError as e:
+            print(f"Error loading INI file {self.file_path}: {e}")
+            print(f"Warning: INI file contains parsing errors. The file may have malformed lines.")
+            print(f"The editor will open but this tab may not function correctly.")
+            # Don't raise - allow the application to continue with empty config
         except Exception as e:
             print(f"Error loading INI file {self.file_path}: {e}")
             raise
