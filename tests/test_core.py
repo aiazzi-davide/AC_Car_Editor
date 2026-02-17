@@ -182,6 +182,45 @@ class TestCarFileManager(unittest.TestCase):
             
         finally:
             shutil.rmtree(temp_dir)
+    
+    def test_unpack_data_acd_with_delete(self):
+        """Test unpacking data.acd file with deletion after unpacking"""
+        # Create a temp test environment
+        temp_dir = tempfile.mkdtemp()
+        try:
+            # Create test car folder structure
+            test_car_path = os.path.join(temp_dir, 'test_unpack_car_delete')
+            os.makedirs(test_car_path)
+            
+            # Copy the test data.acd
+            src_acd = 'tests/test_data/test_car/data.acd'
+            dst_acd = os.path.join(test_car_path, 'data.acd')
+            shutil.copy(src_acd, dst_acd)
+            
+            # Create manager for temp directory
+            temp_manager = CarFileManager(temp_dir)
+            
+            # Verify data.acd exists before unpacking
+            self.assertTrue(os.path.exists(dst_acd))
+            
+            # Unpack the ACD with delete_acd=True
+            result = temp_manager.unpack_data_acd('test_unpack_car_delete', 
+                                                   backup_existing=False, 
+                                                   delete_acd=True)
+            self.assertTrue(result)
+            
+            # Verify data folder was created
+            self.assertTrue(temp_manager.has_data_folder('test_unpack_car_delete'))
+            
+            # Verify files were extracted
+            data_path = temp_manager.get_car_data_path('test_unpack_car_delete')
+            self.assertTrue(os.path.exists(os.path.join(data_path, 'test_unpack.txt')))
+            
+            # Verify data.acd was deleted
+            self.assertFalse(os.path.exists(dst_acd))
+            
+        finally:
+            shutil.rmtree(temp_dir)
 
 
 class TestComponentLibrary(unittest.TestCase):

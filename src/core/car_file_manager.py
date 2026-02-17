@@ -245,16 +245,17 @@ class CarFileManager:
             print(f"Error checking ACD file: {e}")
             return (True, None)
     
-    def unpack_data_acd(self, car_name: str, backup_existing: bool = True) -> bool:
+    def unpack_data_acd(self, car_name: str, backup_existing: bool = True, delete_acd: bool = False) -> bool:
         """
         Unpack data.acd file to data/ folder
         
-        Only works with unencrypted ACD files (ZIP format).
-        Encrypted ACD files are not supported.
+        Attempts to unpack any data.acd file (encrypted or not).
+        Encrypted files may extract but contents may not be readable.
         
         Args:
             car_name: Car folder name
             backup_existing: If True, backup existing data folder before unpacking
+            delete_acd: If True, delete data.acd file after successful unpacking
             
         Returns:
             True if successful, False otherwise
@@ -263,18 +264,8 @@ class CarFileManager:
         data_path = self.get_car_data_path(car_name)
         
         # Check if ACD file exists
-        acd_exists, is_encrypted = self.is_acd_encrypted(car_name)
-        
-        if not acd_exists:
+        if not os.path.exists(acd_path):
             print(f"No data.acd file found for car: {car_name}")
-            return False
-        
-        if is_encrypted is None:
-            print(f"Could not determine if data.acd is encrypted for car: {car_name}")
-            return False
-        
-        if is_encrypted:
-            print(f"data.acd is encrypted for car: {car_name}. Encrypted files are not supported.")
             return False
         
         try:
@@ -291,11 +282,20 @@ class CarFileManager:
             # Create data folder
             os.makedirs(data_path, exist_ok=True)
             
-            # Extract ZIP archive
+            # Try to extract as ZIP archive
             with zipfile.ZipFile(acd_path, 'r') as zip_ref:
                 zip_ref.extractall(data_path)
             
             print(f"Successfully unpacked data.acd for car: {car_name}")
+            
+            # Delete data.acd if requested
+            if delete_acd:
+                try:
+                    os.remove(acd_path)
+                    print(f"Deleted data.acd file for car: {car_name}")
+                except Exception as e:
+                    print(f"Warning: Could not delete data.acd: {e}")
+            
             return True
             
         except zipfile.BadZipFile:
