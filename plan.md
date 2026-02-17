@@ -42,6 +42,7 @@ Creare un'applicazione desktop Windows in Python con PyQt5/6 che permetta di mod
 ### Fase 4: GUI - Finestra Principale
 - [ ] Creare MainWindow con menu e toolbar
 - [ ] Implementare browser auto (lista auto installate)
+- [ ] Implementare ricerca/filtro auto (barra di ricerca rapida, filtri per potenza/peso/tipo)
 - [ ] Implementare preview info auto (nome, marca, potenza, peso)
 - [ ] Implementare selezione cartella Assetto Corsa custom
 - [ ] Implementare barra di stato per feedback operazioni
