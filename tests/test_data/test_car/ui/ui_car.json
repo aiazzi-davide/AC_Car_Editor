@@ -1,0 +1,17 @@
+{
+  "name": "Test Car",
+  "brand": "Test Brand",
+  "description": "A test car for AC Car Editor",
+  "tags": ["test"],
+  "class": "street",
+  "specs": {
+    "bhp": "430 bhp",
+    "torque": "500 Nm",
+    "weight": "1400 kg",
+    "topspeed": "280 km/h",
+    "acceleration": "0-100 km/h in 4.5s"
+  },
+  "country": "Italy",
+  "year": 2023,
+  "author": "AC Car Editor Test"
+}

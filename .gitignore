@@ -45,3 +45,4 @@ backups/
 .pytest_cache/
 .coverage
 htmlcov/
+tests/test_data/**/*.bak
