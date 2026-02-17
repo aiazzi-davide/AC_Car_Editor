@@ -31,12 +31,12 @@ Creare un'applicazione desktop Windows in Python con PyQt5/6 che permetta di mod
 - [ ] Implementare funzione unpack data.acd non criptato (ricerca tool QuickBMS o implementazione custom)
 - [x] Implementare backup automatico prima delle modifiche
 
-### Fase 3: Sistema Componenti Pre-Built 🟠 PARTIALLY COMPLETED
+### Fase 3: Sistema Componenti Pre-Built ✅ COMPLETED
 - [x] Creare schema JSON per componenti (engine, suspension, differential, etc.)
 - [x] Implementare ComponentLibrary per gestire CRUD componenti
-- [ ] Creare componenti di default (motori comuni, sospensioni, differenziali)
-- [ ] Implementare sistema import/export componenti
-- [ ] Implementare sistema di tag/categorie per componenti
+- [x] Creare componenti di default (motori comuni, sospensioni, differenziali)
+- [x] Implementare sistema import/export componenti
+- [x] Implementare sistema di tag/categorie per componenti
 
 ### Fase 4: GUI - Finestra Principale ✅ COMPLETED
 - [x] Creare MainWindow con menu e toolbar
@@ -55,13 +55,14 @@ Creare un'applicazione desktop Windows in Python con PyQt5/6 che permetta di mod
 - [x] Implementare apply/reset per ogni sezione
 - [ ] aggiunta tasto open folder auto in explorer - Future enhancement
 
-### Fase 6: GUI - Libreria Componenti 🟠 PARTIALLY COMPLETED
-- [ ] Creare finestra Component Library Manager
-- [ ] Implementare lista componenti filtrabili per tipo
-- [ ] Implementare anteprima dettagli componente
-- [ ] Implementare form aggiungi/modifica componente
-- [ ] Implementare eliminazione componente con conferma
-- [ ] Implementare drag&drop o apply button per applicare componenti
+### Fase 6: GUI - Libreria Componenti ✅ COMPLETED
+- [x] Creare finestra Component Library Manager
+- [x] Implementare lista componenti filtrabili per tipo
+- [x] Implementare anteprima dettagli componente
+- [x] Implementare form aggiungi/modifica componente
+- [x] Implementare eliminazione componente con conferma
+- [x] Implementare apply button per applicare componenti alle auto
+- [x] Integrare import componenti nell'editor auto (bottoni "Import from Library")
 
 ### Fase 6.5: GUI - Editor Grafico Curve .lut ✅ COMPLETED
 - [x] Creare widget CurveEditor con matplotlib/pyqtgraph integrato
@@ -159,6 +160,13 @@ L'editor grafico permetterà di visualizzare e modificare queste curve visualmen
 - Validare tutti i valori input (range sensati)
 - Non modificare file criptati (rischio corruzione)
 - Permettere ripristino da backup facilmente
+
+## Cartella Examples
+La cartella `examples/` contiene dati reali di un'auto di Assetto Corsa per testing e reference:
+- `examples/data/`: Cartella completa con tutti i file .ini e .lut di una vera auto AC
+- `examples/data.acd`: File data.acd originale (per testing unpack)
+- Utilizzata per testare parsing, modifica e validazione dei file
+- Riferimento per struttura corretta dei file AC
 
 ## Estensioni Future
 - Supporto per setup auto (track-specific configurations)
