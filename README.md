@@ -138,10 +138,13 @@ assettocorsa/content/cars/
 
 - Always create a backup before modifying any car
 - Cars with data folders or data.acd files can be edited
-- **data.acd files are automatically unpacked when you click "Edit Car"** ✅ NEW
-- **After unpacking, data.acd is deleted so AC uses the unpacked folder** ✅ NEW
+- **If a car has BOTH data folder and data.acd: data.acd is automatically deleted on edit** ✅ NEW
+- **data.acd files using AC's custom format cannot be auto-unpacked** ✅ NEW
+  - Most real AC cars use a custom binary format (not ZIP)
+  - You need to unpack them manually using AC's tools or Content Manager first
+  - The app will detect this and show an appropriate message
+- **After unpacking (for ZIP format), data.acd is deleted so AC uses the unpacked folder**
 - The application creates backups before unpacking to protect your data
-- Encrypted data.acd files will be attempted to unpack (may not be readable)
 - The application does not modify the original game files until you save changes
 
 ## Development Status
