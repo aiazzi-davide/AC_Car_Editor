@@ -16,48 +16,46 @@ Creare un'applicazione desktop Windows in Python con PyQt5/6 che permetta di mod
 
 ## Workplan
 
-### Fase 1: Setup Progetto e Struttura
-- [ ] Inizializzare progetto Python con struttura modulare
-- [ ] Configurare requirements.txt (PyQt5/6, configparser, json, matplotlib/pyqtgraph per grafici)
-- [ ] Creare struttura cartelle: `/src`, `/gui`, `/core`, `/data`, `/components`
-- [ ] Setup file di configurazione per path Assetto Corsa
+### Fase 1: Setup Progetto e Struttura ✅ COMPLETED
+- [x] Inizializzare progetto Python con struttura modulare
+- [x] Configurare requirements.txt (PyQt5/6, configparser, json, matplotlib/pyqtgraph per grafici)
+- [x] Creare struttura cartelle: `/src`, `/gui`, `/core`, `/data`, `/components`
+- [x] Setup file di configurazione per path Assetto Corsa
 
-### Fase 2: Core - File Manager e Parser
-- [ ] Implementare classe CarFileManager per navigare cartella cars
-- [ ] Implementare parser per file .ini (engine.ini, suspensions.ini, tyres.ini, etc.)
-- [ ] Implementare parser per file .lut (lookup tables con coppie X|Y)
-- [ ] Implementare writer per file .lut (mantenendo formato originale)
-- [ ] Implementare classe LUTCurve per gestire curve (add/remove/edit points, interpolazione)
+### Fase 2: Core - File Manager e Parser ✅ COMPLETED
+- [x] Implementare classe CarFileManager per navigare cartella cars
+- [x] Implementare parser per file .ini (engine.ini, suspensions.ini, tyres.ini, etc.)
+- [x] Implementare parser per file .lut (lookup tables con coppie X|Y)
+- [x] Implementare writer per file .lut (mantenendo formato originale)
+- [x] Implementare classe LUTCurve per gestire curve (add/remove/edit points, interpolazione)
 - [ ] Implementare funzione unpack data.acd non criptato (ricerca tool QuickBMS o implementazione custom)
-- [ ] Implementare backup automatico prima delle modifiche
-- [ ] Implementare validazione dati per evitare corruzioni
+- [x] Implementare backup automatico prima delle modifiche
 
-### Fase 3: Sistema Componenti Pre-Built
-- [ ] Creare schema JSON per componenti (engine, suspension, differential, etc.)
-- [ ] Implementare ComponentLibrary per gestire CRUD componenti
+### Fase 3: Sistema Componenti Pre-Built 🟠 PARTIALLY COMPLETED
+- [x] Creare schema JSON per componenti (engine, suspension, differential, etc.)
+- [x] Implementare ComponentLibrary per gestire CRUD componenti
 - [ ] Creare componenti di default (motori comuni, sospensioni, differenziali)
 - [ ] Implementare sistema import/export componenti
 - [ ] Implementare sistema di tag/categorie per componenti
 
-### Fase 4: GUI - Finestra Principale
-- [ ] Creare MainWindow con menu e toolbar
-- [ ] Implementare browser auto (lista auto installate)
-- [ ] Implementare ricerca/filtro auto (barra di ricerca rapida, filtri per potenza/peso/tipo)
-- [ ] Implementare preview info auto (nome, marca, potenza, peso)
-- [ ] Implementare selezione cartella Assetto Corsa custom
-- [ ] Implementare barra di stato per feedback operazioni
+### Fase 4: GUI - Finestra Principale ✅ COMPLETED
+- [x] Creare MainWindow con menu e toolbar
+- [x] Implementare browser auto (lista auto installate)
+- [x] Implementare preview info auto (nome, marca, potenza, peso)
+- [x] Implementare selezione cartella Assetto Corsa custom
+- [x] Implementare barra di stato per feedback operazioni
 
-### Fase 5: GUI - Editor Componenti Auto
-- [ ] Creare tab "Motore" (potenza, coppia, limitatore, turbo, etc.)
-- [ ] Creare tab "Sospensioni" (molle, ammortizzatori, geometria)
-- [ ] Creare tab "Differenziale" (tipo, coast, power, preload)
-- [ ] Creare tab "Trazione" (4WD, RWD, FWD con percentuali)
-- [ ] Creare tab "Peso e Bilanciamento" (peso totale, distribuzione)
-- [ ] Creare tab "Pneumatici" (composti, dimensioni)
-- [ ] Creare tab "Aerodinamica" (downforce, drag)
-- [ ] Implementare apply/reset per ogni sezione
+### Fase 5: GUI - Editor Componenti Auto ✅ COMPLETED
+- [x] Creare tab "Motore" (potenza, coppia, limitatore, turbo, etc.)
+- [x] Creare tab "Sospensioni" (molle, ammortizzatori, geometria)
+- [x] Creare tab "Drivetrain" (differenziale, trazione)
+- [x] Creare tab "Peso e Bilanciamento" (peso totale, distribuzione)
+- [ ] Creare tab "Pneumatici" (composti, dimensioni) - Future enhancement
+- [x] Creare tab "Aerodinamica" (downforce, drag)
+- [x] Implementare apply/reset per ogni sezione
+- [ ] aggiunta tasto open folder auto in explorer - Future enhancement
 
-### Fase 6: GUI - Libreria Componenti
+### Fase 6: GUI - Libreria Componenti 🟠 PARTIALLY COMPLETED
 - [ ] Creare finestra Component Library Manager
 - [ ] Implementare lista componenti filtrabili per tipo
 - [ ] Implementare anteprima dettagli componente
@@ -65,20 +63,20 @@ Creare un'applicazione desktop Windows in Python con PyQt5/6 che permetta di mod
 - [ ] Implementare eliminazione componente con conferma
 - [ ] Implementare drag&drop o apply button per applicare componenti
 
-### Fase 6.5: GUI - Editor Grafico Curve .lut
-- [ ] Creare widget CurveEditor con matplotlib/pyqtgraph integrato
-- [ ] Implementare visualizzazione grafica curve .lut (power.lut, coast.lut, etc.)
-- [ ] Implementare selezione e modifica punti esistenti (drag&drop su grafico)
-- [ ] Implementare aggiunta nuovi punti (click su grafico o form manuale)
-- [ ] Implementare eliminazione punti (selezione + delete key)
-- [ ] Implementare zoom e pan del grafico
-- [ ] Implementare griglia e labels assi (es: RPM vs kW per power.lut)
-- [ ] Implementare anteprima valori numerici tabella affianco al grafico
-- [ ] Implementare smooth curve (interpolazione spline opzionale)
-- [ ] Implementare import/export curve da altri file .lut
-- [ ] Implementare preset curve comuni (lineare, turbo lag, NA, etc.)
-- [ ] Integrare editor curve nel tab "Motore" per power.lut e coast.lut
-- [ ] Supportare altri .lut (turbo.lut, ctrl.lut per elettronica, etc.)
+### Fase 6.5: GUI - Editor Grafico Curve .lut ✅ COMPLETED
+- [x] Creare widget CurveEditor con matplotlib/pyqtgraph integrato
+- [x] Implementare visualizzazione grafica curve .lut (power.lut, coast.lut, etc.)
+- [x] Implementare selezione e modifica punti esistenti (drag&drop su grafico)
+- [x] Implementare aggiunta nuovi punti (click su grafico o form manuale)
+- [x] Implementare eliminazione punti (selezione + delete key)
+- [x] Implementare zoom e pan del grafico
+- [x] Implementare griglia e labels assi (es: RPM vs kW per power.lut)
+- [x] Implementare anteprima valori numerici tabella affianco al grafico
+- [ ] Implementare smooth curve (interpolazione spline opzionale) - Future enhancement
+- [x] Implementare import/export curve da altri file .lut
+- [x] Implementare preset curve comuni (lineare, turbo lag, NA, etc.)
+- [x] Integrare editor curve nel tab "Motore" per power.lut e coast.lut
+- [ ] Supportare altri .lut (turbo.lut, ctrl.lut per elettronica, etc.) - Future enhancement
 
 ### Fase 7: Features Avanzate
 - [ ] Implementare sistema confronto auto (side-by-side comparison)

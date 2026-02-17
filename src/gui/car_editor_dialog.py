@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QTabWidget,
     QPushButton, QMessageBox, QWidget, QGroupBox,
     QFormLayout, QLineEdit, QLabel, QDoubleSpinBox,
-    QSpinBox
+    QSpinBox, QComboBox
 )
 from PyQt5.QtCore import Qt
 
@@ -16,6 +16,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from core.ini_parser import IniParser
 from core.lut_parser import LUTCurve
+from gui.curve_editor_dialog import CurveEditorDialog
 
 
 class CarEditorDialog(QDialog):
@@ -193,6 +194,23 @@ class CarEditorDialog(QDialog):
         turbo_group.setLayout(turbo_layout)
         layout.addWidget(turbo_group)
         
+        # Curve editor group
+        curve_group = QGroupBox("Power and Coast Curves")
+        curve_layout = QVBoxLayout()
+        
+        # Power curve button
+        power_curve_btn = QPushButton("Edit Power Curve (power.lut)")
+        power_curve_btn.clicked.connect(self.edit_power_curve)
+        curve_layout.addWidget(power_curve_btn)
+        
+        # Coast curve button
+        coast_curve_btn = QPushButton("Edit Coast Curve (coast.lut)")
+        coast_curve_btn.clicked.connect(self.edit_coast_curve)
+        curve_layout.addWidget(coast_curve_btn)
+        
+        curve_group.setLayout(curve_layout)
+        layout.addWidget(curve_group)
+        
         layout.addStretch()
         
         return widget
@@ -315,9 +333,10 @@ class CarEditorDialog(QDialog):
         traction_group = QGroupBox("Traction")
         traction_layout = QFormLayout()
         
-        # Traction type (read-only info)
-        self.traction_type_label = QLabel("RWD")
-        traction_layout.addRow("Type:", self.traction_type_label)
+        # Traction type (editable combo box)
+        self.traction_type = QComboBox()
+        self.traction_type.addItems(["RWD", "FWD", "AWD"])
+        traction_layout.addRow("Type:", self.traction_type)
         
         traction_group.setLayout(traction_layout)
         layout.addWidget(traction_group)
@@ -326,9 +345,10 @@ class CarEditorDialog(QDialog):
         diff_group = QGroupBox("Differential Settings")
         diff_layout = QFormLayout()
         
-        # Differential type (read-only info)
-        self.diff_type_label = QLabel("LSD")
-        diff_layout.addRow("Type:", self.diff_type_label)
+        # Differential type (editable combo box)
+        self.diff_type = QComboBox()
+        self.diff_type.addItems(["LSD", "SPOOL", "VISCOUS"])
+        diff_layout.addRow("Type:", self.diff_type)
         
         # Power setting
         self.diff_power = QDoubleSpinBox()
@@ -558,7 +578,10 @@ class CarEditorDialog(QDialog):
             # Traction type
             if self.drivetrain_ini.has_section('TRACTION'):
                 traction_type = self.drivetrain_ini.get_value('TRACTION', 'TYPE', 'RWD')
-                self.traction_type_label.setText(traction_type)
+                index = self.traction_type.findText(traction_type)
+                if index >= 0:
+                    self.traction_type.setCurrentIndex(index)
+                self.original_values['traction_type'] = traction_type
             
             # Differential
             if self.drivetrain_ini.has_section('DIFFERENTIAL'):
@@ -567,11 +590,14 @@ class CarEditorDialog(QDialog):
                 diff_coast = self.drivetrain_ini.get_value('DIFFERENTIAL', 'COAST', '0.15')
                 diff_preload = self.drivetrain_ini.get_value('DIFFERENTIAL', 'PRELOAD', '50')
                 
-                self.diff_type_label.setText(diff_type)
+                index = self.diff_type.findText(diff_type)
+                if index >= 0:
+                    self.diff_type.setCurrentIndex(index)
                 self.diff_power.setValue(float(diff_power))
                 self.diff_coast.setValue(float(diff_coast))
                 self.diff_preload.setValue(float(diff_preload))
                 
+                self.original_values['diff_type'] = diff_type
                 self.original_values['diff_power'] = float(diff_power)
                 self.original_values['diff_coast'] = float(diff_coast)
                 self.original_values['diff_preload'] = float(diff_preload)
@@ -620,6 +646,50 @@ class CarEditorDialog(QDialog):
                 self.original_values['rear_lift_coeff'] = float(rear_lift)
                 self.original_values['rear_cl_gain'] = float(rear_cl_gain)
     
+    def edit_power_curve(self):
+        """Open curve editor for power.lut"""
+        power_lut_path = os.path.join(self.car_data_path, 'power.lut')
+        
+        if not os.path.exists(power_lut_path):
+            reply = QMessageBox.question(
+                self, "File Not Found",
+                "power.lut file not found. Create a new one?",
+                QMessageBox.Yes | QMessageBox.No
+            )
+            if reply == QMessageBox.No:
+                return
+        
+        # Open curve editor dialog
+        dialog = CurveEditorDialog(
+            lut_file_path=power_lut_path if os.path.exists(power_lut_path) else None,
+            x_label="RPM",
+            y_label="Power (kW)",
+            parent=self
+        )
+        dialog.exec_()
+    
+    def edit_coast_curve(self):
+        """Open curve editor for coast.lut"""
+        coast_lut_path = os.path.join(self.car_data_path, 'coast.lut')
+        
+        if not os.path.exists(coast_lut_path):
+            reply = QMessageBox.question(
+                self, "File Not Found",
+                "coast.lut file not found. Create a new one?",
+                QMessageBox.Yes | QMessageBox.No
+            )
+            if reply == QMessageBox.No:
+                return
+        
+        # Open curve editor dialog
+        dialog = CurveEditorDialog(
+            lut_file_path=coast_lut_path if os.path.exists(coast_lut_path) else None,
+            x_label="RPM",
+            y_label="Torque (Nm)",
+            parent=self
+        )
+        dialog.exec_()
+    
     def save_changes(self):
         """Save changes to car files"""
         try:
@@ -659,7 +729,13 @@ class CarEditorDialog(QDialog):
             
             # Save drivetrain data
             if self.drivetrain_ini:
+                # Save traction type
+                if self.drivetrain_ini.has_section('TRACTION'):
+                    self.drivetrain_ini.set_value('TRACTION', 'TYPE', self.traction_type.currentText())
+                
+                # Save differential settings
                 if self.drivetrain_ini.has_section('DIFFERENTIAL'):
+                    self.drivetrain_ini.set_value('DIFFERENTIAL', 'TYPE', self.diff_type.currentText())
                     self.drivetrain_ini.set_value('DIFFERENTIAL', 'POWER', str(self.diff_power.value()))
                     self.drivetrain_ini.set_value('DIFFERENTIAL', 'COAST', str(self.diff_coast.value()))
                     self.drivetrain_ini.set_value('DIFFERENTIAL', 'PRELOAD', str(self.diff_preload.value()))
@@ -738,10 +814,21 @@ class CarEditorDialog(QDialog):
             self.rear_rod_length.setValue(self.original_values['rear_rod_length'])
         
         # Differential values
+        if 'diff_type' in self.original_values:
+            index = self.diff_type.findText(self.original_values['diff_type'])
+            if index >= 0:
+                self.diff_type.setCurrentIndex(index)
+        
         if 'diff_power' in self.original_values:
             self.diff_power.setValue(self.original_values['diff_power'])
             self.diff_coast.setValue(self.original_values['diff_coast'])
             self.diff_preload.setValue(self.original_values['diff_preload'])
+        
+        # Traction type values
+        if 'traction_type' in self.original_values:
+            index = self.traction_type.findText(self.original_values['traction_type'])
+            if index >= 0:
+                self.traction_type.setCurrentIndex(index)
         
         # Weight values
         if 'total_mass' in self.original_values:
