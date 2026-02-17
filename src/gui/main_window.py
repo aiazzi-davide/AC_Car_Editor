@@ -19,6 +19,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from core.config import ConfigManager
 from core.car_file_manager import CarFileManager
 from core.component_library import ComponentLibrary
+from gui.car_editor_dialog import CarEditorDialog
 
 
 class MainWindow(QMainWindow):
@@ -263,21 +264,24 @@ class MainWindow(QMainWindow):
             )
             
     def edit_car(self):
-        """Open car editor (placeholder)"""
+        """Open car editor"""
         if not self.current_car:
             return
         
-        QMessageBox.information(
-            self,
-            "Coming Soon",
-            f"Car editor for '{self.current_car}' will be implemented in future updates.\n\n"
-            "This will allow you to edit:\n"
-            "- Engine settings\n"
-            "- Suspension settings\n"
-            "- Differential settings\n"
-            "- Weight and balance\n"
-            "- And more..."
-        )
+        # Get car data path
+        car_data_path = self.car_manager.get_car_data_path(self.current_car)
+        
+        if not os.path.exists(car_data_path):
+            QMessageBox.warning(
+                self,
+                "Error",
+                f"Car data folder not found:\n{car_data_path}"
+            )
+            return
+        
+        # Open car editor dialog
+        editor = CarEditorDialog(self.current_car, car_data_path, self)
+        editor.exec_()
         
     def open_component_library(self):
         """Open component library manager (placeholder)"""

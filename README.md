@@ -7,13 +7,13 @@ A desktop application for modifying Assetto Corsa car configurations.
 - Browse and select Assetto Corsa cars
 - View car information
 - Create backups of car data
-- Edit car parameters (coming soon):
-  - Engine settings (power, torque, limiter, turbo)
-  - Suspension settings
-  - Differential settings
-  - Weight and balance
-  - Aerodynamics
-  - Tire settings
+- Edit car parameters:
+  - **Engine settings** (RPM limits, turbo boost, wastegate) ✅
+  - Suspension settings (coming soon)
+  - Differential settings (coming soon)
+  - Weight and balance (coming soon)
+  - Aerodynamics (coming soon)
+  - Tire settings (coming soon)
 - Component library system for pre-built configurations
 - Visual curve editor for .lut files (coming soon)
 
@@ -50,7 +50,14 @@ python main.py
 
 3. Select a car from the list to view its information
 
-4. Create a backup before making any modifications
+4. Edit a car:
+   - Select a car with an unpacked data folder
+   - Click "Edit Car" to open the editor
+   - Modify engine parameters (RPM limits, turbo settings)
+   - Click "Save Changes" to apply modifications
+   - A backup file (.bak) is automatically created
+
+5. Create additional backups using the "Create Backup" button
 
 ## File Structure
 
@@ -99,7 +106,7 @@ assettocorsa/content/cars/
 
 ## Development Status
 
-### Implemented (Phase 1-4)
+### Implemented (Phase 1-5)
 - ✅ Project structure and configuration
 - ✅ INI file parser
 - ✅ LUT file parser with curve support
@@ -108,9 +115,14 @@ assettocorsa/content/cars/
 - ✅ Main window GUI
 - ✅ Car browser and selection
 - ✅ Backup system
+- ✅ **Car editor dialog with engine tab**
+  - Edit engine RPM settings (minimum, maximum, limiter)
+  - Edit turbo settings (max boost, wastegate)
+  - Automatic backup creation before saving
+  - Reset functionality to restore original values
 
 ### Coming Soon
-- Car editor tabs (engine, suspension, etc.)
+- Additional editor tabs (suspension, differential, weight, aerodynamics, tires)
 - Visual curve editor for .lut files
 - Component library GUI manager
 - Import/export functionality

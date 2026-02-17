@@ -41,6 +41,25 @@ class TestIniParser(unittest.TestCase):
         section = parser.get_section('ENGINE_DATA')
         self.assertIn('MINIMUM', section)
         self.assertIn('MAXIMUM', section)
+    
+    def test_inline_comments(self):
+        """Test parsing values with inline comments"""
+        import tempfile
+        # Create a temporary INI file with inline comments
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.ini', delete=False) as f:
+            f.write('[ENGINE_DATA]\n')
+            f.write('MINIMUM=1000\t\t; minimum RPM\n')
+            f.write('MAXIMUM=8200\t\t\t\t\t; maximum RPM\n')
+            f.write('LIMITER=8500\t\t; engine rev limiter\n')
+            temp_file = f.name
+        
+        try:
+            parser = IniParser(temp_file)
+            self.assertEqual(parser.get_value('ENGINE_DATA', 'MINIMUM'), '1000')
+            self.assertEqual(parser.get_value('ENGINE_DATA', 'MAXIMUM'), '8200')
+            self.assertEqual(parser.get_value('ENGINE_DATA', 'LIMITER'), '8500')
+        finally:
+            os.unlink(temp_file)
 
 
 class TestLUTParser(unittest.TestCase):

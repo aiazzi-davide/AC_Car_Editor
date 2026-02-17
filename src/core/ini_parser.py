@@ -18,7 +18,7 @@ class IniParser:
             file_path: Path to the .ini file
         """
         self.file_path = file_path
-        self.config = configparser.ConfigParser()
+        self.config = configparser.ConfigParser(inline_comment_prefixes=(';', '#'))
         self.config.optionxform = str  # Preserve case sensitivity
         
         if os.path.exists(file_path):
@@ -67,7 +67,9 @@ class IniParser:
             Value as string or default
         """
         try:
-            return self.config.get(section, key)
+            value = self.config.get(section, key)
+            # Strip whitespace from value
+            return value.strip() if value else value
         except (configparser.NoSectionError, configparser.NoOptionError):
             return default
     
