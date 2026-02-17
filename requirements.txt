@@ -1,0 +1,10 @@
+# GUI Framework
+PyQt5>=5.15.0
+
+# Configuration and data handling
+configparser>=5.0.0
+
+# Graph plotting for curve editor
+matplotlib>=3.5.0
+
+# Utilities
