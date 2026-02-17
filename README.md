@@ -6,7 +6,7 @@ A desktop application for modifying Assetto Corsa car configurations.
 
 - Browse and select Assetto Corsa cars
 - View car information
-- **Unpack unencrypted data.acd files** ✅ NEW
+- **Automatic data.acd unpacking** ✅ NEW
 - Create backups of car data
 - Edit car parameters:
   - **Engine settings** (RPM limits, turbo boost, wastegate) ✅
@@ -66,16 +66,11 @@ python main.py
 
 3. Select a car from the list to view its information
 
-4. Unpack data.acd files (if needed):
-   - Some cars have data stored in `data.acd` files instead of unpacked folders
-   - Select a car with a data.acd file
-   - Click "Unpack data.acd" to extract the files
-   - The application will check if the file is encrypted (not supported) or unencrypted (can unpack)
-   - Once unpacked, you can edit the car normally
-
-5. Edit a car:
-   - Select a car with an unpacked data folder
+4. Edit a car:
+   - Select any car with a data folder or data.acd file
    - Click "Edit Car" to open the editor
+   - **If the car has a data.acd file, it will be automatically unpacked**
+   - The data.acd file is deleted after unpacking so AC uses the unpacked folder
    - Use the tabs to navigate different aspects:
      - **Engine**: Modify RPM limits, turbo settings, and edit curves
        - Click "Edit Power Curve" to open the visual curve editor for power.lut
@@ -99,7 +94,7 @@ python main.py
    - Click "Save Changes" to apply modifications
    - A backup file (.bak) is automatically created for each modified file
 
-6. Create additional backups using the "Create Backup" button
+5. Create additional backups using the "Create Backup" button
 
 ## File Structure
 
@@ -142,9 +137,11 @@ assettocorsa/content/cars/
 ### Important
 
 - Always create a backup before modifying any car
-- Only cars with unpacked `data` folders can be edited
-- **Unencrypted `data.acd` files can now be unpacked** ✅ NEW
-- Encrypted `data.acd` files (using Kunos encryption) are not supported
+- Cars with data folders or data.acd files can be edited
+- **data.acd files are automatically unpacked when you click "Edit Car"** ✅ NEW
+- **After unpacking, data.acd is deleted so AC uses the unpacked folder** ✅ NEW
+- The application creates backups before unpacking to protect your data
+- Encrypted data.acd files will be attempted to unpack (may not be readable)
 - The application does not modify the original game files until you save changes
 
 ## Development Status
