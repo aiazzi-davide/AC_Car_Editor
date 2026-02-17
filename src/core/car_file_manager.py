@@ -213,6 +213,33 @@ class CarFileManager:
         """
         return os.path.join(self.get_car_data_path(car_name), lut_name)
     
+    def delete_data_acd(self, car_name: str) -> bool:
+        """
+        Delete data.acd file for a car
+        
+        This is useful when a car has both data/ folder and data.acd.
+        AC will use data.acd if it exists, so deleting it forces AC to use the data/ folder.
+        
+        Args:
+            car_name: Car folder name
+            
+        Returns:
+            True if successful or file doesn't exist, False on error
+        """
+        acd_path = os.path.join(self.get_car_path(car_name), 'data.acd')
+        
+        if not os.path.exists(acd_path):
+            print(f"No data.acd file to delete for car: {car_name}")
+            return True  # Not an error if file doesn't exist
+        
+        try:
+            os.remove(acd_path)
+            print(f"Deleted data.acd file for car: {car_name}")
+            return True
+        except Exception as e:
+            print(f"Error deleting data.acd: {e}")
+            return False
+    
     def is_acd_encrypted(self, car_name: str) -> Tuple[bool, Optional[bool]]:
         """
         Check if data.acd file is encrypted

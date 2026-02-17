@@ -221,6 +221,40 @@ class TestCarFileManager(unittest.TestCase):
             
         finally:
             shutil.rmtree(temp_dir)
+    
+    def test_delete_data_acd(self):
+        """Test deleting data.acd file"""
+        # Create a temp test environment
+        temp_dir = tempfile.mkdtemp()
+        try:
+            # Create test car folder structure with data.acd
+            test_car_path = os.path.join(temp_dir, 'test_delete_acd')
+            os.makedirs(test_car_path)
+            
+            # Create a fake data.acd file
+            acd_path = os.path.join(test_car_path, 'data.acd')
+            with open(acd_path, 'w') as f:
+                f.write('test data')
+            
+            # Create manager for temp directory
+            temp_manager = CarFileManager(temp_dir)
+            
+            # Verify data.acd exists before deletion
+            self.assertTrue(os.path.exists(acd_path))
+            
+            # Delete the data.acd
+            result = temp_manager.delete_data_acd('test_delete_acd')
+            self.assertTrue(result)
+            
+            # Verify data.acd was deleted
+            self.assertFalse(os.path.exists(acd_path))
+            
+            # Try deleting again (should succeed since file doesn't exist)
+            result = temp_manager.delete_data_acd('test_delete_acd')
+            self.assertTrue(result)
+            
+        finally:
+            shutil.rmtree(temp_dir)
 
 
 class TestComponentLibrary(unittest.TestCase):

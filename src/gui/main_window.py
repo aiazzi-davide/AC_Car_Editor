@@ -212,14 +212,17 @@ class MainWindow(QMainWindow):
         details.append(f"Has data folder: {'Yes' if car_info['has_data_folder'] else 'No'}")
         details.append(f"Has data.acd: {'Yes' if car_info['has_data_acd'] else 'No'}")
         
-        # Check if ACD is encrypted
+        # Check if ACD is encrypted (for display purposes)
         if car_info['has_data_acd']:
-            acd_exists, is_encrypted = self.car_manager.is_acd_encrypted(car_name)
-            if is_encrypted is not None:
-                if is_encrypted:
-                    details.append("data.acd: Encrypted (will auto-unpack on edit)")
-                else:
-                    details.append("data.acd: Unencrypted (will auto-unpack on edit)")
+            if car_info['has_data_folder']:
+                details.append("Note: data.acd will be deleted on edit (data folder exists)")
+            else:
+                acd_exists, is_encrypted = self.car_manager.is_acd_encrypted(car_name)
+                if is_encrypted is not None:
+                    if is_encrypted:
+                        details.append("data.acd: Custom format (unpacking not supported)")
+                    else:
+                        details.append("data.acd: ZIP format (will auto-unpack on edit)")
         
         self.car_details.setPlainText('\n'.join(details))
         
@@ -231,9 +234,13 @@ class MainWindow(QMainWindow):
         # Enable backup button only if data folder exists
         self.backup_btn.setEnabled(car_info['has_data_folder'])
         
-        if car_info['has_data_acd'] and not car_info['has_data_folder']:
+        if car_info['has_data_acd'] and car_info['has_data_folder']:
             self.statusBar.showMessage(
-                f"Car '{car_name}' has data.acd - will auto-unpack when you click 'Edit Car'"
+                f"Car '{car_name}' has both data folder and data.acd - will delete data.acd on edit"
+            )
+        elif car_info['has_data_acd'] and not car_info['has_data_folder']:
+            self.statusBar.showMessage(
+                f"Car '{car_name}' has data.acd only - may need manual unpacking"
             )
         elif not can_edit:
             self.statusBar.showMessage(
@@ -284,31 +291,49 @@ class MainWindow(QMainWindow):
         if not self.current_car:
             return
         
-        # Check if data.acd exists and unpack it automatically
+        # Handle data.acd if it exists
         car_info = self.car_manager.get_car_info(self.current_car)
         if car_info['has_data_acd']:
-            self.statusBar.showMessage(f"Unpacking data.acd for '{self.current_car}'...")
-            result = self.car_manager.unpack_data_acd(
-                self.current_car, 
-                backup_existing=True,
-                delete_acd=True  # Delete data.acd after unpacking
-            )
-            
-            if not result:
-                reply = QMessageBox.question(
-                    self,
-                    "Unpacking Failed",
-                    f"Failed to unpack data.acd for '{self.current_car}'.\n\n"
-                    "The file may be encrypted or corrupted.\n"
-                    "Do you want to try editing the car anyway?",
-                    QMessageBox.Yes | QMessageBox.No,
-                    QMessageBox.No
-                )
-                if reply != QMessageBox.Yes:
-                    self.statusBar.showMessage("Edit cancelled")
-                    return
+            if car_info['has_data_folder']:
+                # Car has BOTH data folder and data.acd
+                # Just delete data.acd so AC uses the data folder
+                self.statusBar.showMessage(f"Removing data.acd for '{self.current_car}' (data folder already exists)...")
+                result = self.car_manager.delete_data_acd(self.current_car)
+                if result:
+                    self.statusBar.showMessage(f"Removed data.acd for '{self.current_car}'")
+                else:
+                    QMessageBox.warning(
+                        self,
+                        "Warning",
+                        f"Could not delete data.acd for '{self.current_car}'.\n\n"
+                        "The file may be in use or you may not have permission."
+                    )
             else:
-                self.statusBar.showMessage(f"Successfully unpacked data.acd for '{self.current_car}'")
+                # Car has ONLY data.acd, no data folder
+                # Try to unpack it
+                self.statusBar.showMessage(f"Unpacking data.acd for '{self.current_car}'...")
+                result = self.car_manager.unpack_data_acd(
+                    self.current_car, 
+                    backup_existing=True,
+                    delete_acd=True  # Delete data.acd after unpacking
+                )
+                
+                if not result:
+                    reply = QMessageBox.question(
+                        self,
+                        "Unpacking Not Supported",
+                        f"Cannot unpack data.acd for '{self.current_car}'.\n\n"
+                        "This file uses Assetto Corsa's custom binary format which is not yet supported.\n"
+                        "You need to unpack it using Assetto Corsa's own tools first.\n\n"
+                        "Do you want to try editing anyway (if data folder exists)?",
+                        QMessageBox.Yes | QMessageBox.No,
+                        QMessageBox.No
+                    )
+                    if reply != QMessageBox.Yes:
+                        self.statusBar.showMessage("Edit cancelled")
+                        return
+                else:
+                    self.statusBar.showMessage(f"Successfully unpacked data.acd for '{self.current_car}'")
         
         # Get car data path
         car_data_path = self.car_manager.get_car_data_path(self.current_car)
