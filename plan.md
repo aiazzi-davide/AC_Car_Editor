@@ -65,20 +65,20 @@ Creare un'applicazione desktop Windows in Python con PyQt5/6 che permetta di mod
 - [ ] Implementare eliminazione componente con conferma
 - [ ] Implementare drag&drop o apply button per applicare componenti
 
-### Fase 6.5: GUI - Editor Grafico Curve .lut
-- [ ] Creare widget CurveEditor con matplotlib/pyqtgraph integrato
-- [ ] Implementare visualizzazione grafica curve .lut (power.lut, coast.lut, etc.)
-- [ ] Implementare selezione e modifica punti esistenti (drag&drop su grafico)
-- [ ] Implementare aggiunta nuovi punti (click su grafico o form manuale)
-- [ ] Implementare eliminazione punti (selezione + delete key)
-- [ ] Implementare zoom e pan del grafico
-- [ ] Implementare griglia e labels assi (es: RPM vs kW per power.lut)
-- [ ] Implementare anteprima valori numerici tabella affianco al grafico
-- [ ] Implementare smooth curve (interpolazione spline opzionale)
-- [ ] Implementare import/export curve da altri file .lut
-- [ ] Implementare preset curve comuni (lineare, turbo lag, NA, etc.)
-- [ ] Integrare editor curve nel tab "Motore" per power.lut e coast.lut
-- [ ] Supportare altri .lut (turbo.lut, ctrl.lut per elettronica, etc.)
+### Fase 6.5: GUI - Editor Grafico Curve .lut ✅ COMPLETED
+- [x] Creare widget CurveEditor con matplotlib/pyqtgraph integrato
+- [x] Implementare visualizzazione grafica curve .lut (power.lut, coast.lut, etc.)
+- [x] Implementare selezione e modifica punti esistenti (drag&drop su grafico)
+- [x] Implementare aggiunta nuovi punti (click su grafico o form manuale)
+- [x] Implementare eliminazione punti (selezione + delete key)
+- [x] Implementare zoom e pan del grafico
+- [x] Implementare griglia e labels assi (es: RPM vs kW per power.lut)
+- [x] Implementare anteprima valori numerici tabella affianco al grafico
+- [ ] Implementare smooth curve (interpolazione spline opzionale) - Future enhancement
+- [x] Implementare import/export curve da altri file .lut
+- [x] Implementare preset curve comuni (lineare, turbo lag, NA, etc.)
+- [x] Integrare editor curve nel tab "Motore" per power.lut e coast.lut
+- [ ] Supportare altri .lut (turbo.lut, ctrl.lut per elettronica, etc.) - Future enhancement
 
 ### Fase 7: Features Avanzate
 - [ ] Implementare sistema confronto auto (side-by-side comparison)
