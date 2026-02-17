@@ -17,12 +17,14 @@ A desktop application for modifying Assetto Corsa car configurations.
   - Tire settings (coming soon)
 - **Visual curve editor** for power.lut and coast.lut files:
   - Interactive matplotlib-based graph editor
-  - Drag-and-drop point editing
-  - Add/remove points with mouse or keyboard
-  - Zoom and pan controls
+  - Integer-only values for precise car tuning
+  - Drag-and-drop point editing (graph stays fixed during drag)
+  - Add/remove points with form input or keyboard (Delete key)
+  - Mouse wheel zoom (centered on cursor) + keyboard shortcuts (+/-)
+  - Simplified toolbar (Home, Back, Forward, Save)
   - Side-by-side graph and table view
   - Preset curves (Linear, Turbo Lag, NA, V-Shape Coast)
-  - Import/export curves
+  - Export curves to other files
   - Automatic backup creation
 - Component library system for pre-built configurations
 
@@ -67,12 +69,13 @@ python main.py
        - Click "Edit Power Curve" to open the visual curve editor for power.lut
        - Click "Edit Coast Curve" to open the visual curve editor for coast.lut
        - In the curve editor:
-         - Drag points to adjust curve shape
-         - Add points using the form (X/Y values) or by clicking on the graph
+         - Drag points to adjust curve shape (graph stays fixed)
+         - Add points using the form (integer X/Y values) at the bottom right
          - Remove points by selecting them and pressing Delete or clicking "Remove Point"
-         - Use the navigation toolbar to zoom and pan
+         - Zoom with mouse wheel (centered on cursor) or +/- keyboard keys
+         - Use toolbar buttons: Home (reset view), Back, Forward, Save
          - Load preset curves from the dropdown menu
-         - Import curves from other .lut files or export the current curve
+         - Export curves to other .lut files
          - Save changes (automatically creates a .bak backup)
      - **Suspension**: Adjust spring rates, damper settings for front and rear
      - **Differential**: Configure differential power, coast, and preload
