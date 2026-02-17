@@ -1,0 +1,45 @@
+{
+    "version": "1.0",
+    "components": {
+        "engine": [
+            {
+                "id": "engine_default",
+                "name": "Default Engine",
+                "description": "Default engine configuration",
+                "tags": [
+                    "stock"
+                ],
+                "data": {
+                    "MINIMUM": 1000,
+                    "LIMITER": 8000,
+                    "INERTIA": 0.15
+                }
+            }
+        ],
+        "suspension": [
+            {
+                "id": "suspension_default",
+                "name": "Default Suspension",
+                "description": "Default suspension setup",
+                "tags": [
+                    "stock"
+                ],
+                "data": {}
+            }
+        ],
+        "differential": [
+            {
+                "id": "diff_default",
+                "name": "Default Differential",
+                "description": "Default differential setup",
+                "tags": [
+                    "stock"
+                ],
+                "data": {}
+            }
+        ],
+        "drivetrain": [],
+        "aero": [],
+        "tyres": []
+    }
+}

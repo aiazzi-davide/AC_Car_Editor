@@ -9,10 +9,10 @@ A desktop application for modifying Assetto Corsa car configurations.
 - Create backups of car data
 - Edit car parameters:
   - **Engine settings** (RPM limits, turbo boost, wastegate) ✅
-  - Suspension settings (coming soon)
-  - Differential settings (coming soon)
-  - Weight and balance (coming soon)
-  - Aerodynamics (coming soon)
+  - **Suspension settings** (spring rates, dampers, rod length) ✅
+  - **Differential settings** (power, coast, preload) ✅
+  - **Weight and balance** (total mass, center of gravity) ✅
+  - **Aerodynamics** (drag coefficient, downforce) ✅
   - Tire settings (coming soon)
 - Component library system for pre-built configurations
 - Visual curve editor for .lut files (coming soon)
@@ -53,9 +53,14 @@ python main.py
 4. Edit a car:
    - Select a car with an unpacked data folder
    - Click "Edit Car" to open the editor
-   - Modify engine parameters (RPM limits, turbo settings)
+   - Use the tabs to navigate different aspects:
+     - **Engine**: Modify RPM limits, turbo settings
+     - **Suspension**: Adjust spring rates, damper settings for front and rear
+     - **Differential**: Configure differential power, coast, and preload
+     - **Weight**: Set total mass and center of gravity position
+     - **Aerodynamics**: Adjust drag coefficient and downforce settings
    - Click "Save Changes" to apply modifications
-   - A backup file (.bak) is automatically created
+   - A backup file (.bak) is automatically created for each modified file
 
 5. Create additional backups using the "Create Backup" button
 
@@ -106,7 +111,7 @@ assettocorsa/content/cars/
 
 ## Development Status
 
-### Implemented (Phase 1-5)
+### Implemented (Phase 1-6)
 - ✅ Project structure and configuration
 - ✅ INI file parser
 - ✅ LUT file parser with curve support
@@ -115,14 +120,17 @@ assettocorsa/content/cars/
 - ✅ Main window GUI
 - ✅ Car browser and selection
 - ✅ Backup system
-- ✅ **Car editor dialog with engine tab**
-  - Edit engine RPM settings (minimum, maximum, limiter)
-  - Edit turbo settings (max boost, wastegate)
+- ✅ **Car editor dialog with multiple tabs**
+  - **Engine tab**: RPM settings (minimum, maximum, limiter) and turbo settings (max boost, wastegate)
+  - **Suspension tab**: Front and rear suspension settings (spring rate, damper fast/slow bump/rebound, rod length)
+  - **Differential tab**: Traction type display and differential settings (power, coast, preload)
+  - **Weight tab**: Total mass and center of gravity location (X, Y, Z coordinates)
+  - **Aerodynamics tab**: Drag coefficient, front and rear downforce settings (lift coefficient, CL gain)
   - Automatic backup creation before saving
   - Reset functionality to restore original values
 
 ### Coming Soon
-- Additional editor tabs (suspension, differential, weight, aerodynamics, tires)
+- Tire settings tab
 - Visual curve editor for .lut files
 - Component library GUI manager
 - Import/export functionality
