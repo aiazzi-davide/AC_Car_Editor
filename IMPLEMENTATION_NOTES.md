@@ -23,6 +23,8 @@ This document tracks the implemented features and provides guidance for future d
 - Automatic whitespace stripping
 - Inline comment support (`;` and `#`)
 - Backup file creation with `.bak` extension
+- **Robust error handling**: Gracefully handles malformed INI files with unparseable lines (configparser.ParsingError)
+- **Non-crashing behavior**: Application continues to run even if some INI files have parsing errors
 
 #### LUTCurve (lut_parser.py)
 **Status**: Fully implemented and tested
@@ -206,10 +208,11 @@ This document tracks the implemented features and provides guidance for future d
 - ✅ Differential: 2 tests (load_differential_data, save_differential_data)
 - ✅ Weight: 2 tests (load_weight_data, save_weight_data)
 - ✅ Aerodynamics: 2 tests (load_aero_data, save_aero_data)
+- ✅ Error Handling: 1 test (malformed_ini_file)
 
-**Total GUI Tests**: 13 tests, all passing
+**Total GUI Tests**: 14 tests, all passing
 
-**Total Tests**: 29 tests, 100% passing
+**Total Tests**: 30 tests, 100% passing
 
 ## Test Data Files
 
@@ -221,6 +224,7 @@ Located in `tests/test_data/test_car/data/`:
 - ✅ aero.ini - Drag and downforce settings
 - ✅ power.lut - Power curve (RPM|kW)
 - ✅ coast.lut - Coast curve (RPM|Nm)
+- ✅ malformed_suspensions.ini - Test file with unparseable lines for error handling
 
 ## Implementation Patterns
 
@@ -228,11 +232,15 @@ Located in `tests/test_data/test_car/data/`:
 
 Follow this pattern (documented in copilot-instructions.md):
 
-1. **Add parser initialization** in `init_parsers()`:
+1. **Add parser initialization** in `init_parsers()` (with error handling):
 ```python
 myfile_path = os.path.join(self.car_data_path, 'myfile.ini')
 if os.path.exists(myfile_path):
-    self.myfile_ini = IniParser(myfile_path)
+    try:
+        self.myfile_ini = IniParser(myfile_path)
+    except Exception as e:
+        print(f"Failed to load myfile.ini: {e}")
+        self.myfile_ini = None
 ```
 
 2. **Create tab method** `create_mytab_tab()`:
@@ -392,7 +400,7 @@ AC_Car_Editor/
 │       └── library.json             # Component library data (auto-created)
 ├── tests/
 │   ├── test_core.py                 # Core tests (16 tests)
-│   ├── test_gui.py                  # GUI tests (13 tests)
+│   ├── test_gui.py                  # GUI tests (14 tests)
 │   └── test_data/
 │       └── test_car/data/           # Test car data files
 └── backups/                         # Car backups (auto-created)
@@ -402,6 +410,7 @@ AC_Car_Editor/
 
 - **v0.1.0** (Phase 1-5): Initial release with engine tab
 - **v0.2.0** (Phase 6): Added suspension, differential, weight, and aerodynamics tabs
+- **v0.2.1** (Phase 6 bugfix): Fixed crash when loading malformed INI files
 
 ## Contributors Notes
 
