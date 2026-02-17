@@ -16,6 +16,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from core.ini_parser import IniParser
 from core.lut_parser import LUTCurve
+from gui.curve_editor_dialog import CurveEditorDialog
 
 
 class CarEditorDialog(QDialog):
@@ -192,6 +193,23 @@ class CarEditorDialog(QDialog):
         
         turbo_group.setLayout(turbo_layout)
         layout.addWidget(turbo_group)
+        
+        # Curve editor group
+        curve_group = QGroupBox("Power and Coast Curves")
+        curve_layout = QVBoxLayout()
+        
+        # Power curve button
+        power_curve_btn = QPushButton("Edit Power Curve (power.lut)")
+        power_curve_btn.clicked.connect(self.edit_power_curve)
+        curve_layout.addWidget(power_curve_btn)
+        
+        # Coast curve button
+        coast_curve_btn = QPushButton("Edit Coast Curve (coast.lut)")
+        coast_curve_btn.clicked.connect(self.edit_coast_curve)
+        curve_layout.addWidget(coast_curve_btn)
+        
+        curve_group.setLayout(curve_layout)
+        layout.addWidget(curve_group)
         
         layout.addStretch()
         
@@ -619,6 +637,50 @@ class CarEditorDialog(QDialog):
                 
                 self.original_values['rear_lift_coeff'] = float(rear_lift)
                 self.original_values['rear_cl_gain'] = float(rear_cl_gain)
+    
+    def edit_power_curve(self):
+        """Open curve editor for power.lut"""
+        power_lut_path = os.path.join(self.car_data_path, 'power.lut')
+        
+        if not os.path.exists(power_lut_path):
+            reply = QMessageBox.question(
+                self, "File Not Found",
+                "power.lut file not found. Create a new one?",
+                QMessageBox.Yes | QMessageBox.No
+            )
+            if reply == QMessageBox.No:
+                return
+        
+        # Open curve editor dialog
+        dialog = CurveEditorDialog(
+            lut_file_path=power_lut_path if os.path.exists(power_lut_path) else None,
+            x_label="RPM",
+            y_label="Power (kW)",
+            parent=self
+        )
+        dialog.exec_()
+    
+    def edit_coast_curve(self):
+        """Open curve editor for coast.lut"""
+        coast_lut_path = os.path.join(self.car_data_path, 'coast.lut')
+        
+        if not os.path.exists(coast_lut_path):
+            reply = QMessageBox.question(
+                self, "File Not Found",
+                "coast.lut file not found. Create a new one?",
+                QMessageBox.Yes | QMessageBox.No
+            )
+            if reply == QMessageBox.No:
+                return
+        
+        # Open curve editor dialog
+        dialog = CurveEditorDialog(
+            lut_file_path=coast_lut_path if os.path.exists(coast_lut_path) else None,
+            x_label="RPM",
+            y_label="Torque (Nm)",
+            parent=self
+        )
+        dialog.exec_()
     
     def save_changes(self):
         """Save changes to car files"""
