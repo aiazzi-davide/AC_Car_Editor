@@ -6,17 +6,21 @@ A desktop application for modifying Assetto Corsa car configurations.
 
 - Browse and select Assetto Corsa cars
 - View car information
+- **Unpack unencrypted data.acd files** ✅ NEW
 - Create backups of car data
 - Edit car parameters:
   - **Engine settings** (RPM limits, turbo boost, wastegate) ✅
   - **Power and coast curves** (visual curve editor for .lut files) ✅
+  - **Turbo curves** (boost pressure vs RPM) ✅ NEW
   - **Suspension settings** (spring rates, dampers, rod length) ✅
   - **Differential settings** (power, coast, preload) ✅
   - **Weight and balance** (total mass, center of gravity) ✅
   - **Aerodynamics** (drag coefficient, downforce) ✅
+  - **Advanced settings** (ctrl.lut, damage.lut) ✅ NEW
   - Tire settings (coming soon)
-- **Visual curve editor** for power.lut and coast.lut files:
+- **Visual curve editor** for .lut files:
   - Interactive matplotlib-based graph editor
+  - **Smooth curve option with cubic spline interpolation** ✅ NEW
   - Integer-only values for precise car tuning
   - Drag-and-drop point editing (graph stays fixed during drag)
   - Add/remove points with form input or keyboard (Delete key)
@@ -26,6 +30,7 @@ A desktop application for modifying Assetto Corsa car configurations.
   - Preset curves (Linear, Turbo Lag, NA, V-Shape Coast)
   - Export curves to other files
   - Automatic backup creation
+  - **Support for multiple LUT file types** (power, coast, turbo, ctrl, damage) ✅ NEW
 - Component library system for pre-built configurations
 
 ## Requirements
@@ -61,14 +66,23 @@ python main.py
 
 3. Select a car from the list to view its information
 
-4. Edit a car:
+4. Unpack data.acd files (if needed):
+   - Some cars have data stored in `data.acd` files instead of unpacked folders
+   - Select a car with a data.acd file
+   - Click "Unpack data.acd" to extract the files
+   - The application will check if the file is encrypted (not supported) or unencrypted (can unpack)
+   - Once unpacked, you can edit the car normally
+
+5. Edit a car:
    - Select a car with an unpacked data folder
    - Click "Edit Car" to open the editor
    - Use the tabs to navigate different aspects:
-     - **Engine**: Modify RPM limits, turbo settings, and edit power/coast curves
+     - **Engine**: Modify RPM limits, turbo settings, and edit curves
        - Click "Edit Power Curve" to open the visual curve editor for power.lut
        - Click "Edit Coast Curve" to open the visual curve editor for coast.lut
+       - Click "Edit Turbo Curve" to edit turbo boost pressure curve (turbo.lut)
        - In the curve editor:
+         - Enable "Smooth Curve (Spline)" checkbox for smooth interpolation
          - Drag points to adjust curve shape (graph stays fixed)
          - Add points using the form (integer X/Y values) at the bottom right
          - Remove points by selecting them and pressing Delete or clicking "Remove Point"
@@ -81,10 +95,11 @@ python main.py
      - **Differential**: Configure differential power, coast, and preload
      - **Weight**: Set total mass and center of gravity position
      - **Aerodynamics**: Adjust drag coefficient and downforce settings
+     - **Advanced**: Edit additional curve files (ctrl.lut, damage.lut)
    - Click "Save Changes" to apply modifications
    - A backup file (.bak) is automatically created for each modified file
 
-5. Create additional backups using the "Create Backup" button
+6. Create additional backups using the "Create Backup" button
 
 ## File Structure
 
@@ -128,37 +143,39 @@ assettocorsa/content/cars/
 
 - Always create a backup before modifying any car
 - Only cars with unpacked `data` folders can be edited
-- Encrypted `data.acd` files are not supported yet
+- **Unencrypted `data.acd` files can now be unpacked** ✅ NEW
+- Encrypted `data.acd` files (using Kunos encryption) are not supported
 - The application does not modify the original game files until you save changes
 
 ## Development Status
 
-### Implemented (Phase 1-6.5)
+### Implemented (Phase 1-6.5) ✅ COMPLETE
 - ✅ Project structure and configuration
 - ✅ INI file parser
 - ✅ LUT file parser with curve support
+- ✅ **data.acd unpacking for unencrypted files** (Phase 2 complete)
 - ✅ Car file manager
 - ✅ Component library system
 - ✅ Main window GUI
 - ✅ Car browser and selection
 - ✅ Backup system
-- ✅ **Car editor dialog with multiple tabs**
-  - **Engine tab**: RPM settings (minimum, maximum, limiter) and turbo settings (max boost, wastegate)
-  - **Power and coast curve editor**: Visual matplotlib-based editor for .lut files
-  - **Suspension tab**: Front and rear suspension settings (spring rate, damper fast/slow bump/rebound, rod length)
-  - **Differential tab**: Traction type display and differential settings (power, coast, preload)
-  - **Weight tab**: Total mass and center of gravity location (X, Y, Z coordinates)
-  - **Aerodynamics tab**: Drag coefficient, front and rear downforce settings (lift coefficient, CL gain)
-  - Automatic backup creation before saving
-  - Reset functionality to restore original values
-- ✅ **Visual curve editor for .lut files**
+- ✅ **Car editor dialog with 6 tabs** (Phase 5 complete)
+  - **Engine tab**: RPM settings, turbo settings, and curve editors
+  - **Suspension tab**: Front and rear suspension settings
+  - **Differential tab**: Traction type and differential settings
+  - **Weight tab**: Total mass and center of gravity
+  - **Aerodynamics tab**: Drag coefficient and downforce
+  - **Advanced tab**: Additional curve files (ctrl.lut, damage.lut)
+- ✅ **Visual curve editor for .lut files** (Phase 6.5 complete)
   - Interactive matplotlib graph with zoom/pan
-  - Drag-and-drop point editing
-  - Add/remove points via mouse, keyboard, or form
+  - **Smooth curve option with cubic spline interpolation** ✅ NEW
+  - Drag-and-drop point editing with fixed graph
+  - Add/remove points via multiple methods
   - Side-by-side graph and table view
   - Preset curves (Linear, Turbo Lag, NA, V-Shape Coast)
   - Import/export functionality
-  - Real-time preview with axis labels (RPM vs kW, etc.)
+  - **Support for 5 LUT file types**: power.lut, coast.lut, turbo.lut, ctrl.lut, damage.lut ✅ NEW
+  - Real-time preview with appropriate axis labels
 
 ### Coming Soon
 - Tire settings tab
