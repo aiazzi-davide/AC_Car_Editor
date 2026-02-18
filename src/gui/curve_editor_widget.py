@@ -187,21 +187,28 @@ class CurveEditorWidget(QWidget):
         
         # Plot the curve
         if self.smooth_curve and len(points) >= 4:
-            # Use cubic spline interpolation for smooth curve
-            # Need at least 4 points for cubic spline
+            # Use PCHIP interpolation for smooth curve without overshooting
+            # PCHIP (Piecewise Cubic Hermite Interpolating Polynomial) preserves monotonicity
+            # and doesn't produce overshoots, making it safer for car tuning data
             try:
-                # Create interpolation function with boundary clamping
-                # bounds_error=False ensures we stay within data range
-                f = interpolate.interp1d(x_vals, y_vals, kind='cubic', 
-                                        bounds_error=False, fill_value=(y_vals[0], y_vals[-1]))
+                # Create PCHIP interpolator (no overshooting, preserves shape)
+                pchip = interpolate.PchipInterpolator(x_vals, y_vals)
                 
                 # Generate smooth curve points
                 x_min, x_max = min(x_vals), max(x_vals)
                 x_smooth = np.linspace(x_min, x_max, 200)
-                y_smooth = f(x_smooth)
+                y_smooth = pchip(x_smooth)
                 
-                # Plot smooth curve
-                self.ax.plot(x_smooth, y_smooth, 'b-', linewidth=2, alpha=0.7)
+                # Validate: ensure no negative values for curves that should be positive
+                # This is a safety check for power/torque curves
+                if np.any(y_smooth < 0) and np.all(np.array(y_vals) >= 0):
+                    print("Warning: Spline interpolation produced negative values. Using linear interpolation.")
+                    # Fall back to linear
+                    self.ax.plot(x_vals, y_vals, 'bo-', linewidth=2, markersize=6, 
+                               markerfacecolor='lightblue', markeredgecolor='blue')
+                else:
+                    # Plot smooth curve
+                    self.ax.plot(x_smooth, y_smooth, 'b-', linewidth=2, alpha=0.7)
             except Exception as e:
                 # Fallback to linear if spline fails
                 print(f"Spline interpolation failed: {e}. Using linear interpolation.")

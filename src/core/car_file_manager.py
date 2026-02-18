@@ -347,7 +347,7 @@ class CarFileManager:
             Path to QuickBMS executable if found, None otherwise
         """
         # Check if QuickBMS path is configured
-        quickbms_path = self.config_manager.get_quickbms_path() if hasattr(self, 'config_manager') else None
+        quickbms_path = self.config_manager.get_quickbms_path() if self.config_manager is not None else None
         if quickbms_path and os.path.exists(quickbms_path):
             return quickbms_path
         
@@ -357,13 +357,14 @@ class CarFileManager:
         else:
             exe_names = ['quickbms', 'QuickBMS']
         
-        # Search in common locations
+        # Search in common locations (prioritize safe locations)
         search_paths = [
-            os.getcwd(),  # Current directory
+            # User-configured path first (most trusted)
+            # Specific tool directories (safer than current dir)
             os.path.join(os.getcwd(), 'tools'),
             os.path.join(os.getcwd(), 'quickbms'),
-            os.path.expanduser('~'),
             os.path.join(os.path.expanduser('~'), 'quickbms'),
+            # System directories (trusted)
             '/usr/local/bin',
             '/usr/bin',
         ]
@@ -371,6 +372,10 @@ class CarFileManager:
         # Add PATH directories
         if 'PATH' in os.environ:
             search_paths.extend(os.environ['PATH'].split(os.pathsep))
+        
+        # NOTE: Current directory is intentionally last for security
+        search_paths.append(os.getcwd())
+        search_paths.append(os.path.expanduser('~'))
         
         for path in search_paths:
             for exe_name in exe_names:
@@ -432,6 +437,13 @@ class CarFileManager:
             print("QuickBMS not found. Please install QuickBMS to unpack AC data.acd files.")
             print("Download from: http://aluigi.altervista.org/quickbms.htm")
             return False
+        
+        # Security: Validate the executable path is not in potentially unsafe locations
+        unsafe_locations = [os.getcwd(), os.path.join(os.getcwd(), '.')]
+        quickbms_dir = os.path.dirname(os.path.abspath(quickbms_exe))
+        if quickbms_dir in unsafe_locations:
+            print(f"WARNING: QuickBMS found in current directory ({quickbms_exe})")
+            print("For security, consider moving it to a dedicated tools folder.")
         
         # Find BMS script
         bms_script = self.find_acd_bms_script()
