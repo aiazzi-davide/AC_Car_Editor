@@ -17,10 +17,13 @@ A desktop application for modifying Assetto Corsa car configurations.
   - **Power/Torque Calculator** – real-time chart of power (HP, derived) and torque (Nm) with turbo boost effect ✅
   - **Suspension settings** (spring rates, dampers, rod length) ✅
   - **Drivetrain settings** (differential, gearbox, clutch, AWD/AWD2 support) ✅
+    - **Gear Ratio Editor**: Individual gear ratio editing (R, 1-10) with collapsible UI ✅
+    - **Gear Ratio Presets**: Import from library (4 presets: Street 5-speed, Sport 6-speed, Race 6-speed, Drift 6-speed) ✅
   - **Weight and balance** (total mass, center of gravity, fuel) ✅
   - **Aerodynamics** (drag coefficient, downforce, wing angles) ✅
   - **Brakes** (max torque, bias, handbrake, adjust step) ✅
   - **Tyres (Pneumatici)** (compound selection, dimensions, grip, pressure) ✅
+    - **Tire Presets**: Import from library (6 presets: Street, Sport, Semi-Slick, Soft/Medium/Hard Slicks) ✅
 - **Setup Manager** for track-specific presets (save/load/delete per-track setups) ✅
 - **Visual curve editor** for power.lut and coast.lut files:
   - Interactive matplotlib-based graph editor

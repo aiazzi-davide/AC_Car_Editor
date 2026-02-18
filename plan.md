@@ -89,13 +89,13 @@ Creare un'applicazione desktop Windows in Python con PyQt5/6 che permetta di mod
 - [x] Aggiunta campo ADJUST_STEP al tab freni (§4.6)
 - [x] Aggiornamento documentazione (README.md, plan.md)
 
-### Fase 7: Features Avanzate ✅ (4/8 completed)
+### Fase 7: Features Avanzate ✅ (6/8 completed)
 - [x] implementare preview immagine dell'auto
 - [x] Implementare ricerca/filtro auto
 - [x] implementare calcolatore potenza/coppia in tempo reale basato su curve .lut e sul moltiplicatore turbo
 - [x] Implementare supporto per setup auto (track-specific configurations)
-- [ ] Implementare gestione rapporti cambio (gear ratios)
-- [ ] Implementare possibilità di aggiungere/rimuovere tipi di gomme predefiniti dalla libreria
+- [x] Implementare gestione rapporti cambio (gear ratios) - Editor con spinbox per ogni marcia (R, 1-10), import da libreria con 4 preset (street 5-speed, sport 6-speed, race 6-speed, drift 6-speed)
+- [x] Implementare possibilità di aggiungere/rimuovere tipi di gomme predefiniti dalla libreria - 6 preset disponibili (street, sport, semi-slick, soft/medium/hard slick), import in tab Pneumatici
 - [ ] implementare modifiche a cartella ui/ (nome auto in menu, icone, etc.)
 - [ ] Supportare altri .lut, implementare un editor generico di lut per altri tipi di curve specifici per ogni macchina (es. traction_control.lut throttle.lut) ci deve essere quindi un selettore di lut disponibili e una sezione per modificarli - Future enhancement
 - [ ] Implementare smooth curve (interpolazione spline opzionale) - Future enhancement
