@@ -33,6 +33,7 @@ class CarEditorDialog(QDialog):
 
     def __init__(self, car_name, car_data_path, parent=None):
         super().__init__(parent)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
 
         self.car_name = car_name
         self.car_data_path = car_data_path

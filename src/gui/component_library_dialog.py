@@ -24,6 +24,7 @@ class ComponentLibraryDialog(QDialog):
     def __init__(self, parent=None):
         """Initialize component library dialog"""
         super().__init__(parent)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         
         self.library = ComponentLibrary()
         self.current_component_type = 'engine'
@@ -413,6 +414,7 @@ class ComponentEditorDialog(QDialog):
             parent: Parent widget
         """
         super().__init__(parent)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         
         self.component_type = component_type
         self.component = component or {}

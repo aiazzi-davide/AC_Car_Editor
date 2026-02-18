@@ -47,6 +47,7 @@ class CurveEditorDialog(QDialog):
             parent: Parent widget
         """
         super().__init__(parent)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.lut_file_path = lut_file_path
         self.x_label = x_label
         self.y_label = y_label

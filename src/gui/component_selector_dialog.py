@@ -29,6 +29,7 @@ class ComponentSelectorDialog(QDialog):
             parent: Parent widget
         """
         super().__init__(parent)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         
         self.component_type = component_type
         self.library = ComponentLibrary()
