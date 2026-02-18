@@ -317,6 +317,65 @@ class TestSetupManager(unittest.TestCase):
         self.assertFalse(self.manager.delete_preset(''))
 
 
+class TestGearRatiosAndTyres(unittest.TestCase):
+    """Test gear ratios and tyre library features."""
+
+    def test_gears_component_library(self):
+        """Test that gear ratio presets are available in component library."""
+        from core.component_library import ComponentLibrary
+        lib = ComponentLibrary()
+        
+        gears = lib.get_components('gears')
+        self.assertGreater(len(gears), 0, "Should have gear ratio presets")
+        
+        # Check structure of first preset
+        first = gears[0]
+        self.assertIn('id', first)
+        self.assertIn('name', first)
+        self.assertIn('data', first)
+        self.assertIn('COUNT', first['data'])
+        self.assertIn('FINAL', first['data'])
+        self.assertIn('GEAR_1', first['data'])
+        self.assertIn('GEAR_R', first['data'])
+
+    def test_tyres_component_library(self):
+        """Test that tyre presets are available in component library."""
+        from core.component_library import ComponentLibrary
+        lib = ComponentLibrary()
+        
+        tyres = lib.get_components('tyres')
+        self.assertGreater(len(tyres), 0, "Should have tyre presets")
+        
+        # Check structure of first preset
+        first = tyres[0]
+        self.assertIn('id', first)
+        self.assertIn('name', first)
+        self.assertIn('data', first)
+        self.assertIn('WIDTH', first['data'])
+        self.assertIn('RADIUS', first['data'])
+        self.assertIn('DX0', first['data'])
+        self.assertIn('DY0', first['data'])
+
+    def test_gear_count_matches_ratios(self):
+        """Test that gear count matches number of gear ratios in presets."""
+        from core.component_library import ComponentLibrary
+        lib = ComponentLibrary()
+        
+        gears = lib.get_components('gears')
+        for gear_set in gears:
+            data = gear_set['data']
+            count = data.get('COUNT', 0)
+            
+            # Check that we have exactly 'count' gears (GEAR_1 to GEAR_N)
+            for i in range(1, count + 1):
+                self.assertIn(f'GEAR_{i}', data, 
+                             f"Gear set '{gear_set['name']}' should have GEAR_{i}")
+            
+            # Check we don't have more gears than count
+            self.assertNotIn(f'GEAR_{count + 1}', data,
+                            f"Gear set '{gear_set['name']}' should not have GEAR_{count + 1}")
+
+
 def run_tests():
     loader = unittest.TestLoader()
     suite = loader.loadTestsFromModule(sys.modules[__name__])

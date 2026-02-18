@@ -1174,14 +1174,16 @@ class CarEditorDialog(QDialog):
             self.original_values.update({'gear_count': gc, 'final_ratio': final})
             
             # Load individual gear ratios
-            gear_r = float(self.drivetrain_ini.get_value('GEARS', 'GEAR_R', '-3.5'))
-            self.gear_ratios['GEAR_R'].setValue(gear_r)
-            self.original_values['gear_r'] = gear_r
+            gear_r = self.drivetrain_ini.get_value('GEARS', 'GEAR_R', '-3.5')
+            if gear_r:
+                self.gear_ratios['GEAR_R'].setValue(float(gear_r))
+                self.original_values['gear_r'] = float(gear_r)
             
             for i in range(1, 11):
                 gear_key = f'GEAR_{i}'
-                if self.drivetrain_ini.has_key('GEARS', gear_key):
-                    ratio = float(self.drivetrain_ini.get_value('GEARS', gear_key, '1.0'))
+                ratio_str = self.drivetrain_ini.get_value('GEARS', gear_key, None)
+                if ratio_str:
+                    ratio = float(ratio_str)
                     self.gear_ratios[gear_key].setValue(ratio)
                     self.original_values[f'gear_{i}'] = ratio
 
