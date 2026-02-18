@@ -92,8 +92,8 @@ Creare un'applicazione desktop Windows in Python con PyQt5/6 che permetta di mod
 - [x] Aggiornamento documentazione (README.md, plan.md)
 
 ### Fase 7: Features Avanzate
-- [ ] Implementare sistema confronto auto (side-by-side comparison)
-- [ ] implementare preview grafico dell'auto (immagine)
+- [x] Implementare sistema confronto auto (side-by-side comparison)
+- [x] implementare preview grafico dell'auto (immagine)
 - [ ] Implementare ricerca/filtro auto
 - [ ] Implementare sistema undo/redo modifiche
 - [ ] Investigare gestione sound motore (bank files, GUIDs)

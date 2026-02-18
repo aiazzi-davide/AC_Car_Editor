@@ -5,8 +5,10 @@ A desktop application for modifying Assetto Corsa car configurations.
 ## Features
 
 - Browse and select Assetto Corsa cars
+- **Car preview images** - Display car preview from ui/preview.png ✅
 - View car information
 - Create backups of car data
+- **Compare cars side-by-side** - Visual comparison of two cars with highlighted differences ✅
 - **Automatic unpacking of data.acd files** using quickBMS ✅
 - **Automatic data.acd deletion after editing** to ensure changes are used in-game ✅
 - Edit car parameters:
@@ -91,6 +93,22 @@ python main.py
    - **After editing**: Application prompts to delete data.acd to ensure changes are used in-game
 
 5. Create additional backups using the "Create Backup" button
+
+6. **Compare Cars** (New in Phase 7):
+   - Click "Compare Cars" button or go to Tools > Compare Cars...
+   - Select two cars from the dropdown menus
+   - View side-by-side comparison of specifications:
+     - Engine specs (power, limiter, inertia)
+     - Weight and distribution
+     - Suspension geometry
+     - Drivetrain configuration
+     - Aerodynamic properties
+     - Brake settings
+   - Differences are highlighted with color coding:
+     - Green background: Higher value (generally better)
+     - Yellow background: Lower value
+     - Light gray: Non-numeric differences
+   - Car preview images are displayed if available
 
 ## Data.acd Unpacking
 
