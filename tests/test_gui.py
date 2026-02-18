@@ -27,6 +27,7 @@ class TestCarEditorDialog(unittest.TestCase):
         self.test_drivetrain_ini = os.path.join(self.test_data_dir, 'drivetrain.ini')
         self.test_car_ini = os.path.join(self.test_data_dir, 'car.ini')
         self.test_aero_ini = os.path.join(self.test_data_dir, 'aero.ini')
+        self.test_brakes_ini = os.path.join(self.test_data_dir, 'brakes.ini')
         
         # Create temporary copy for testing
         self.temp_dir = tempfile.mkdtemp()
@@ -35,6 +36,7 @@ class TestCarEditorDialog(unittest.TestCase):
         self.temp_drivetrain_ini = os.path.join(self.temp_dir, 'drivetrain.ini')
         self.temp_car_ini = os.path.join(self.temp_dir, 'car.ini')
         self.temp_aero_ini = os.path.join(self.temp_dir, 'aero.ini')
+        self.temp_brakes_ini = os.path.join(self.temp_dir, 'brakes.ini')
         
         shutil.copy2(self.test_engine_ini, self.temp_engine_ini)
         if os.path.exists(self.test_suspension_ini):
@@ -236,6 +238,50 @@ class TestCarEditorDialog(unittest.TestCase):
         
         # Sections after malformed lines may not be available
         # but the parser should not crash
+    
+    def test_load_brakes_data(self):
+        """Test loading brakes data from INI file"""
+        test_brakes_ini = os.path.join(self.test_data_dir, 'brakes.ini')
+        if not os.path.exists(test_brakes_ini):
+            self.skipTest("brakes.ini test file not found")
+        
+        parser = IniParser(test_brakes_ini)
+        
+        self.assertTrue(parser.has_section('DATA'))
+        self.assertEqual(parser.get_value('DATA', 'MAX_TORQUE'), '2000')
+        self.assertEqual(parser.get_value('DATA', 'FRONT_SHARE'), '0.64')
+        self.assertEqual(parser.get_value('DATA', 'HANDBRAKE_TORQUE'), '2500')
+        self.assertEqual(parser.get_value('DATA', 'COCKPIT_ADJUSTABLE'), '0')
+        self.assertEqual(parser.get_value('DATA', 'ADJUST_STEP'), '0.5')
+    
+    def test_save_brakes_data(self):
+        """Test saving modified brakes data"""
+        test_brakes_ini = os.path.join(self.test_data_dir, 'brakes.ini')
+        if not os.path.exists(test_brakes_ini):
+            self.skipTest("brakes.ini test file not found")
+        
+        temp_brakes_ini = os.path.join(self.temp_dir, 'brakes.ini')
+        shutil.copy2(test_brakes_ini, temp_brakes_ini)
+        
+        parser = IniParser(temp_brakes_ini)
+        
+        # Modify values
+        parser.set_value('DATA', 'MAX_TORQUE', '3000')
+        parser.set_value('DATA', 'FRONT_SHARE', '0.70')
+        parser.set_value('DATA', 'HANDBRAKE_TORQUE', '3500')
+        parser.set_value('DATA', 'COCKPIT_ADJUSTABLE', '1')
+        parser.set_value('DATA', 'ADJUST_STEP', '1.0')
+        
+        # Save without backup for testing
+        parser.save(backup=False)
+        
+        # Re-load and verify
+        parser2 = IniParser(temp_brakes_ini)
+        self.assertEqual(parser2.get_value('DATA', 'MAX_TORQUE'), '3000')
+        self.assertEqual(parser2.get_value('DATA', 'FRONT_SHARE'), '0.70')
+        self.assertEqual(parser2.get_value('DATA', 'HANDBRAKE_TORQUE'), '3500')
+        self.assertEqual(parser2.get_value('DATA', 'COCKPIT_ADJUSTABLE'), '1')
+        self.assertEqual(parser2.get_value('DATA', 'ADJUST_STEP'), '1.0')
 
 
 def run_tests():

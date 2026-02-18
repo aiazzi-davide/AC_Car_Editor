@@ -46,11 +46,12 @@ Creare un'applicazione desktop Windows in Python con PyQt5/6 che permetta di mod
 - [x] Implementare selezione cartella Assetto Corsa custom
 - [x] Implementare barra di stato per feedback operazioni
 
-### Fase 5: GUI - Editor Componenti Auto
+### Fase 5: GUI - Editor Componenti Auto ✅ COMPLETED
 - [x] Creare tab "Motore" (potenza, coppia, limitatore, turbo, etc.)
 - [x] Creare tab "Sospensioni" (molle, ammortizzatori, geometria)
 - [x] Creare tab "Drivetrain" (differenziale, trazione)
 - [x] Creare tab "Peso e Bilanciamento" (peso totale, distribuzione)
+- [x] Creare tab "Freni" (brake torque, bias, handbrake, cockpit adjustment)
 - [ ] Creare tab "Pneumatici" (composti, dimensioni) - Future enhancement
 - [x] Creare tab "Aerodinamica" (downforce, drag)
 - [x] Implementare apply/reset per ogni sezione
