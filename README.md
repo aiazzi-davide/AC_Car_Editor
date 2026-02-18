@@ -5,6 +5,8 @@ A desktop application for modifying Assetto Corsa car configurations.
 ## Features
 
 - Browse and select Assetto Corsa cars
+- **Search and filter cars** by name ✅
+- **Preview car images** from ui/preview.png or preview.jpg ✅
 - View car information
 - Create backups of car data
 - **Automatic unpacking of data.acd files** using quickBMS ✅
@@ -63,9 +65,17 @@ python main.py
    - Navigate to your Assetto Corsa installation folder
    - Default: `C:\Program Files (x86)\Steam\steamapps\common\assettocorsa`
 
-3. Select a car from the list to view its information
+3. Browse and filter cars:
+   - All installed cars are shown in the left panel
+   - Use the search box to filter cars by name (case-insensitive)
+   - Click the ✕ button to clear the filter
+   - Select a car to view its information and preview image
 
-4. Edit a car:
+4. Select a car from the list to view its information
+   - Car preview image is displayed (if available in ui/preview.png or preview.jpg)
+   - Car details are shown below the preview
+
+5. Edit a car:
    - Select a car (with or without unpacked data folder)
    - **If car has only data.acd**: Application will prompt to unpack it using quickBMS
    - Click "Edit Car" to open the editor
@@ -90,7 +100,7 @@ python main.py
    - A backup file (.bak) is automatically created for each modified file
    - **After editing**: Application prompts to delete data.acd to ensure changes are used in-game
 
-5. Create additional backups using the "Create Backup" button
+6. Create additional backups using the "Create Backup" button
 
 ## Data.acd Unpacking
 
@@ -156,13 +166,15 @@ assettocorsa/content/cars/
 
 ## Development Status
 
-### Implemented (Phase 1-6.5)
+### Implemented (Phase 1-7 partial)
 - ✅ Project structure and configuration
 - ✅ INI file parser
 - ✅ LUT file parser with curve support
 - ✅ Car file manager
 - ✅ **Data.acd unpacking with quickBMS**
 - ✅ **Automatic data.acd deletion after editing**
+- ✅ **Car search and filter** (Phase 7)
+- ✅ **Car preview images** (Phase 7)
 - ✅ Component library system
 - ✅ Main window GUI
 - ✅ Car browser and selection
