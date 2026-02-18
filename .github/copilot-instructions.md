@@ -28,7 +28,7 @@
 | Class                     | File                           | Purpose                                                                              |
 | ------------------------- | ------------------------------ | ------------------------------------------------------------------------------------ |
 | `MainWindow`              | `main_window.py`               | Car list, edit dialog launcher                                                       |
-| `CarEditorDialog`         | `car_editor_dialog.py`         | 6 tabs (Engine, Suspension, Drivetrain, Weight, Aero, Brakes), each in `QScrollArea` |
+| `CarEditorDialog`         | `car_editor_dialog.py`         | 7 tabs (Engine, Suspension, Drivetrain, Weight, Aero, Brakes, Pneumatici), each in `QScrollArea` |
 | `CurveEditorWidget`       | `curve_editor_widget.py`       | Matplotlib-based interactive LUT editor (drag points, add/remove, smooth via PCHIP)  |
 | `ComponentSelectorDialog` | `component_selector_dialog.py` | "Import from Library" buttons in each tab                                            |
 | `ComponentLibraryDialog`  | `component_library_dialog.py`  | Full CRUD component manager                                                          |
@@ -59,6 +59,7 @@ from core.ini_parser import IniParser
 
 - **Turbos**: Count `TURBO_N` sections → create widgets dynamically, store as `turbo_0_max_boost`, etc.
 - **Aero**: Count `WING_N` sections → one `QGroupBox` per wing via `_create_wing_widget(index)`
+- **Tyres**: Count `FRONT_N` sections → compound selector dropdown, load/save based on selected compound
 - **Suspension details**: `CG_LOCATION` + `WHEELBASE` live in `suspensions.ini [BASIC]`, not `car.ini`
 
 ### Backup Strategy

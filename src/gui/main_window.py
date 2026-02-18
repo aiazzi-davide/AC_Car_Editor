@@ -182,6 +182,10 @@ class MainWindow(QMainWindow):
         self.edit_btn.clicked.connect(self.edit_car)
         button_layout.addWidget(self.edit_btn)
         
+        self.open_folder_btn = QPushButton("Open Folder")
+        self.open_folder_btn.clicked.connect(self.open_car_folder)
+        button_layout.addWidget(self.open_folder_btn)
+        
         self.backup_btn = QPushButton("Create Backup")
         self.backup_btn.setEnabled(False)
         self.backup_btn.clicked.connect(self.create_backup)
@@ -343,6 +347,37 @@ class MainWindow(QMainWindow):
                 "Backup Failed",
                 "Failed to create backup. Check console for details."
             )
+    
+    def open_car_folder(self):
+        """Open the current car's folder in the system file explorer."""
+        if not self.current_car:
+            return
+        
+        import subprocess
+        import platform
+        
+        # Get the car's folder path
+        car_path = self.car_manager.get_car_path(self.current_car)
+        
+        if not os.path.exists(car_path):
+            QMessageBox.warning(
+                self,
+                "Folder Not Found",
+                f"The car's folder does not exist:\n{car_path}"
+            )
+            return
+        
+        try:
+            system = platform.system()
+            if system == 'Windows':
+                subprocess.Popen(['explorer', car_path])
+            elif system == 'Darwin':  # macOS
+                subprocess.Popen(['open', car_path])
+            else:  # Linux and others
+                subprocess.Popen(['xdg-open', car_path])
+            self.statusBar.showMessage(f"Opened folder: {car_path}")
+        except Exception as e:
+            QMessageBox.warning(self, "Error", f"Could not open folder:\n{str(e)}")
             
     def edit_car(self):
         """Open car editor"""

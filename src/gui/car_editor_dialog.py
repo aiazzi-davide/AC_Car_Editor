@@ -45,11 +45,14 @@ class CarEditorDialog(QDialog):
         self.car_ini = None
         self.aero_ini = None
         self.brakes_ini = None
+        self.tyres_ini = None
 
         # Count turbo units present in engine.ini (TURBO_0, TURBO_1, ...)
         self.turbo_count = 0
         # Count wing sections in aero.ini (WING_0, WING_1, ...)
         self.wing_count = 0
+        # Count tyre compounds available (FRONT, FRONT_1, FRONT_2, ...)
+        self.compound_count = 0
 
         self.init_parsers()
         self.init_ui()
@@ -66,6 +69,7 @@ class CarEditorDialog(QDialog):
             ('car_ini',        'car.ini'),
             ('aero_ini',       'aero.ini'),
             ('brakes_ini',     'brakes.ini'),
+            ('tyres_ini',      'tyres.ini'),
         ]:
             path = os.path.join(self.car_data_path, filename)
             if os.path.exists(path):
@@ -85,6 +89,15 @@ class CarEditorDialog(QDialog):
             while self.aero_ini.has_section(f'WING_{i}'):
                 i += 1
             self.wing_count = i
+
+        if self.tyres_ini:
+            # Count compounds: FRONT = 0, FRONT_1 = 1, FRONT_2 = 2, etc.
+            i = 0
+            if self.tyres_ini.has_section('FRONT'):
+                i = 1
+            while self.tyres_ini.has_section(f'FRONT_{i}'):
+                i += 1
+            self.compound_count = i
 
     # ------------------------------------------------------------------ UI init
 
@@ -111,10 +124,12 @@ class CarEditorDialog(QDialog):
         self.tabs.addTab(self._make_scroll(self.create_weight_tab()),      "Weight & Fuel")
         self.tabs.addTab(self._make_scroll(self.create_aero_tab()),        "Aerodynamics")
         self.tabs.addTab(self._make_scroll(self.create_brakes_tab()),      "Brakes")
+        self.tabs.addTab(self._make_scroll(self.create_tyres_tab()),       "Pneumatici")
 
         layout.addWidget(self.tabs)
 
         btn_layout = QHBoxLayout()
+        
         self.save_btn = QPushButton("Save Changes")
         self.save_btn.clicked.connect(self.save_changes)
         btn_layout.addWidget(self.save_btn)
@@ -814,6 +829,128 @@ class CarEditorDialog(QDialog):
         layout.addStretch()
         return widget
 
+    def create_tyres_tab(self):
+        """Create the Tyres (Pneumatici) tab with compound selection and tyre parameters."""
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+
+        # --- Compound Selector ---
+        compound_grp = QGroupBox("Compound Selection  (tyres.ini › COMPOUND_DEFAULT)")
+        compound_form = QFormLayout()
+
+        self.compound_selector = _tip(QComboBox(), 
+                                      "Select tyre compound to edit.\n"
+                                      "Different compounds have different grip, wear, and thermal characteristics.  (INDEX)")
+        compound_form.addRow("Active Compound:", self.compound_selector)
+        
+        # Populate compound selector - will be filled in load_data
+        if self.compound_count > 0:
+            for i in range(self.compound_count):
+                suffix = "" if i == 0 else f"_{i}"
+                self.compound_selector.addItem(f"Compound {i}", i)
+        
+        self.compound_selector.currentIndexChanged.connect(self._on_compound_changed)
+        
+        compound_grp.setLayout(compound_form)
+        layout.addWidget(compound_grp)
+
+        # --- Front Tyre Dimensions ---
+        front_dim_grp = QGroupBox("Front Tyre Dimensions  (tyres.ini › FRONT / FRONT_N)")
+        front_dim_form = QFormLayout()
+
+        self.front_name = _tip(QLabel(""), "Tyre compound name  (NAME)")
+        front_dim_form.addRow("Name:", self.front_name)
+
+        self.front_width = _tip(QDoubleSpinBox(), 
+                               "Tyre width in meters.  (WIDTH)")
+        self.front_width.setRange(0.1, 0.5); self.front_width.setDecimals(4); self.front_width.setSingleStep(0.005); self.front_width.setSuffix(" m")
+        front_dim_form.addRow("Width:", self.front_width)
+
+        self.front_radius = _tip(QDoubleSpinBox(),
+                                "Outer radius in meters.  (RADIUS)")
+        self.front_radius.setRange(0.2, 0.5); self.front_radius.setDecimals(5); self.front_radius.setSingleStep(0.005); self.front_radius.setSuffix(" m")
+        front_dim_form.addRow("Radius:", self.front_radius)
+
+        self.front_rim_radius = _tip(QDoubleSpinBox(),
+                                     "Rim radius in meters.  (RIM_RADIUS)")
+        self.front_rim_radius.setRange(0.15, 0.35); self.front_rim_radius.setDecimals(4); self.front_rim_radius.setSingleStep(0.005); self.front_rim_radius.setSuffix(" m")
+        front_dim_form.addRow("Rim Radius:", self.front_rim_radius)
+
+        front_dim_grp.setLayout(front_dim_form)
+        layout.addWidget(front_dim_grp)
+
+        # --- Rear Tyre Dimensions ---
+        rear_dim_grp = QGroupBox("Rear Tyre Dimensions  (tyres.ini › REAR / REAR_N)")
+        rear_dim_form = QFormLayout()
+
+        self.rear_name = _tip(QLabel(""), "Tyre compound name  (NAME)")
+        rear_dim_form.addRow("Name:", self.rear_name)
+
+        self.rear_width = _tip(QDoubleSpinBox(),
+                              "Tyre width in meters.  (WIDTH)")
+        self.rear_width.setRange(0.1, 0.5); self.rear_width.setDecimals(4); self.rear_width.setSingleStep(0.005); self.rear_width.setSuffix(" m")
+        rear_dim_form.addRow("Width:", self.rear_width)
+
+        self.rear_radius = _tip(QDoubleSpinBox(),
+                               "Outer radius in meters.  (RADIUS)")
+        self.rear_radius.setRange(0.2, 0.5); self.rear_radius.setDecimals(5); self.rear_radius.setSingleStep(0.005); self.rear_radius.setSuffix(" m")
+        rear_dim_form.addRow("Radius:", self.rear_radius)
+
+        self.rear_rim_radius = _tip(QDoubleSpinBox(),
+                                    "Rim radius in meters.  (RIM_RADIUS)")
+        self.rear_rim_radius.setRange(0.15, 0.35); self.rear_rim_radius.setDecimals(4); self.rear_rim_radius.setSingleStep(0.005); self.rear_rim_radius.setSuffix(" m")
+        rear_dim_form.addRow("Rim Radius:", self.rear_rim_radius)
+
+        rear_dim_grp.setLayout(rear_dim_form)
+        layout.addWidget(rear_dim_grp)
+
+        # --- Front Tyre Performance ---
+        front_perf_grp = QGroupBox("Front Tyre Performance  (tyres.ini › FRONT / FRONT_N)")
+        front_perf_form = QFormLayout()
+
+        self.front_dx0 = _tip(QDoubleSpinBox(),
+                             "Peak longitudinal grip coefficient (braking/acceleration).  (DX0)")
+        self.front_dx0.setRange(0.5, 3.0); self.front_dx0.setDecimals(4); self.front_dx0.setSingleStep(0.01)
+        front_perf_form.addRow("Longitudinal Grip (DX0):", self.front_dx0)
+
+        self.front_dy0 = _tip(QDoubleSpinBox(),
+                             "Peak lateral grip coefficient (cornering).  (DY0)")
+        self.front_dy0.setRange(0.5, 3.0); self.front_dy0.setDecimals(4); self.front_dy0.setSingleStep(0.01)
+        front_perf_form.addRow("Lateral Grip (DY0):", self.front_dy0)
+
+        self.front_pressure_ideal = _tip(QSpinBox(),
+                                        "Ideal operating pressure in PSI for optimal grip.  (PRESSURE_IDEAL)")
+        self.front_pressure_ideal.setRange(15, 60); self.front_pressure_ideal.setSuffix(" PSI")
+        front_perf_form.addRow("Ideal Pressure:", self.front_pressure_ideal)
+
+        front_perf_grp.setLayout(front_perf_form)
+        layout.addWidget(front_perf_grp)
+
+        # --- Rear Tyre Performance ---
+        rear_perf_grp = QGroupBox("Rear Tyre Performance  (tyres.ini › REAR / REAR_N)")
+        rear_perf_form = QFormLayout()
+
+        self.rear_dx0 = _tip(QDoubleSpinBox(),
+                            "Peak longitudinal grip coefficient (braking/acceleration).  (DX0)")
+        self.rear_dx0.setRange(0.5, 3.0); self.rear_dx0.setDecimals(4); self.rear_dx0.setSingleStep(0.01)
+        rear_perf_form.addRow("Longitudinal Grip (DX0):", self.rear_dx0)
+
+        self.rear_dy0 = _tip(QDoubleSpinBox(),
+                            "Peak lateral grip coefficient (cornering).  (DY0)")
+        self.rear_dy0.setRange(0.5, 3.0); self.rear_dy0.setDecimals(4); self.rear_dy0.setSingleStep(0.01)
+        rear_perf_form.addRow("Lateral Grip (DY0):", self.rear_dy0)
+
+        self.rear_pressure_ideal = _tip(QSpinBox(),
+                                       "Ideal operating pressure in PSI for optimal grip.  (PRESSURE_IDEAL)")
+        self.rear_pressure_ideal.setRange(15, 60); self.rear_pressure_ideal.setSuffix(" PSI")
+        rear_perf_form.addRow("Ideal Pressure:", self.rear_pressure_ideal)
+
+        rear_perf_grp.setLayout(rear_perf_form)
+        layout.addWidget(rear_perf_grp)
+
+        layout.addStretch()
+        return widget
+
     # ------------------------------------------------------------------ Load data
 
     def load_data(self):
@@ -823,6 +960,7 @@ class CarEditorDialog(QDialog):
         self._load_weight_data()
         self._load_aero_data()
         self._load_brakes_data()
+        self._load_tyres_data()
 
     def _load_engine_data(self):
         if not self.engine_ini:
@@ -1068,6 +1206,84 @@ class CarEditorDialog(QDialog):
                                          'brake_handbrake': hb, 'brake_cockpit_adj': bool(ca),
                                          'brake_adjust_step': adj})
 
+    def _load_tyres_data(self):
+        """Load tyre data from tyres.ini for the current compound."""
+        if not self.tyres_ini:
+            return
+        
+        # Load default compound index
+        default_compound = 0
+        if self.tyres_ini.has_section('COMPOUND_DEFAULT'):
+            default_compound = int(float(self.tyres_ini.get_value('COMPOUND_DEFAULT', 'INDEX', '0')))
+        
+        # Update compound selector names with actual tyre names
+        if self.compound_count > 0:
+            self.compound_selector.clear()
+            for i in range(self.compound_count):
+                section = 'FRONT' if i == 0 else f'FRONT_{i}'
+                name = "Unknown"
+                if self.tyres_ini.has_section(section):
+                    name = self.tyres_ini.get_value(section, 'NAME', f'Compound {i}')
+                self.compound_selector.addItem(f"{name}", i)
+        
+        # Set current compound
+        if default_compound < self.compound_selector.count():
+            self.compound_selector.setCurrentIndex(default_compound)
+        
+        # Load data for the selected compound
+        self._load_compound_data(default_compound)
+    
+    def _on_compound_changed(self, index):
+        """Handle compound selection change."""
+        compound_idx = self.compound_selector.itemData(index)
+        if compound_idx is not None:
+            self._load_compound_data(compound_idx)
+    
+    def _load_compound_data(self, compound_idx):
+        """Load tyre data for a specific compound index."""
+        if not self.tyres_ini:
+            return
+        
+        # Determine section names
+        front_section = 'FRONT' if compound_idx == 0 else f'FRONT_{compound_idx}'
+        rear_section = 'REAR' if compound_idx == 0 else f'REAR_{compound_idx}'
+        
+        # Load FRONT data
+        if self.tyres_ini.has_section(front_section):
+            name = self.tyres_ini.get_value(front_section, 'NAME', 'Unknown')
+            width = float(self.tyres_ini.get_value(front_section, 'WIDTH', '0.225'))
+            radius = float(self.tyres_ini.get_value(front_section, 'RADIUS', '0.3'))
+            rim_radius = float(self.tyres_ini.get_value(front_section, 'RIM_RADIUS', '0.24'))
+            dx0 = float(self.tyres_ini.get_value(front_section, 'DX0', '1.0'))
+            dy0 = float(self.tyres_ini.get_value(front_section, 'DY0', '1.0'))
+            pressure_ideal = int(float(self.tyres_ini.get_value(front_section, 'PRESSURE_IDEAL', '35')))
+            
+            self.front_name.setText(name)
+            self.front_width.setValue(width)
+            self.front_radius.setValue(radius)
+            self.front_rim_radius.setValue(rim_radius)
+            self.front_dx0.setValue(dx0)
+            self.front_dy0.setValue(dy0)
+            self.front_pressure_ideal.setValue(pressure_ideal)
+        
+        # Load REAR data
+        if self.tyres_ini.has_section(rear_section):
+            name = self.tyres_ini.get_value(rear_section, 'NAME', 'Unknown')
+            width = float(self.tyres_ini.get_value(rear_section, 'WIDTH', '0.225'))
+            radius = float(self.tyres_ini.get_value(rear_section, 'RADIUS', '0.3'))
+            rim_radius = float(self.tyres_ini.get_value(rear_section, 'RIM_RADIUS', '0.24'))
+            dx0 = float(self.tyres_ini.get_value(rear_section, 'DX0', '1.0'))
+            dy0 = float(self.tyres_ini.get_value(rear_section, 'DY0', '1.0'))
+            pressure_ideal = int(float(self.tyres_ini.get_value(rear_section, 'PRESSURE_IDEAL', '35')))
+            
+            self.rear_name.setText(name)
+            self.rear_width.setValue(width)
+            self.rear_radius.setValue(radius)
+            self.rear_rim_radius.setValue(rim_radius)
+            self.rear_dx0.setValue(dx0)
+            self.rear_dy0.setValue(dy0)
+            self.rear_pressure_ideal.setValue(pressure_ideal)
+
     # ------------------------------------------------------------------ Curve editors
 
     def edit_power_curve(self):
@@ -1196,6 +1412,7 @@ class CarEditorDialog(QDialog):
             self._save_weight_data()       # saves car_ini; suspension BASIC already saved above
             self._save_aero_data()
             self._save_brakes_data()
+            self._save_tyres_data()
             QMessageBox.information(self, "Success",
                                     "Changes saved successfully!\n"
                                     "Backups created with .bak extension.")
@@ -1328,6 +1545,40 @@ class CarEditorDialog(QDialog):
             self.brakes_ini.set_value('DATA', 'ADJUST_STEP', f"{self.brake_adjust_step.value():.1f}")
         self.brakes_ini.save(backup=True)
 
+    def _save_tyres_data(self):
+        """Save tyre data back to tyres.ini for the currently selected compound."""
+        if not self.tyres_ini:
+            return
+        
+        # Get the currently selected compound
+        compound_idx = self.compound_selector.currentData()
+        if compound_idx is None:
+            return
+        
+        # Determine section names
+        front_section = 'FRONT' if compound_idx == 0 else f'FRONT_{compound_idx}'
+        rear_section = 'REAR' if compound_idx == 0 else f'REAR_{compound_idx}'
+        
+        # Save FRONT data
+        if self.tyres_ini.has_section(front_section):
+            self.tyres_ini.set_value(front_section, 'WIDTH', f"{self.front_width.value():.4f}")
+            self.tyres_ini.set_value(front_section, 'RADIUS', f"{self.front_radius.value():.5f}")
+            self.tyres_ini.set_value(front_section, 'RIM_RADIUS', f"{self.front_rim_radius.value():.4f}")
+            self.tyres_ini.set_value(front_section, 'DX0', f"{self.front_dx0.value():.4f}")
+            self.tyres_ini.set_value(front_section, 'DY0', f"{self.front_dy0.value():.4f}")
+            self.tyres_ini.set_value(front_section, 'PRESSURE_IDEAL', str(self.front_pressure_ideal.value()))
+        
+        # Save REAR data
+        if self.tyres_ini.has_section(rear_section):
+            self.tyres_ini.set_value(rear_section, 'WIDTH', f"{self.rear_width.value():.4f}")
+            self.tyres_ini.set_value(rear_section, 'RADIUS', f"{self.rear_radius.value():.5f}")
+            self.tyres_ini.set_value(rear_section, 'RIM_RADIUS', f"{self.rear_rim_radius.value():.4f}")
+            self.tyres_ini.set_value(rear_section, 'DX0', f"{self.rear_dx0.value():.4f}")
+            self.tyres_ini.set_value(rear_section, 'DY0', f"{self.rear_dy0.value():.4f}")
+            self.tyres_ini.set_value(rear_section, 'PRESSURE_IDEAL', str(self.rear_pressure_ideal.value()))
+        
+        self.tyres_ini.save(backup=True)
+
     # ------------------------------------------------------------------ Reset
 
     def reset_values(self):
@@ -1338,3 +1589,5 @@ class CarEditorDialog(QDialog):
         self._load_weight_data()
         self._load_aero_data()
         self._load_brakes_data()
+        self._load_tyres_data()
+
