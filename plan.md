@@ -92,12 +92,14 @@ Creare un'applicazione desktop Windows in Python con PyQt5/6 che permetta di mod
 ### Fase 7: Features Avanzate ✅ (4/8 completed)
 - [x] implementare preview immagine dell'auto
 - [x] Implementare ricerca/filtro auto
-- [ ] Implementare sistema undo/redo modifiche
 - [x] implementare calcolatore potenza/coppia in tempo reale basato su curve .lut e sul moltiplicatore turbo
 - [x] Implementare supporto per setup auto (track-specific configurations)
+- [ ] Implementare gestione rapporti cambio (gear ratios)
+- [ ] Implementare possibilità di aggiungere/rimuovere tipi di gomme predefiniti dalla libreria
 - [ ] implementare modifiche a cartella ui/ (nome auto in menu, icone, etc.)
 - [ ] Supportare altri .lut, implementare un editor generico di lut per altri tipi di curve specifici per ogni macchina (es. traction_control.lut throttle.lut) ci deve essere quindi un selettore di lut disponibili e una sezione per modificarli - Future enhancement
 - [ ] Implementare smooth curve (interpolazione spline opzionale) - Future enhancement
+- [ ] Implementare sistema undo/redo modifiche
 - [ ] Investigare gestione sound motore (bank files, GUIDs)
 
 ### Fase 8: Testing e Refinement
