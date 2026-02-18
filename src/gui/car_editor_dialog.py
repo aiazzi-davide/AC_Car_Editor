@@ -589,6 +589,7 @@ class CarEditorDialog(QDialog):
                                 "Final drive ratio.\n"
                                 "Higher = more acceleration, lower top speed.  (GEARS > FINAL)")
         self.final_ratio.setRange(1.0, 12.0); self.final_ratio.setDecimals(3); self.final_ratio.setSingleStep(0.05)
+        self.final_ratio.valueChanged.connect(self._update_gear_speeds)
         gbox_form.addRow("Final Ratio:", self.final_ratio)
 
         self.gearbox_up_time = _tip(QSpinBox(),
@@ -624,13 +625,23 @@ class CarEditorDialog(QDialog):
 
         # Create spinboxes for all possible gears (R + 1-10)
         self.gear_ratios = {}
+        self.gear_speed_labels = {}  # Store speed labels for each gear
         
         self.gear_ratios['GEAR_R'] = _tip(QDoubleSpinBox(),
                                           "Reverse gear ratio (negative value).  (GEAR_R)")
         self.gear_ratios['GEAR_R'].setRange(-10.0, 0.0)
         self.gear_ratios['GEAR_R'].setDecimals(3)
         self.gear_ratios['GEAR_R'].setSingleStep(0.1)
-        gear_ratios_form.addRow("Reverse:", self.gear_ratios['GEAR_R'])
+        self.gear_ratios['GEAR_R'].valueChanged.connect(self._update_gear_speeds)
+        
+        # Create horizontal layout for reverse gear with speed label
+        reverse_layout = QHBoxLayout()
+        reverse_layout.addWidget(self.gear_ratios['GEAR_R'])
+        self.gear_speed_labels['GEAR_R'] = QLabel("")
+        self.gear_speed_labels['GEAR_R'].setStyleSheet("color: #666; font-style: italic;")
+        reverse_layout.addWidget(self.gear_speed_labels['GEAR_R'])
+        reverse_layout.addStretch()
+        gear_ratios_form.addRow("Reverse:", reverse_layout)
 
         for i in range(1, 11):  # Support up to 10 gears
             gear_key = f'GEAR_{i}'
@@ -640,8 +651,18 @@ class CarEditorDialog(QDialog):
             self.gear_ratios[gear_key].setRange(0.1, 10.0)
             self.gear_ratios[gear_key].setDecimals(3)
             self.gear_ratios[gear_key].setSingleStep(0.1)
+            self.gear_ratios[gear_key].valueChanged.connect(self._update_gear_speeds)
+            
+            # Create horizontal layout for gear with speed label
+            gear_layout = QHBoxLayout()
+            gear_layout.addWidget(self.gear_ratios[gear_key])
+            self.gear_speed_labels[gear_key] = QLabel("")
+            self.gear_speed_labels[gear_key].setStyleSheet("color: #666; font-style: italic;")
+            gear_layout.addWidget(self.gear_speed_labels[gear_key])
+            gear_layout.addStretch()
+            
             gear_ratios_form.addRow(f"{i}{'st' if i==1 else 'nd' if i==2 else 'rd' if i==3 else 'th'} Gear:", 
-                                    self.gear_ratios[gear_key])
+                                    gear_layout)
 
         # Import gear ratios from library button
         import_gears_btn = QPushButton("📥 Import Gear Set from Library...")
@@ -1463,6 +1484,41 @@ class CarEditorDialog(QDialog):
         
         self.rto_status_label.setText(" | ".join(status_parts))
 
+    def _update_gear_speeds(self):
+        """Update max speed labels for each gear."""
+        if not hasattr(self, 'gear_speed_labels'):
+            return
+        
+        from core.speed_calculator import SpeedCalculator
+        
+        # Get required data
+        tire_radius = SpeedCalculator.get_tire_radius_from_ini(
+            os.path.join(self.car_data_path, 'tyres.ini')
+        )
+        max_rpm = SpeedCalculator.get_max_rpm_from_ini(
+            os.path.join(self.car_data_path, 'engine.ini')
+        )
+        
+        # If missing data, show N/A
+        if not tire_radius or not max_rpm:
+            for label in self.gear_speed_labels.values():
+                label.setText("(speed: N/A)")
+            return
+        
+        final_ratio = self.final_ratio.value()
+        
+        # Calculate and update speed for each gear
+        for gear_key, speed_label in self.gear_speed_labels.items():
+            gear_ratio = self.gear_ratios[gear_key].value()
+            
+            if gear_ratio != 0 and final_ratio != 0:
+                speed = SpeedCalculator.calculate_max_speed(
+                    gear_ratio, final_ratio, max_rpm, tire_radius
+                )
+                speed_label.setText(f"(~{speed:.0f} km/h)")
+            else:
+                speed_label.setText("(speed: N/A)")
+
     def _toggle_gear_ratios(self):
         """Toggle visibility of gear ratios section."""
         visible = not self.gear_ratios_grp.isVisible()
@@ -1471,6 +1527,8 @@ class CarEditorDialog(QDialog):
             self.edit_gear_ratios_btn.setText("⚙ Hide Gear Ratios")
             # Update gear ratio spinboxes visibility based on current gear count
             self._update_gear_ratio_visibility()
+            # Update speed estimates
+            self._update_gear_speeds()
         else:
             self.edit_gear_ratios_btn.setText("⚙ Edit Gear Ratios...")
 
