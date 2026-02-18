@@ -18,6 +18,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from core.ini_parser import IniParser
 from core.lut_parser import LUTCurve
+from core.power_calculator import PowerTorqueCalculator
 from gui.curve_editor_dialog import CurveEditorDialog
 from gui.component_selector_dialog import ComponentSelectorDialog
 
@@ -137,6 +138,11 @@ class CarEditorDialog(QDialog):
         self.reset_btn = QPushButton("Reset")
         self.reset_btn.clicked.connect(self.reset_values)
         btn_layout.addWidget(self.reset_btn)
+
+        self.setup_btn = QPushButton("🔧 Setup Manager")
+        self.setup_btn.setToolTip("Manage track-specific setup presets")
+        self.setup_btn.clicked.connect(self.open_setup_manager)
+        btn_layout.addWidget(self.setup_btn)
 
         btn_layout.addStretch()
 
@@ -316,13 +322,20 @@ class CarEditorDialog(QDialog):
         curve_grp = QGroupBox("Power & Coast Curves")
         curve_layout = QVBoxLayout()
 
-        power_btn = QPushButton("Edit Power Curve (power.lut)  ·  RPM → HP")
+        power_btn = QPushButton("Edit Power Curve (power.lut)  ·  RPM → Nm")
         power_btn.clicked.connect(self.edit_power_curve)
         curve_layout.addWidget(power_btn)
 
         coast_btn = QPushButton("Edit Coast Curve (coast.lut)  ·  RPM → drag Nm")
         coast_btn.clicked.connect(self.edit_coast_curve)
         curve_layout.addWidget(coast_btn)
+
+        calc_btn = QPushButton("⚡ Power / Torque Calculator")
+        calc_btn.setToolTip("Show real-time power (HP) and torque (Nm) curves\n"
+                            "computed from power.lut (Nm) with turbo boost effect.")
+        calc_btn.setStyleSheet("background-color: #2196F3; color: white; font-weight: bold; padding: 8px;")
+        calc_btn.clicked.connect(self.open_power_torque_calculator)
+        curve_layout.addWidget(calc_btn)
 
         curve_grp.setLayout(curve_layout)
         layout.addWidget(curve_grp)
@@ -1294,7 +1307,7 @@ class CarEditorDialog(QDialog):
                                     QMessageBox.Yes | QMessageBox.No) == QMessageBox.No:
                 return
         CurveEditorDialog(lut_file_path=path if os.path.exists(path) else None,
-                          x_label="RPM", y_label="Power (HP)", parent=self).exec_()
+                          x_label="RPM", y_label="Torque (Nm)", parent=self).exec_()
 
     def edit_coast_curve(self):
         path = os.path.join(self.car_data_path, 'coast.lut')
@@ -1305,6 +1318,37 @@ class CarEditorDialog(QDialog):
                 return
         CurveEditorDialog(lut_file_path=path if os.path.exists(path) else None,
                           x_label="RPM", y_label="Drag Torque (Nm)", parent=self).exec_()
+
+    def open_power_torque_calculator(self):
+        """Open the Power / Torque calculator dialog."""
+        path = os.path.join(self.car_data_path, 'power.lut')
+        if not os.path.exists(path):
+            QMessageBox.warning(self, "Missing File",
+                                "power.lut not found. Cannot compute power/torque curves.")
+            return
+        lut = LUTCurve(path)
+        torque_points = lut.get_points()
+
+        turbo_configs = []
+        if self.has_turbo_check.isChecked():
+            num = self.turbo_count_combo.currentIndex() + 1
+            for i in range(num):
+                turbo_configs.append({
+                    'max_boost': getattr(self, f'turbo_{i}_max_boost').value(),
+                    'wastegate': getattr(self, f'turbo_{i}_wastegate').value(),
+                    'reference_rpm': getattr(self, f'turbo_{i}_ref_rpm').value(),
+                    'gamma': getattr(self, f'turbo_{i}_gamma').value(),
+                })
+
+        from gui.power_torque_dialog import PowerTorqueDialog
+        dlg = PowerTorqueDialog(torque_points, turbo_configs, parent=self)
+        dlg.exec_()
+
+    def open_setup_manager(self):
+        """Open the Setup Manager dialog."""
+        from gui.setup_manager_dialog import SetupManagerDialog
+        dlg = SetupManagerDialog(self.car_data_path, parent=self)
+        dlg.exec_()
 
     # ------------------------------------------------------------------ Component imports
 
