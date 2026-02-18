@@ -152,6 +152,14 @@ class CarEditorDialog(QDialog):
         self.limiter_rpm.setSuffix(" RPM")
         basic_form.addRow("Rev Limiter:", self.limiter_rpm)
 
+        self.limiter_hz = _tip(QSpinBox(),
+                               "Limiter activation frequency in Hz.\n"
+                               "Controls how quickly the limiter cycles on/off.\n"
+                               "Typical: 20–50 Hz.  (LIMITER_HZ)")
+        self.limiter_hz.setRange(1, 200)
+        self.limiter_hz.setSuffix(" Hz")
+        basic_form.addRow("Limiter Frequency:", self.limiter_hz)
+
         self.engine_inertia = _tip(QDoubleSpinBox(),
                                    "Engine rotational inertia in kg·m².\n"
                                    "Lower = throttle response feels snappier.\n"
@@ -169,6 +177,14 @@ class CarEditorDialog(QDialog):
         self.altitude_sensitivity.setDecimals(3)
         self.altitude_sensitivity.setSingleStep(0.01)
         basic_form.addRow("Altitude Sensitivity:", self.altitude_sensitivity)
+
+        self.default_turbo_adj = _tip(QDoubleSpinBox(),
+                                      "Default turbo adjustment value if boost is cockpit-adjustable.\n"
+                                      "Range 0.0–1.0.  Typical: 0.7 (70% of max boost).  (DEFAULT_TURBO_ADJUSTMENT)")
+        self.default_turbo_adj.setRange(0.0, 1.0)
+        self.default_turbo_adj.setDecimals(2)
+        self.default_turbo_adj.setSingleStep(0.05)
+        basic_form.addRow("Default Turbo Adj:", self.default_turbo_adj)
 
         basic_grp.setLayout(basic_form)
         layout.addWidget(basic_grp)
@@ -243,6 +259,37 @@ class CarEditorDialog(QDialog):
         fi_grp.setLayout(fi_layout)
         layout.addWidget(fi_grp)
 
+        # --- Engine Damage ---
+        dmg_grp = QGroupBox("Engine Damage  (engine.ini › DAMAGE)")
+        dmg_form = QFormLayout()
+
+        self.turbo_boost_threshold = _tip(QDoubleSpinBox(),
+                                          "Boost pressure above which the engine takes damage.\n"
+                                          "Set above MAX_BOOST to allow some overboost before damage.  (TURBO_BOOST_THRESHOLD)")
+        self.turbo_boost_threshold.setRange(0, 10.0); self.turbo_boost_threshold.setDecimals(2); self.turbo_boost_threshold.setSingleStep(0.1); self.turbo_boost_threshold.setSuffix(" bar")
+        dmg_form.addRow("Turbo Damage Threshold:", self.turbo_boost_threshold)
+
+        self.turbo_damage_k = _tip(QDoubleSpinBox(),
+                                    "Damage rate per second for each bar of boost over threshold.\n"
+                                    "Higher = faster engine destruction.  (TURBO_DAMAGE_K)")
+        self.turbo_damage_k.setRange(0, 100); self.turbo_damage_k.setDecimals(1); self.turbo_damage_k.setSingleStep(0.5)
+        dmg_form.addRow("Turbo Damage Rate:", self.turbo_damage_k)
+
+        self.rpm_threshold = _tip(QSpinBox(),
+                                   "RPM above which the engine takes damage.\n"
+                                   "Usually set above LIMITER by 200–500 RPM.  (RPM_THRESHOLD)")
+        self.rpm_threshold.setRange(0, 30000); self.rpm_threshold.setSuffix(" RPM")
+        dmg_form.addRow("RPM Damage Threshold:", self.rpm_threshold)
+
+        self.rpm_damage_k = _tip(QDoubleSpinBox(),
+                                  "Damage rate per second for each RPM over threshold.\n"
+                                  "Typical: 1.  (RPM_DAMAGE_K)")
+        self.rpm_damage_k.setRange(0, 100); self.rpm_damage_k.setDecimals(1); self.rpm_damage_k.setSingleStep(0.5)
+        dmg_form.addRow("RPM Damage Rate:", self.rpm_damage_k)
+
+        dmg_grp.setLayout(dmg_form)
+        layout.addWidget(dmg_grp)
+
         # --- Library import ---
         import_btn = QPushButton("Import Engine from Library...")
         import_btn.clicked.connect(self.import_engine_component)
@@ -253,7 +300,7 @@ class CarEditorDialog(QDialog):
         curve_grp = QGroupBox("Power & Coast Curves")
         curve_layout = QVBoxLayout()
 
-        power_btn = QPushButton("Edit Power Curve (power.lut)  ·  RPM → kW")
+        power_btn = QPushButton("Edit Power Curve (power.lut)  ·  RPM → HP")
         power_btn.clicked.connect(self.edit_power_curve)
         curve_layout.addWidget(power_btn)
 
@@ -467,8 +514,9 @@ class CarEditorDialog(QDialog):
         traction_grp = QGroupBox("Traction Layout  (drivetrain.ini › TRACTION)")
         traction_form = QFormLayout()
 
-        self.traction_type = _tip(QComboBox(), "Drive wheel configuration.  (TYPE)")
-        self.traction_type.addItems(["RWD", "FWD", "AWD"])
+        self.traction_type = _tip(QComboBox(), "Drive wheel configuration.\n"
+                                            "AWD2 = advanced AWD with controller (drivetrain.ini VERSION=3).  (TYPE)")
+        self.traction_type.addItems(["RWD", "FWD", "AWD", "AWD2"])
         traction_form.addRow("Drive Type:", self.traction_type)
 
         traction_grp.setLayout(traction_form)
@@ -627,8 +675,9 @@ class CarEditorDialog(QDialog):
 
         self.steer_ratio = _tip(QDoubleSpinBox(),
                                 "Steering gear ratio.\n"
-                                "Lower = more direct.  Street: 15–18 · Sport: 12–15  (STEER_RATIO)")
-        self.steer_ratio.setRange(5, 25); self.steer_ratio.setDecimals(1); self.steer_ratio.setSingleStep(0.5)
+                                "Lower absolute value = more direct.  Negative = inverted side.\n"
+                                "Street: 15–18 · Sport: 12–15 · Negative = reversed  (STEER_RATIO)")
+        self.steer_ratio.setRange(-25, 25); self.steer_ratio.setDecimals(1); self.steer_ratio.setSingleStep(0.5)
         steer_form.addRow("Steering Ratio:", self.steer_ratio)
 
         steer_grp.setLayout(steer_form)
@@ -752,6 +801,12 @@ class CarEditorDialog(QDialog):
                                       "Allow driver to adjust front/rear brake balance from cockpit.  (COCKPIT_ADJUSTABLE)")
         brake_form.addRow("", self.brake_cockpit_adj)
 
+        self.brake_adjust_step = _tip(QDoubleSpinBox(),
+                                       "Step size for cockpit brake bias adjustment.\n"
+                                       "How much the bias changes per click.  Typical: 0.5–1.0.  (ADJUST_STEP)")
+        self.brake_adjust_step.setRange(0.1, 5.0); self.brake_adjust_step.setDecimals(1); self.brake_adjust_step.setSingleStep(0.1)
+        brake_form.addRow("Bias Adjust Step:", self.brake_adjust_step)
+
         brake_grp.setLayout(brake_form)
         layout.addWidget(brake_grp)
 
@@ -775,15 +830,20 @@ class CarEditorDialog(QDialog):
         if self.engine_ini.has_section('ENGINE_DATA'):
             minimum  = int(self.engine_ini.get_value('ENGINE_DATA', 'MINIMUM',  '800'))
             limiter  = int(self.engine_ini.get_value('ENGINE_DATA', 'LIMITER',  '7000'))
+            lim_hz   = int(float(self.engine_ini.get_value('ENGINE_DATA', 'LIMITER_HZ', '30')))
             inertia  = float(self.engine_ini.get_value('ENGINE_DATA', 'INERTIA',  '0.15'))
             alt_sens = float(self.engine_ini.get_value('ENGINE_DATA', 'ALTITUDE_SENSITIVITY', '0.1'))
+            turbo_adj = float(self.engine_ini.get_value('ENGINE_DATA', 'DEFAULT_TURBO_ADJUSTMENT', '0.7'))
 
             self.minimum_rpm.setValue(minimum)
             self.limiter_rpm.setValue(limiter)
+            self.limiter_hz.setValue(lim_hz)
             self.engine_inertia.setValue(inertia)
             self.altitude_sensitivity.setValue(alt_sens)
-            self.original_values.update({'minimum': minimum, 'limiter': limiter,
-                                         'engine_inertia': inertia, 'altitude_sensitivity': alt_sens})
+            self.default_turbo_adj.setValue(turbo_adj)
+            self.original_values.update({'minimum': minimum, 'limiter': limiter, 'limiter_hz': lim_hz,
+                                         'engine_inertia': inertia, 'altitude_sensitivity': alt_sens,
+                                         'default_turbo_adj': turbo_adj})
 
         if self.engine_ini.has_section('COAST_REF'):
             c_rpm = int(self.engine_ini.get_value('COAST_REF', 'RPM',            '5000'))
@@ -834,6 +894,19 @@ class CarEditorDialog(QDialog):
 
         # Trigger visibility update after loading
         self._on_turbo_toggle(Qt.Checked if has_turbo else Qt.Unchecked)
+
+        # Engine damage section
+        if self.engine_ini.has_section('DAMAGE'):
+            tbt = float(self.engine_ini.get_value('DAMAGE', 'TURBO_BOOST_THRESHOLD', '1.5'))
+            tdk = float(self.engine_ini.get_value('DAMAGE', 'TURBO_DAMAGE_K', '5'))
+            rth = int(float(self.engine_ini.get_value('DAMAGE', 'RPM_THRESHOLD', '8000')))
+            rdk = float(self.engine_ini.get_value('DAMAGE', 'RPM_DAMAGE_K', '1'))
+            self.turbo_boost_threshold.setValue(tbt)
+            self.turbo_damage_k.setValue(tdk)
+            self.rpm_threshold.setValue(rth)
+            self.rpm_damage_k.setValue(rdk)
+            self.original_values.update({'turbo_boost_threshold': tbt, 'turbo_damage_k': tdk,
+                                         'rpm_threshold': rth, 'rpm_damage_k': rdk})
 
     def _load_suspension_data(self):
         if not self.suspension_ini:
@@ -983,13 +1056,16 @@ class CarEditorDialog(QDialog):
             mt  = float(self.brakes_ini.get_value('DATA', 'MAX_TORQUE',        '2000'))
             fs  = float(self.brakes_ini.get_value('DATA', 'FRONT_SHARE',       '0.60'))
             hb  = float(self.brakes_ini.get_value('DATA', 'HANDBRAKE_TORQUE',  '2500'))
-            ca  = int(self.brakes_ini.get_value('DATA',   'COCKPIT_ADJUSTABLE', '0'))
+            ca  = int(float(self.brakes_ini.get_value('DATA', 'COCKPIT_ADJUSTABLE', '0')))
+            adj = float(self.brakes_ini.get_value('DATA', 'ADJUST_STEP',       '0.5'))
             self.brake_max_torque.setValue(mt)
             self.brake_front_share.setValue(fs)
             self.brake_handbrake.setValue(hb)
             self.brake_cockpit_adj.setChecked(bool(ca))
+            self.brake_adjust_step.setValue(adj)
             self.original_values.update({'brake_max_torque': mt, 'brake_front_share': fs,
-                                         'brake_handbrake': hb, 'brake_cockpit_adj': bool(ca)})
+                                         'brake_handbrake': hb, 'brake_cockpit_adj': bool(ca),
+                                         'brake_adjust_step': adj})
 
     # ------------------------------------------------------------------ Curve editors
 
@@ -1001,7 +1077,7 @@ class CarEditorDialog(QDialog):
                                     QMessageBox.Yes | QMessageBox.No) == QMessageBox.No:
                 return
         CurveEditorDialog(lut_file_path=path if os.path.exists(path) else None,
-                          x_label="RPM", y_label="Power (kW)", parent=self).exec_()
+                          x_label="RPM", y_label="Power (HP)", parent=self).exec_()
 
     def edit_coast_curve(self):
         path = os.path.join(self.car_data_path, 'coast.lut')
@@ -1131,8 +1207,10 @@ class CarEditorDialog(QDialog):
             return
         self.engine_ini.set_value('ENGINE_DATA', 'MINIMUM',              str(self.minimum_rpm.value()))
         self.engine_ini.set_value('ENGINE_DATA', 'LIMITER',              str(self.limiter_rpm.value()))
+        self.engine_ini.set_value('ENGINE_DATA', 'LIMITER_HZ',          str(self.limiter_hz.value()))
         self.engine_ini.set_value('ENGINE_DATA', 'INERTIA',              f"{self.engine_inertia.value():.4f}")
         self.engine_ini.set_value('ENGINE_DATA', 'ALTITUDE_SENSITIVITY', f"{self.altitude_sensitivity.value():.3f}")
+        self.engine_ini.set_value('ENGINE_DATA', 'DEFAULT_TURBO_ADJUSTMENT', f"{self.default_turbo_adj.value():.2f}")
 
         if self.engine_ini.has_section('COAST_REF'):
             self.engine_ini.set_value('COAST_REF', 'RPM',           str(self.coast_ref_rpm.value()))
@@ -1151,6 +1229,12 @@ class CarEditorDialog(QDialog):
             self.engine_ini.set_value(sec, 'GAMMA',           f"{getattr(self, f'turbo_{i}_gamma').value():.2f}")
             self.engine_ini.set_value(sec, 'COCKPIT_ADJUSTABLE',
                                       '1' if getattr(self, f'turbo_{i}_cockpit_adj').isChecked() else '0')
+
+        if self.engine_ini.has_section('DAMAGE'):
+            self.engine_ini.set_value('DAMAGE', 'TURBO_BOOST_THRESHOLD', f"{self.turbo_boost_threshold.value():.2f}")
+            self.engine_ini.set_value('DAMAGE', 'TURBO_DAMAGE_K',       f"{self.turbo_damage_k.value():.1f}")
+            self.engine_ini.set_value('DAMAGE', 'RPM_THRESHOLD',        str(self.rpm_threshold.value()))
+            self.engine_ini.set_value('DAMAGE', 'RPM_DAMAGE_K',         f"{self.rpm_damage_k.value():.1f}")
 
         self.engine_ini.save(backup=True)
 
@@ -1240,6 +1324,7 @@ class CarEditorDialog(QDialog):
             self.brakes_ini.set_value('DATA', 'HANDBRAKE_TORQUE',  str(int(self.brake_handbrake.value())))
             self.brakes_ini.set_value('DATA', 'COCKPIT_ADJUSTABLE',
                                       '1' if self.brake_cockpit_adj.isChecked() else '0')
+            self.brakes_ini.set_value('DATA', 'ADJUST_STEP', f"{self.brake_adjust_step.value():.1f}")
         self.brakes_ini.save(backup=True)
 
     # ------------------------------------------------------------------ Reset

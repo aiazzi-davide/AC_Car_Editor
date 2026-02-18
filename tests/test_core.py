@@ -119,6 +119,79 @@ class TestLUTParser(unittest.TestCase):
             if os.path.exists(temp_file):
                 os.remove(temp_file)
 
+    def test_semicolon_comments(self):
+        """Test that LUT parser skips lines starting with ;"""
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.lut') as f:
+            f.write("; This is a comment\n")
+            f.write("0|0\n")
+            f.write("; Another comment\n")
+            f.write("100|50\n")
+            temp_file = f.name
+        try:
+            curve = LUTCurve(temp_file)
+            self.assertEqual(len(curve), 2)
+            self.assertEqual(curve.get_points(), [(0.0, 0.0), (100.0, 50.0)])
+        finally:
+            os.remove(temp_file)
+
+    def test_inline_semicolon_comments(self):
+        """Test that LUT parser strips inline ; comments from values"""
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.lut') as f:
+            f.write("0|0\n")
+            f.write("1000|85     ; This is an inline comment\n")
+            f.write("2000|120\n")
+            temp_file = f.name
+        try:
+            curve = LUTCurve(temp_file)
+            self.assertEqual(len(curve), 3)
+            self.assertEqual(curve.get_points()[1], (1000.0, 85.0))
+        finally:
+            os.remove(temp_file)
+
+    def test_inline_hash_comments(self):
+        """Test that LUT parser strips inline # comments from values"""
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.lut') as f:
+            f.write("0|10 # start point\n")
+            f.write("500|75\n")
+            temp_file = f.name
+        try:
+            curve = LUTCurve(temp_file)
+            self.assertEqual(len(curve), 2)
+            self.assertEqual(curve.get_points()[0], (0.0, 10.0))
+        finally:
+            os.remove(temp_file)
+
+    def test_mixed_comments(self):
+        """Test LUT parser with mixed comment styles (like real AC files)"""
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.lut') as f:
+            f.write("; Power curve\n")
+            f.write("# RPM|HP\n")
+            f.write("0|0\n")
+            f.write("1500|105     ; low torque\n")
+            f.write("3500|168     ; peak torque\n")
+            f.write("6500|85      ; engine fading\n")
+            temp_file = f.name
+        try:
+            curve = LUTCurve(temp_file)
+            self.assertEqual(len(curve), 4)
+            self.assertEqual(curve.get_points()[0], (0.0, 0.0))
+            self.assertEqual(curve.get_points()[1], (1500.0, 105.0))
+            self.assertEqual(curve.get_points()[2], (3500.0, 168.0))
+            self.assertEqual(curve.get_points()[3], (6500.0, 85.0))
+        finally:
+            os.remove(temp_file)
+
+    def test_load_real_power_lut_with_comments(self):
+        """Test loading the example power.lut that has inline ; comments"""
+        example_file = os.path.join(os.path.dirname(__file__), '..', 'examples', 'data', 'power.lut')
+        if os.path.exists(example_file):
+            curve = LUTCurve(example_file)
+            self.assertGreater(len(curve), 0)
+            # All points should have valid float values (comments stripped)
+            for x, y in curve.get_points():
+                self.assertIsInstance(x, float)
+                self.assertIsInstance(y, float)
+
 
 class TestCarFileManager(unittest.TestCase):
     """Test car file manager"""
