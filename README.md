@@ -14,12 +14,14 @@ A desktop application for modifying Assetto Corsa car configurations.
 - Edit car parameters:
   - **Engine settings** (RPM limits, limiter frequency, turbo boost, wastegate, engine damage thresholds) ✅
   - **Power and coast curves** (visual curve editor for .lut files) ✅
+  - **Power/Torque Calculator** – real-time chart of HP and Nm with turbo boost effect ✅
   - **Suspension settings** (spring rates, dampers, rod length) ✅
   - **Drivetrain settings** (differential, gearbox, clutch, AWD/AWD2 support) ✅
   - **Weight and balance** (total mass, center of gravity, fuel) ✅
   - **Aerodynamics** (drag coefficient, downforce, wing angles) ✅
   - **Brakes** (max torque, bias, handbrake, adjust step) ✅
   - **Tyres (Pneumatici)** (compound selection, dimensions, grip, pressure) ✅
+- **Setup Manager** for track-specific presets (save/load/delete per-track setups) ✅
 - **Visual curve editor** for power.lut and coast.lut files:
   - Interactive matplotlib-based graph editor
   - Integer-only values for precise car tuning
@@ -83,6 +85,7 @@ python main.py
      - **Engine**: Modify RPM limits, turbo settings, and edit power/coast curves
        - Click "Edit Power Curve" to open the visual curve editor for power.lut
        - Click "Edit Coast Curve" to open the visual curve editor for coast.lut
+       - Click "⚡ Power / Torque Calculator" to see real-time HP and Nm curves (with turbo effect)
        - In the curve editor:
          - Drag points to adjust curve shape (graph stays fixed)
          - Add points using the form (integer X/Y values) at the bottom right
@@ -98,6 +101,7 @@ python main.py
      - **Aerodynamics**: Adjust drag coefficient, downforce settings, and wing configurations
      - **Brakes**: Set maximum brake torque, brake bias, handbrake torque
      - **Pneumatici (Tyres)**: Select compound, adjust tyre dimensions (width, radius), grip coefficients (DX0/DY0), and ideal pressure
+   - Click "🔧 Setup Manager" to manage track-specific setup presets (save/load/delete)
    - Click "Open Folder" to open the car's data folder in your system file explorer
    - Click "Save Changes" to apply modifications
    - A backup file (.bak) is automatically created for each modified file
@@ -133,6 +137,8 @@ AC_Car_Editor/
 │   │   ├── car_file_manager.py  # Car file handling
 │   │   ├── ini_parser.py  # INI file parser
 │   │   ├── lut_parser.py  # LUT file parser
+│   │   ├── power_calculator.py  # Power/torque calculator
+│   │   ├── setup_manager.py     # Track setup manager
 │   │   └── component_library.py  # Component library
 │   ├── gui/               # GUI components
 │   │   └── main_window.py # Main window
@@ -200,12 +206,20 @@ assettocorsa/content/cars/
   - Preset curves (Linear, Turbo Lag, NA, V-Shape Coast)
   - Import/export functionality
   - Real-time preview with axis labels (RPM vs HP, etc.)
+- ✅ **Power/Torque Calculator** (Phase 7)
+  - Real-time HP and Nm curves from power.lut
+  - Turbo boost effect visualization (NA vs turbo comparison)
+  - Peak power/torque statistics
+- ✅ **Setup Manager** (Phase 7)
+  - Read and display setup.ini parameters grouped by tab
+  - Save/load/delete track-specific setup presets as JSON
+  - Preset management UI with parameter editing
 
 ### Coming Soon
-- Tire settings tab
-- Component library GUI manager
-- Import/export functionality for complete car setups
-- Advanced features (car comparison, undo/redo)
+- Undo/redo system
+- UI folder modifications (car name in menus, icons)
+- Generic LUT editor for all curve types
+- Smooth curve interpolation (spline)
 
 ## License
 

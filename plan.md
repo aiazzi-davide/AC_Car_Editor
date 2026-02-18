@@ -89,12 +89,12 @@ Creare un'applicazione desktop Windows in Python con PyQt5/6 che permetta di mod
 - [x] Aggiunta campo ADJUST_STEP al tab freni (§4.6)
 - [x] Aggiornamento documentazione (README.md, plan.md)
 
-### Fase 7: Features Avanzate ✅ (2/8 completed)
+### Fase 7: Features Avanzate ✅ (4/8 completed)
 - [x] implementare preview immagine dell'auto
 - [x] Implementare ricerca/filtro auto
 - [ ] Implementare sistema undo/redo modifiche
-- [ ] implementare calcolatore potenza/coppia in tempo reale basato su curve .lut e sul moltiplicatore turbo
-- [ ] Implementare supporto per setup auto (track-specific configurations)
+- [x] implementare calcolatore potenza/coppia in tempo reale basato su curve .lut e sul moltiplicatore turbo
+- [x] Implementare supporto per setup auto (track-specific configurations)
 - [ ] implementare modifiche a cartella ui/ (nome auto in menu, icone, etc.)
 - [ ] Supportare altri .lut, implementare un editor generico di lut per altri tipi di curve specifici per ogni macchina (es. traction_control.lut throttle.lut) ci deve essere quindi un selettore di lut disponibili e una sezione per modificarli - Future enhancement
 - [ ] Implementare smooth curve (interpolazione spline opzionale) - Future enhancement
@@ -148,7 +148,7 @@ I file .lut contengono curve di dati con formato:
 X_VALUE|Y_VALUE
 ```
 Esempi comuni:
-- **power.lut**: RPM|kW (curva di potenza motore)
+- **power.lut**: RPM|HP (curva di potenza motore)
 - **coast.lut**: RPM|Nm (freno motore)
 - **turbo.lut**: RPM|boost pressure
 - **ctrl.lut**: Vari controlli elettronici
