@@ -74,11 +74,9 @@ Creare un'applicazione desktop Windows in Python con PyQt5/6 che permetta di mod
 - [x] Implementare zoom e pan del grafico
 - [x] Implementare griglia e labels assi (es: RPM vs HP per power.lut)
 - [x] Implementare anteprima valori numerici tabella affianco al grafico
-- [ ] Implementare smooth curve (interpolazione spline opzionale) - Future enhancement
 - [x] Implementare import/export curve da altri file .lut
 - [x] Implementare preset curve comuni (lineare, turbo lag, NA, etc.)
 - [x] Integrare editor curve nel tab "Motore" per power.lut e coast.lut
-- [ ] Supportare altri .lut (turbo.lut, ctrl.lut per elettronica, etc.) - Future enhancement
 
 ### Fase 6.7: Revisione Documentazione ✅ COMPLETED
 - [x] Revisione progetto in base alla documentazione `assettocorsa_car_data_documentation.md`
@@ -92,10 +90,14 @@ Creare un'applicazione desktop Windows in Python con PyQt5/6 che permetta di mod
 - [x] Aggiornamento documentazione (README.md, plan.md)
 
 ### Fase 7: Features Avanzate
-- [ ] Implementare sistema confronto auto (side-by-side comparison)
-- [ ] implementare preview grafico dell'auto (immagine)
+- [ ] implementare preview immagine dell'auto
 - [ ] Implementare ricerca/filtro auto
 - [ ] Implementare sistema undo/redo modifiche
+- [ ] implementare calcolatore potenza/coppia in tempo reale basato su curve .lut e sul moltiplicatore turbo
+- [ ] Implementare supporto per setup auto (track-specific configurations)
+- [ ] implementare modifiche a cartella ui/ (nome auto in menu, icone, etc.)
+- [ ] Supportare altri .lut, implementare un editor generico di lut per altri tipi di curve specifici per ogni macchina (es. traction_control.lut throttle.lut) ci deve essere quindi un selettore di lut disponibili e una sezione per modificarli - Future enhancement
+- [ ] Implementare smooth curve (interpolazione spline opzionale) - Future enhancement
 - [ ] Investigare gestione sound motore (bank files, GUIDs)
 
 ### Fase 8: Testing e Refinement
