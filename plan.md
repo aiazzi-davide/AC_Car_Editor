@@ -72,13 +72,24 @@ Creare un'applicazione desktop Windows in Python con PyQt5/6 che permetta di mod
 - [x] Implementare aggiunta nuovi punti (click su grafico o form manuale)
 - [x] Implementare eliminazione punti (selezione + delete key)
 - [x] Implementare zoom e pan del grafico
-- [x] Implementare griglia e labels assi (es: RPM vs kW per power.lut)
+- [x] Implementare griglia e labels assi (es: RPM vs HP per power.lut)
 - [x] Implementare anteprima valori numerici tabella affianco al grafico
 - [ ] Implementare smooth curve (interpolazione spline opzionale) - Future enhancement
 - [x] Implementare import/export curve da altri file .lut
 - [x] Implementare preset curve comuni (lineare, turbo lag, NA, etc.)
 - [x] Integrare editor curve nel tab "Motore" per power.lut e coast.lut
 - [ ] Supportare altri .lut (turbo.lut, ctrl.lut per elettronica, etc.) - Future enhancement
+
+### Fase 6.7: Revisione Documentazione ✅ COMPLETED
+- [x] Revisione progetto in base alla documentazione `assettocorsa_car_data_documentation.md`
+- [x] Correzione unità di misura power.lut da kW a HP (§4.28, §10.3)
+- [x] Correzione range STEER_RATIO per valori negativi (§4.1)
+- [x] Aggiunta tipo trazione AWD2 al dropdown drivetrain (§4.3)
+- [x] Fix parser LUT per commenti `;` e commenti inline (§10.2)
+- [x] Aggiunta campi LIMITER_HZ e DEFAULT_TURBO_ADJUSTMENT al tab motore (§4.2)
+- [x] Aggiunta sezione DAMAGE al tab motore (§4.2)
+- [x] Aggiunta campo ADJUST_STEP al tab freni (§4.6)
+- [x] Aggiornamento documentazione (README.md, plan.md)
 
 ### Fase 7: Features Avanzate
 - [ ] Implementare sistema confronto auto (side-by-side comparison)

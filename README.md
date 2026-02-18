@@ -10,12 +10,13 @@ A desktop application for modifying Assetto Corsa car configurations.
 - **Automatic unpacking of data.acd files** using quickBMS ✅
 - **Automatic data.acd deletion after editing** to ensure changes are used in-game ✅
 - Edit car parameters:
-  - **Engine settings** (RPM limits, turbo boost, wastegate) ✅
+  - **Engine settings** (RPM limits, limiter frequency, turbo boost, wastegate, engine damage thresholds) ✅
   - **Power and coast curves** (visual curve editor for .lut files) ✅
   - **Suspension settings** (spring rates, dampers, rod length) ✅
-  - **Differential settings** (power, coast, preload) ✅
-  - **Weight and balance** (total mass, center of gravity) ✅
-  - **Aerodynamics** (drag coefficient, downforce) ✅
+  - **Drivetrain settings** (differential, gearbox, clutch, AWD/AWD2 support) ✅
+  - **Weight and balance** (total mass, center of gravity, fuel) ✅
+  - **Aerodynamics** (drag coefficient, downforce, wing angles) ✅
+  - **Brakes** (max torque, bias, handbrake, adjust step) ✅
   - Tire settings (coming soon)
 - **Visual curve editor** for power.lut and coast.lut files:
   - Interactive matplotlib-based graph editor
@@ -167,12 +168,13 @@ assettocorsa/content/cars/
 - ✅ Car browser and selection
 - ✅ Backup system
 - ✅ **Car editor dialog with multiple tabs**
-  - **Engine tab**: RPM settings (minimum, maximum, limiter) and turbo settings (max boost, wastegate)
-  - **Power and coast curve editor**: Visual matplotlib-based editor for .lut files
-  - **Suspension tab**: Front and rear suspension settings (spring rate, damper fast/slow bump/rebound, rod length)
-  - **Differential tab**: Traction type display and differential settings (power, coast, preload)
-  - **Weight tab**: Total mass and center of gravity location (X, Y, Z coordinates)
-  - **Aerodynamics tab**: Drag coefficient, front and rear downforce settings (lift coefficient, CL gain)
+  - **Engine tab**: RPM settings (minimum, maximum, limiter, limiter frequency), turbo settings (max boost, wastegate, default adjustment), engine damage thresholds
+  - **Power and coast curve editor**: Visual matplotlib-based editor for .lut files (power.lut uses HP, not kW)
+  - **Suspension tab**: Front and rear suspension settings (spring rate, damper fast/slow bump/rebound, rod length, camber, toe)
+  - **Drivetrain tab**: Traction type (RWD/FWD/AWD/AWD2), differential settings (power, coast, preload), gearbox, clutch
+  - **Weight & Fuel tab**: Total mass, inertia, center of gravity, steering, fuel settings
+  - **Aerodynamics tab**: Dynamic wing sections with drag/lift coefficients and angles
+  - **Brakes tab**: Max torque, front bias, handbrake, cockpit adjustable settings with adjust step
   - Automatic backup creation before saving
   - Reset functionality to restore original values
 - ✅ **Visual curve editor for .lut files**
@@ -182,7 +184,7 @@ assettocorsa/content/cars/
   - Side-by-side graph and table view
   - Preset curves (Linear, Turbo Lag, NA, V-Shape Coast)
   - Import/export functionality
-  - Real-time preview with axis labels (RPM vs kW, etc.)
+  - Real-time preview with axis labels (RPM vs HP, etc.)
 
 ### Coming Soon
 - Tire settings tab
