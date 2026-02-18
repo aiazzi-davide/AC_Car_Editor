@@ -55,10 +55,52 @@ assettocorsa/content/cars/<nome_auto>/
 
 `data.acd` è un archivio binario proprietario che contiene tutti i file della cartella `/data`. Assetto Corsa carica i dati fisici **direttamente** da questo archivio. Se esiste anche una cartella `/data/` estratta nella stessa directory, AC la usa al posto dell'`.acd` (comportamento utile per il modding).
 
-**Implicazione per l'applicazione:**
+### 2.1 Algoritmo di Cifratura
+
+Il formato `.acd` è una sequenza di file in cui **ogni byte occupa un campo a 32 bit** (quindi la dimensione del file è 4 volte quella originale). La cifratura è una semplice **rotazione (ROT cipher)**:
+
+- La **chiave** viene generata dal **nome della cartella** contenente il file `data.acd` (es. `ks_nissan_gtr`).
+- Il nome cartella viene convertito in minuscolo.
+- Vengono applicati **8 algoritmi diversi** su porzioni del nome (caratteri interi o sottosequenze) per produrre 8 valori a 8 bit.
+- Questi 8 valori vengono combinati come stringa con `sprintf "%d-%d-%d-%d-%d-%d-%d-%d"` per formare la chiave finale.
+
+> ⚠️ **Conseguenza critica:** Se la cartella dell'auto viene rinominata, il file `data.acd` non sarà più decifrabile. La cartella deve mantenere il nome originale per il corretto funzionamento.
+
+### 2.2 Varianti di Cifratura dei KN5
+
+Esiste anche una cifratura aggiuntiva applicabile ai file modello `.kn5`, distinta da quella di `data.acd`:
+
+| Tipo | Descrizione | Effetto |
+|------|-------------|---------|
+| **Nessuna cifratura** | Auto ufficiali Kunos e molti mod | Completamente modificabile |
+| **Soft encryption** | KN5 cifrato, data non collegato | Il modello non è editabile ma i dati fisici sì (usato da RSS, VRC, MNBA) |
+| **Hard encryption** | KN5 cifrato E collegato ai dati | Modificare `data.acd` rompe la decifratura del KN5 → modello con "cristalli blu" |
+
+> ℹ️ **Per l'applicazione:** Rilevare se un'auto usa hard encryption prima di applicare modifiche. Il sintomo visibile in-game è il modello che appare come una mesh frammentata blu/viola.
+
+### 2.3 Meccanismo `data_override` (CSP)
+
+Con **Custom Shaders Patch (CSP)** è disponibile un meccanismo alternativo per sovrascrivere file di dati senza toccare `data.acd`:
+
+```
+extension/
+└── data_override/
+    ├── car.ini         ← sovrascrive car.ini dal data.acd
+    ├── lights.ini      ← sovrascrive lights.ini
+    └── ...
+```
+
+- I file in `extension/data_override/` **hanno priorità** sui corrispondenti in `data.acd` o nella cartella `/data/`.
+- Utile per auto con **hard encryption**: permette di modificare alcuni parametri (luci, strumenti, grafica) senza invalidare il KN5.
+- **Limitazione:** Non tutti i file sono sovrascrivibili tramite `data_override`; i file che influenzano la fisica online (come `car.ini` con peso, o `tyres.ini`) sono bloccati per prevenire il cheating in gare multiplayer.
+
+### 2.4 Implicazioni per l'Applicazione
+
 - Il programma estrae `data.acd` → cartella `/data/`
 - I file `.ini`, `.lut`, `.rto` estratti vengono modificati
-- Per applicare le modifiche, i file modificati devono essere **riconfezionati** in `data.acd` oppure la cartella `/data/` estratta deve essere lasciata presente (AC la riconoscerà)
+- Per applicare le modifiche, la cartella `/data/` estratta può essere lasciata presente (AC la utilizzerà automaticamente senza necessità di riconfezionare)
+- Il riconfezionamento in `data.acd` tramite tool (es. QuickBMS con script `assetto_corsa_acd_rebuilder.bms`) è opzionale ma utile per distribuire mod
+- **Non rinominare mai la cartella** dell'auto dopo l'estrazione, altrimenti l'`.acd` diventa inutilizzabile
 
 ---
 
@@ -190,13 +232,15 @@ RPM_THRESHOLD=8000              ; RPM sopra cui il motore si danneggia
 RPM_DAMAGE_K=1                  ; danno al secondo per RPM > soglia
 ```
 
-**File `power.lut`:** Mappa `RPM|PotenzaHP` (o Nm). Esempio:
+**File `power.lut`:** Mappa `RPM|PotenzaHP` (cavalli, non kW). Esempio:
 ```
 0|40
 1000|83
 5000|163
 7500|120
 ```
+
+> **Nota:** La curva di potenza in `power.lut` usa **HP (cavalli vapore)** come unità di uscita, non kW. AC mostra internamente la curva calcolandone la coppia derivata. Il campo `POWER_CURVE` in `engine.ini` punta a questo file oppure a un LUT con coppia in Nm (specificato esplicitamente da alcuni modder — verificare sempre i valori massimi per capire l'unità usata: HP plausibile ~50-1000, Nm plausibile ~100-2000).
 
 ---
 
@@ -293,58 +337,79 @@ VERSION=2
 [BASIC]
 WHEELBASE=2.475                 ; passo in metri
 CG_LOCATION=0.53                ; posizione CoG longitudinale (0=avantreno, 1=retrotreno)
+                                ; rappresenta la distribuzione del peso anteriore come percentuale
 
 [ARB]
 FRONT=26000                     ; rigidità barra antirollio anteriore (N/m)
-REAR=9000                       ; rigidità barra antirollio posteriore
+REAR=9000                       ; rigidità barra antirollio posteriore (N/m)
 
 [FRONT]                         ; configurazione sospensione anteriore
-TYPE=STRUT                      ; tipo: STRUT (MacPherson), DWB (doppio braccio), AXLE
-BASEY=-0.12                     ; altezza base sospensione in metri dal CoG
-TRACK=1.50                      ; carreggiata in metri
-ROD_LENGTH=0.05                 ; lunghezza bieletta di regolazione altezza
-HUB_MASS=50                     ; massa del mozzo/freno in kg
-RIM_OFFSET=-0.015               ; offset visuale cerchio rispetto alla posizione fisica
+TYPE=STRUT                      ; tipo sospensione:
+                                ;   STRUT   = MacPherson (predefinito per molte auto stradali)
+                                ;   DWB     = Double Wishbone (doppio braccio)
+                                ;   AXLE    = assale rigido (solo posteriore, non sterza)
+                                ;   ML      = Multilink 5-bracci (solo posteriore)
+BASEY=-0.12                     ; altezza base sospensione in metri dal centro ruota
+                                ; Formula: CG_height = RADIUS + BASEY (valore negativo → CoG positivo)
+                                ; Usare il raggio del pneumatico carico (loaded radius) per precisione
+TRACK=1.50                      ; carreggiata in metri (tra i centri dei pneumatici a terra)
+ROD_LENGTH=0.05                 ; lunghezza bieletta di regolazione altezza (metri)
+                                ; valori positivi alzano l'auto, negativi abbassano
+HUB_MASS=50                     ; massa della parte non sospesa per ruota in kg
+                                ; NOTA per STRUT: il 20% di HUB_MASS viene trattato come massa sospesa
+                                ; quindi per avere 40 kg non sospesi: HUB_MASS = 40/0.80 = 50
+RIM_OFFSET=-0.015               ; offset visuale cerchio rispetto alla posizione fisica (metri)
 
-; Geometria punti di attacco (specifici per tipo STRUT):
-STRUT_CAR=0.12,0.37,-0.04
-STRUT_TYRE=0.037,-0.122,0.019
-WBCAR_BOTTOM_FRONT=0.413,-0.138,0.37
-; ...
+; --- Geometria punti di attacco per STRUT (MacPherson): ---
+STRUT_CAR=0.12,0.37,-0.04       ; punto attacco superiore ammortizzatore al telaio (X,Y,Z)
+STRUT_TYRE=0.037,-0.122,0.019   ; punto attacco inferiore ammortizzatore al mozzo (X,Y,Z)
+WBCAR_BOTTOM_FRONT=0.413,-0.138,0.37  ; braccio inferiore lato telaio (anteriore)
+WBCAR_BOTTOM_REAR=0.413,-0.138,-0.19  ; braccio inferiore lato telaio (posteriore)
+WBTYRE_BOTTOM=0.065,-0.138,0.019      ; braccio inferiore lato mozzo
 
-TOE_OUT=-0.00015                ; convergenza (negativo=convergenza, positivo=divergenza) in radianti
+; --- Geometria punti di attacco per DWB (Double Wishbone): ---
+; [usato in [REAR] di molte auto e in [FRONT] di auto sportive]
+; WBCAR_TOP_FRONT    = braccio superiore, punto telaio anteriore (X,Y,Z)
+; WBCAR_TOP_REAR     = braccio superiore, punto telaio posteriore (X,Y,Z)
+; WBCAR_BOTTOM_FRONT = braccio inferiore, punto telaio anteriore (X,Y,Z)
+; WBCAR_BOTTOM_REAR  = braccio inferiore, punto telaio posteriore (X,Y,Z)
+; WBTYRE_TOP         = braccio superiore, punto mozzo (X,Y,Z)
+; WBTYRE_BOTTOM      = braccio inferiore, punto mozzo (X,Y,Z)
+; WBCAR_STEER        = tirante sterzo, punto telaio (X,Y,Z)
+; WBTYRE_STEER       = tirante sterzo, punto mozzo (X,Y,Z)
+; Tutti in metri relativi al CoG. Il sistema di coordinate è: X=laterale, Y=verticale, Z=longitudinale
+
+; --- Sterzo (comune a tutti i tipi): ---
+TOE_OUT=-0.00015                ; convergenza in radianti (negativo=convergenza, positivo=divergenza)
 STATIC_CAMBER=-4.0              ; camber statico in gradi (negativo=inclinato verso l'interno)
 
-SPRING_RATE=79436               ; rigidità molla in N/m
-PROGRESSIVE_SPRING_RATE=8000   ; componente progressiva della molla
-BUMP_STOP_RATE=50000            ; rigidità bump-stop
-BUMPSTOP_UP=0.09                ; corsa bump-stop estensione in m
-BUMPSTOP_DN=0.03                ; corsa bump-stop compressione in m
-PACKER_RANGE=0.18               ; corsa totale disponibile in m
+; --- Molle e ammortizzatori: ---
+SPRING_RATE=79436               ; rigidità molla in N/m (wheel rate, non molla rate)
+PROGRESSIVE_SPRING_RATE=8000   ; componente progressiva della molla in N/m/m
+BUMP_STOP_RATE=50000            ; rigidità bump-stop in N/m
+BUMPSTOP_UP=0.09                ; corsa bump-stop estensione in metri (dal design height a 0)
+BUMPSTOP_DN=0.03                ; corsa bump-stop compressione in metri
+PACKER_RANGE=0.18               ; corsa totale disponibile (BUMPSTOP_UP + BUMPSTOP_DN + distanza packer)
 
 DAMP_BUMP=10000                 ; smorzamento in compressione lenta (N·s/m)
-DAMP_FAST_BUMP=9000             ; smorzamento in compressione veloce
-DAMP_FAST_BUMPTHRESHOLD=0.1    ; soglia velocità per passaggio slow/fast (m/s)
-DAMP_REBOUND=11000              ; smorzamento in estensione lenta
-DAMP_FAST_REBOUND=13000         ; smorzamento in estensione veloce
-DAMP_FAST_REBOUNDTHRESHOLD=0.1 ; soglia velocità estensione slow/fast
+DAMP_FAST_BUMP=9000             ; smorzamento in compressione veloce (N·s/m)
+DAMP_FAST_BUMPTHRESHOLD=0.1    ; soglia velocità per passaggio slow/fast compressione (m/s)
+DAMP_REBOUND=11000              ; smorzamento in estensione lenta (N·s/m)
+DAMP_FAST_REBOUND=13000         ; smorzamento in estensione veloce (N·s/m)
+DAMP_FAST_REBOUNDTHRESHOLD=0.1 ; soglia velocità per passaggio slow/fast estensione (m/s)
 
-[REAR]                          ; stessa struttura di [FRONT] ma con TYPE=DWB
-; Per DWB vengono usati:
-WBCAR_TOP_FRONT=...             ; punto attacco braccio superiore (lato telaio, anteriore)
-WBCAR_TOP_REAR=...              ; punto attacco braccio superiore (lato telaio, posteriore)
-WBCAR_BOTTOM_FRONT=...
-WBCAR_BOTTOM_REAR=...
-WBTYRE_TOP=...                  ; punto attacco braccio superiore (lato mozzo)
-WBTYRE_BOTTOM=...
-WBCAR_STEER=...                 ; punto attacco tirante sterzo (lato telaio)
-WBTYRE_STEER=...                ; punto attacco tirante sterzo (lato mozzo)
+[REAR]                          ; stessa struttura di [FRONT]
+; Per posteriori con TYPE=DWB usare i parametri WBCAR_*/WBTYRE_* sopra descritti.
+; Per posteriori con TYPE=AXLE non ci sono punti di attacco wishbone (solo molle/ammortizzatori).
+; Per TYPE=ML (Multilink) la struttura è analoga a DWB.
 
-[GRAPHICS_OFFSETS]              ; offset visivi (non fisici) per allineamento grafico
-WHEEL_LF=-0.01                  ; offset ruota anteriore sinistra
-SUSP_LF=-0.01
-; etc.
+[GRAPHICS_OFFSETS]              ; offset visivi (non fisici) per allineamento modello 3D
+WHEEL_LF=-0.01                  ; offset ruota anteriore sinistra (metri)
+SUSP_LF=-0.01                   ; offset sospensione anteriore sinistra
+; Disponibili: WHEEL_LF, WHEEL_RF, WHEEL_LR, WHEEL_RR, SUSP_LF, SUSP_RF, SUSP_LR, SUSP_RR
 ```
+
+> **Tipi di sospensione supportati:** AC vanilla supporta `STRUT`, `DWB`, `AXLE` (solo posteriore) e `ML` (multilink, solo posteriore). Con CSP (Custom Shaders Patch) è disponibile anche `COSMIC` per sospensioni fisiche avanzate con corpo rigido.
 
 ---
 
@@ -901,7 +966,9 @@ Metadati dell'auto visualizzati nel menu di selezione.
 }
 ```
 
-**Classi auto valide:** `street`, `sport`, `race`, `gt`, `touring`, `drift`, `drag`, `open_wheel`, `rally`
+**Classi auto valide:** `street`, `sport`, `race`, `gt`, `touring`, `drift`, `drag`, `open_wheel`, `rally`, `vintage`
+
+> **Nota:** La classe determina la categoria nel menu di selezione e nelle classifiche. Il campo `tags` è un array di stringhe libere usate per la ricerca/filtro in Content Manager; le convenzioni comuni includono prefisso `#` per le categorie principali.
 
 ---
 
@@ -1445,9 +1512,24 @@ File con prefisso `__cm_` sono generati automaticamente da **Content Manager** (
 | `fuelmaps.lut` | ⚠️ | Tipi carburante selezionabili |
 | `gear_start.lut` | ⚠️ | Coppia massima per marcia al via (launch) |
 | `wing_controller_speed.lut` | ⚠️ | Angolo alettone in funzione della velocità |
+| `brakes_tcurve_*.lut` | ⚠️ | Curva temperatura→attrito freni (brakes_temp.ini) |
 | `__cm_tyre_*.lut` | 🔵 | Generato da Content Manager – NON letto da AC |
 
 ✅ = generalmente sempre presente | ⚠️ = opzionale | 🔵 = generato da strumenti esterni (non usato da AC)
+
+---
+
+## 11. API Shared Memory di Assetto Corsa
+
+Per applicazioni che leggono dati in **tempo reale** (telemetria, overlay, dashboard), AC espone una **Shared Memory** accessibile su Windows:
+
+| Handle | Contenuto |
+|--------|-----------|
+| `Local\acpmf_physics` | Dati fisici: velocità, accelerazioni, rpm, gear, slip, temperature gomme, pressioni |
+| `Local\acpmf_graphics` | Dati grafici: posizione 3D, nome auto, nome track, status sessione |
+| `Local\acpmf_static` | Dati statici: nome auto, nome pilota, numero massimo di auto, versione SM |
+
+Questi dati vengono aggiornati durante la sessione di gioco e sono indipendenti dai file `data/`. Un'applicazione che **legge** i dati per mostrarli non ha bisogno di accedere ai file `data/`, ma può combinarli per arricchire le informazioni (es. leggere la curva termica delle gomme per mostrare il range ottimale di temperatura).
 
 ---
 
@@ -1458,26 +1540,37 @@ File con prefisso `__cm_` sono generati automaticamente da **Content Manager** (
 2. **Parsing LUT:** Le LUT usano `|` come separatore. Possono contenere righe vuote o righe di commento con `;`. L'interpolazione tra punti è **lineare**. Il carattere `"` può comparire nei valori di testo (es. `fuelmaps.lut`).
 
 3. **Unità di misura:**
-   - Forze: Newton (N)
+   - Potenza (`power.lut`): **HP** (cavalli vapore) — NON kW
    - Coppie: Newton·metro (Nm)
+   - Forze/rigidità molle: Newton (N) o N/m
+   - Barre antirollio (ARB): N/m
    - Masse: kg
    - Lunghezze/posizioni: metri
-   - Angoli: gradi (salvo INERTIA in rad e alcuni parametri geometria sospensioni)
+   - Angoli sterzo/camber/pitch: gradi
+   - Angoli convergenza (`TOE_OUT`): **radianti** (non gradi!)
    - Pressioni gomme: PSI
    - RPM: giri/minuto
+   - Temperature gomme (`tcurve`): °C
 
-4. **Sistema di coordinate:** AC usa un sistema destrorso con Y verso l'alto. Il CoG è l'origine. Z positivo = verso il retrotreno.
+4. **Sistema di coordinate:** AC usa un sistema destrorso con **Y verso l'alto**. Il CoG è l'origine. **Z positivo = verso il retrotreno** (Z negativo = anteriore). **X positivo = verso destra**. Le coordinate di sospensioni sono definite per il **lato sinistro** — AC le rispecchia per il lato destro automaticamente.
 
-5. **Backup:** Prima di modificare, fare sempre backup di `data.acd` e della cartella `/data/`.
+5. **Backup:** Prima di qualsiasi modifica, fare sempre backup di `data.acd` e dell'eventuale cartella `/data/`.
 
-6. **Aggiornamento in-game:** AC legge i file al caricamento della sessione; non è necessario riavviare il gioco, basta uscire e rientrare nella sessione.
+6. **Aggiornamento in-game:** AC legge i file al caricamento della sessione; non è necessario riavviare il gioco, basta uscire e rientrare nella sessione di guida.
 
 7. **Gestione file non standard:**
    - Ignorare file con estensioni `.candidate`, `.bak`, `.old`, `.tmp` — non vengono letti da AC.
    - I file con prefisso `__cm_` sono generati da Content Manager e non devono essere modificati manualmente.
    - Il numero e il nome dei file `.lut` varia molto da pack a pack — scoprirli sempre tramite le chiavi `*_CURVE=`, `LUT=`, `*_LUT=` nel file `.ini` corrispondente.
-   - File come `ctrl_*.ini`, `ers.ini`, `brakes_temp.ini`, `script.lua` sono presenti solo nei mod più elaborati — non assumere la loro presenza.
+   - File come `ctrl_*.ini`, `ers.ini`, `brakes_temp.ini`, `script.lua` sono presenti solo nei mod più elaborati — non assumerne la presenza.
 
 8. **Rilevamento versione formato:** Molti file ini hanno `[HEADER] VERSION=N`. Usare questo valore per distinguere il comportamento (es. `drivetrain.ini` con VERSION=3 abilita AWD2 e AUTO_SHIFTER).
 
 9. **File duplicati con suffisso variante:** Alcuni pack includono più varianti dello stesso file (es. `digital_instruments_HKS.ini`, `ctrl_awd2_r34.ini`) — solo il file senza suffisso è caricato da AC; i file con suffisso sono preset alternativi da copiare/rinominare manualmente.
+
+10. **Rilevamento crittografia KN5:** Prima di modificare i dati di un'auto, verificare se il modello KN5 usa hard encryption (collegata al `data.acd`). In questo caso, modificare o sostituire il `data.acd` causerà l'impossibilità di caricare il modello (errore "failed to decrypt", modello blu frammentato). Usare il meccanismo `extension/data_override/` per modifiche sicure su auto con hard encryption.
+
+11. **Cartella dell'auto e chiave ACD:** Il nome della cartella dell'auto (`<nome_auto>`) **è la chiave crittografica** del `data.acd`. Non rinominare mai la cartella senza ricreare il `data.acd` con la nuova chiave. La cartella deve corrispondere esattamente al nome usato durante la creazione del file.
+
+12. **Priorità di caricamento dati:** `extension/data_override/*.ini` > cartella `/data/` estratta > `data.acd`.
+
