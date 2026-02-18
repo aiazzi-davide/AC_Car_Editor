@@ -1,0 +1,43 @@
+╔════════════════════════════════════════════════════════════╗
+║             AC Car Editor - Main Window                    ║
+╠════════════════════════════════════════════════════════════╣
+║                                                            ║
+║  ┌─────────────┬────────────────────────────────────────┐ ║
+║  │ Car List    │ Car Details Panel                      │ ║
+║  │             │                                         │ ║
+║  │ • car1      │ Car Name: Example Car                  │ ║
+║  │ • car2      │                                         │ ║
+║  │ • car3      │ Folder: car_folder_name                │ ║
+║  │             │ Brand: Some Brand                       │ ║
+║  │             │ Has data folder: Yes                    │ ║
+║  │             │ Has data.acd: No                        │ ║
+║  │             │                                         │ ║
+║  │             │ [Car Preview Image]                     │ ║
+║  │             │                                         │ ║
+║  │             │ ┌──────────────────────────────────┐   │ ║
+║  │             │ │ Action Buttons:                   │   │ ║
+║  │             │ │                                   │   │ ║
+║  │             │ │  ┏━━━━━━━━━┓  ┏━━━━━━━━━━━━━┓   │   │ ║
+║  │             │ │  ┃Edit Car ┃  ┃ Open Folder ┃ ◄─┼───┼─ NEW LOCATION
+║  │             │ │  ┗━━━━━━━━━┛  ┗━━━━━━━━━━━━━┛   │   │ ║
+║  │             │ │                                   │   │ ║
+║  │             │ │  ┏━━━━━━━━━━━━━━━┓              │   │ ║
+║  │             │ │  ┃ Create Backup ┃              │   │ ║
+║  │             │ │  ┗━━━━━━━━━━━━━━━┛              │   │ ║
+║  │             │ └──────────────────────────────────┘   │ ║
+║  └─────────────┴────────────────────────────────────────┘ ║
+║                                                            ║
+╚════════════════════════════════════════════════════════════╝
+
+BEFORE: Open Folder button was in the Car Editor Dialog
+        (opened after clicking "Edit Car")
+
+NOW:    Open Folder button is in the Main Window
+        (visible when browsing cars, next to Edit Car button)
+
+Button Behavior:
+• Disabled when no car is selected
+• Disabled when car has no unpacked data folder
+• Enabled when car has unpacked data folder
+• Opens the car's data folder in system file explorer
+
