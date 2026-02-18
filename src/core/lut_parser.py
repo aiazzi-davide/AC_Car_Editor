@@ -32,9 +32,17 @@ class LUTCurve:
             self.points = []
             for line in lines:
                 line = line.strip()
-                if not line or line.startswith('#'):
+                if not line or line.startswith('#') or line.startswith(';'):
                     continue
                 
+                # Strip inline comments (; or #)
+                for comment_char in (';', '#'):
+                    comment_idx = line.find(comment_char)
+                    if comment_idx >= 0:
+                        line = line[:comment_idx].strip()
+                if not line:
+                    continue
+
                 # Parse X|Y format
                 if '|' in line:
                     parts = line.split('|')
