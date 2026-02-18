@@ -21,6 +21,7 @@ from core.car_file_manager import CarFileManager
 from core.component_library import ComponentLibrary
 from gui.car_editor_dialog import CarEditorDialog
 from gui.component_library_dialog import ComponentLibraryDialog
+from gui.car_comparison_dialog import CarComparisonDialog
 
 
 class MainWindow(QMainWindow):
@@ -104,6 +105,11 @@ class MainWindow(QMainWindow):
         library_action.triggered.connect(self.open_component_library)
         tools_menu.addAction(library_action)
         
+        # Compare cars action
+        compare_action = QAction("Compare Cars...", self)
+        compare_action.triggered.connect(self.compare_cars)
+        tools_menu.addAction(compare_action)
+        
         # Help menu
         help_menu = menubar.addMenu("&Help")
         
@@ -168,6 +174,10 @@ class MainWindow(QMainWindow):
         self.backup_btn.setEnabled(False)
         self.backup_btn.clicked.connect(self.create_backup)
         button_layout.addWidget(self.backup_btn)
+        
+        self.compare_btn = QPushButton("Compare Cars")
+        self.compare_btn.clicked.connect(self.compare_cars)
+        button_layout.addWidget(self.compare_btn)
         
         button_layout.addStretch()
         
@@ -380,6 +390,34 @@ class MainWindow(QMainWindow):
     def open_component_library(self):
         """Open component library manager"""
         dialog = ComponentLibraryDialog(self)
+        dialog.exec_()
+    
+    def compare_cars(self):
+        """Open car comparison dialog"""
+        if not self.car_manager:
+            QMessageBox.warning(
+                self,
+                "No Cars Loaded",
+                "Please load cars first by setting the AC path."
+            )
+            return
+        
+        # Check if there are at least 2 cars available
+        available_cars = []
+        for car in self.car_manager.get_car_list():
+            info = self.car_manager.get_car_info(car)
+            if info['has_data_folder'] or info['has_data_acd']:
+                available_cars.append(car)
+        
+        if len(available_cars) < 2:
+            QMessageBox.warning(
+                self,
+                "Not Enough Cars",
+                "You need at least 2 cars with data to compare."
+            )
+            return
+        
+        dialog = CarComparisonDialog(self.car_manager, self)
         dialog.exec_()
         
     def show_about(self):
