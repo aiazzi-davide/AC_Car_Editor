@@ -8,10 +8,10 @@ from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
     QListWidget, QLabel, QPushButton, QStatusBar,
     QMenuBar, QAction, QFileDialog, QMessageBox,
-    QSplitter, QGroupBox, QTextEdit, QDialog
+    QSplitter, QGroupBox, QTextEdit, QDialog, QLineEdit
 )
 from PyQt5.QtCore import Qt, QSize
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QPixmap
 
 # Add parent directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -37,6 +37,9 @@ class MainWindow(QMainWindow):
         
         # Current car
         self.current_car = None
+        
+        # Full car list for filtering
+        self.all_cars = []
         
         self.init_ui()
         self.load_cars()
@@ -116,7 +119,22 @@ class MainWindow(QMainWindow):
         panel = QGroupBox("Cars")
         layout = QVBoxLayout()
         
-        # Search/filter could be added here
+        # Search box
+        search_layout = QHBoxLayout()
+        search_label = QLabel("Search:")
+        self.search_box = QLineEdit()
+        self.search_box.setPlaceholderText("Filter cars...")
+        self.search_box.textChanged.connect(self.filter_cars)
+        
+        clear_btn = QPushButton("✕")
+        clear_btn.setMaximumWidth(30)
+        clear_btn.setToolTip("Clear filter")
+        clear_btn.clicked.connect(self.clear_filter)
+        
+        search_layout.addWidget(search_label)
+        search_layout.addWidget(self.search_box)
+        search_layout.addWidget(clear_btn)
+        layout.addLayout(search_layout)
         
         # Car list
         self.car_list = QListWidget()
@@ -140,6 +158,15 @@ class MainWindow(QMainWindow):
         self.car_name_label = QLabel("No car selected")
         self.car_name_label.setStyleSheet("font-size: 18px; font-weight: bold;")
         layout.addWidget(self.car_name_label)
+        
+        # Preview image
+        self.preview_label = QLabel()
+        self.preview_label.setAlignment(Qt.AlignCenter)
+        self.preview_label.setMinimumHeight(150)
+        self.preview_label.setMaximumHeight(250)
+        self.preview_label.setStyleSheet("QLabel { background-color: #f0f0f0; border: 1px solid #ccc; }")
+        self.preview_label.setText("No preview image")
+        layout.addWidget(self.preview_label)
         
         # Car details
         self.car_details = QTextEdit()
@@ -184,12 +211,14 @@ class MainWindow(QMainWindow):
             return
         
         self.car_manager = CarFileManager(cars_path)
-        cars = self.car_manager.get_car_list()
+        self.all_cars = self.car_manager.get_car_list()
         
+        # Clear search box and display all cars
+        self.search_box.clear()
         self.car_list.clear()
-        self.car_list.addItems(cars)
+        self.car_list.addItems(self.all_cars)
         
-        self.statusBar.showMessage(f"Loaded {len(cars)} cars from {cars_path}")
+        self.statusBar.showMessage(f"Loaded {len(self.all_cars)} cars from {cars_path}")
         
     def on_car_selected(self, current, previous):
         """Handle car selection"""
@@ -204,6 +233,25 @@ class MainWindow(QMainWindow):
         
         # Update UI
         self.car_name_label.setText(car_info.get('display_name', car_name))
+        
+        # Load and display preview image
+        preview_path = self.car_manager.get_car_preview_path(car_name)
+        if preview_path:
+            pixmap = QPixmap(preview_path)
+            if not pixmap.isNull():
+                # Scale to fit while maintaining aspect ratio
+                scaled_pixmap = pixmap.scaled(
+                    self.preview_label.width() - 10,
+                    self.preview_label.height() - 10,
+                    Qt.KeepAspectRatio,
+                    Qt.SmoothTransformation
+                )
+                self.preview_label.setPixmap(scaled_pixmap)
+            else:
+                self.preview_label.setText("Failed to load preview image")
+        else:
+            self.preview_label.clear()
+            self.preview_label.setText("No preview image")
         
         # Build details text
         details = []
@@ -232,6 +280,29 @@ class MainWindow(QMainWindow):
             if car_info['has_data_acd'] and not car_info['has_data_folder']:
                 status_msg += " (will need unpacking)"
             self.statusBar.showMessage(status_msg)
+    
+    def filter_cars(self, text):
+        """Filter car list based on search text"""
+        if not text:
+            # Show all cars if search is empty
+            self.car_list.clear()
+            self.car_list.addItems(self.all_cars)
+            return
+        
+        # Filter cars that match the search text (case-insensitive)
+        search_lower = text.lower()
+        filtered_cars = [car for car in self.all_cars if search_lower in car.lower()]
+        
+        # Update list
+        self.car_list.clear()
+        self.car_list.addItems(filtered_cars)
+        
+        # Update status bar
+        self.statusBar.showMessage(f"Showing {len(filtered_cars)} of {len(self.all_cars)} cars")
+    
+    def clear_filter(self):
+        """Clear the search filter"""
+        self.search_box.clear()
         
     def set_ac_path(self):
         """Set Assetto Corsa installation path"""

@@ -125,6 +125,26 @@ class CarFileManager:
         
         return info
     
+    def get_car_preview_path(self, car_name: str) -> Optional[str]:
+        """
+        Get path to car preview image (preview.png or preview.jpg)
+        
+        Args:
+            car_name: Car folder name
+            
+        Returns:
+            Full path to preview image or None if not found
+        """
+        ui_path = os.path.join(self.get_car_path(car_name), 'ui')
+        
+        # Check for preview.png first, then preview.jpg
+        for ext in ['png', 'jpg']:
+            preview_path = os.path.join(ui_path, f'preview.{ext}')
+            if os.path.exists(preview_path):
+                return preview_path
+        
+        return None
+    
     def create_backup(self, car_name: str, backup_dir: str = 'backups') -> Optional[str]:
         """
         Create backup of car data folder
