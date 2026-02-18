@@ -4,6 +4,7 @@ Car File Manager for handling Assetto Corsa car files and folders
 
 import os
 import shutil
+import subprocess
 from pathlib import Path
 from typing import List, Dict, Optional, Any
 from datetime import datetime
@@ -211,3 +212,132 @@ class CarFileManager:
             Full path to LUT file
         """
         return os.path.join(self.get_car_data_path(car_name), lut_name)
+    
+    def delete_data_acd(self, car_name: str) -> bool:
+        """
+        Delete data.acd file for a car
+        
+        This is necessary after editing car files because AC prioritizes
+        data.acd over the unpacked data/ folder
+        
+        Args:
+            car_name: Car folder name
+            
+        Returns:
+            True if deleted successfully or file doesn't exist
+        """
+        acd_path = os.path.join(self.get_car_path(car_name), 'data.acd')
+        
+        if not os.path.exists(acd_path):
+            return True
+        
+        try:
+            os.remove(acd_path)
+            print(f"Deleted data.acd for {car_name}")
+            return True
+        except Exception as e:
+            print(f"Error deleting data.acd: {e}")
+            return False
+    
+    def _find_quickbms_path(self) -> Optional[str]:
+        """
+        Find quickbms.exe in the tools folder
+        
+        Returns:
+            Path to quickbms.exe or None if not found
+        """
+        # Try relative to project root
+        possible_paths = [
+            os.path.join('tools', 'quickbms', 'quickbms.exe'),
+            os.path.join('tools', 'quickbms.exe'),
+            os.path.join(os.path.dirname(__file__), '..', '..', 'tools', 'quickbms', 'quickbms.exe'),
+            os.path.join(os.path.dirname(__file__), '..', '..', 'tools', 'quickbms.exe'),
+        ]
+        
+        for path in possible_paths:
+            if os.path.exists(path):
+                return os.path.abspath(path)
+        
+        return None
+    
+    def _find_quickbms_script(self) -> Optional[str]:
+        """
+        Find assetto_corsa_acd.bms script
+        
+        Returns:
+            Path to script or None if not found
+        """
+        possible_paths = [
+            os.path.join('tools', 'assetto_corsa_acd.bms'),
+            os.path.join(os.path.dirname(__file__), '..', '..', 'tools', 'assetto_corsa_acd.bms'),
+        ]
+        
+        for path in possible_paths:
+            if os.path.exists(path):
+                return os.path.abspath(path)
+        
+        return None
+    
+    def unpack_data_acd(self, car_name: str, delete_acd: bool = True) -> bool:
+        """
+        Unpack data.acd file using quickBMS
+        
+        Args:
+            car_name: Car folder name
+            delete_acd: If True, delete data.acd after successful unpacking
+            
+        Returns:
+            True if unpacked successfully
+        """
+        acd_path = os.path.join(self.get_car_path(car_name), 'data.acd')
+        
+        if not os.path.exists(acd_path):
+            print(f"No data.acd file found for {car_name}")
+            return False
+        
+        # Find quickBMS executable
+        quickbms_exe = self._find_quickbms_path()
+        if not quickbms_exe:
+            print("Error: quickbms.exe not found in tools folder")
+            return False
+        
+        # Find quickBMS script
+        quickbms_script = self._find_quickbms_script()
+        if not quickbms_script:
+            print("Error: assetto_corsa_acd.bms script not found in tools folder")
+            return False
+        
+        # Create data folder if it doesn't exist
+        data_path = self.get_car_data_path(car_name)
+        os.makedirs(data_path, exist_ok=True)
+        
+        try:
+            # Run quickBMS: quickbms.exe -o script.bms data.acd output_folder
+            # -o flag overwrites existing files
+            cmd = [quickbms_exe, '-o', quickbms_script, acd_path, data_path]
+            
+            # Run quickBMS and capture output
+            result = subprocess.run(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                cwd=os.path.dirname(quickbms_exe)
+            )
+            
+            # Check if extraction was successful
+            if result.returncode == 0:
+                print(f"Successfully unpacked data.acd for {car_name}")
+                
+                # Delete data.acd if requested
+                if delete_acd:
+                    self.delete_data_acd(car_name)
+                
+                return True
+            else:
+                print(f"Error unpacking data.acd: {result.stderr}")
+                return False
+                
+        except Exception as e:
+            print(f"Error running quickBMS: {e}")
+            return False

@@ -7,6 +7,8 @@ A desktop application for modifying Assetto Corsa car configurations.
 - Browse and select Assetto Corsa cars
 - View car information
 - Create backups of car data
+- **Automatic unpacking of data.acd files** using quickBMS ✅
+- **Automatic data.acd deletion after editing** to ensure changes are used in-game ✅
 - Edit car parameters:
   - **Engine settings** (RPM limits, turbo boost, wastegate) ✅
   - **Power and coast curves** (visual curve editor for .lut files) ✅
@@ -32,7 +34,8 @@ A desktop application for modifying Assetto Corsa car configurations.
 
 - Python 3.x
 - PyQt5
-- Assetto Corsa installed with unpacked car data folders
+- Assetto Corsa installed
+- quickBMS (included in `tools/` folder for unpacking data.acd files)
 
 ## Installation
 
@@ -62,7 +65,8 @@ python main.py
 3. Select a car from the list to view its information
 
 4. Edit a car:
-   - Select a car with an unpacked data folder
+   - Select a car (with or without unpacked data folder)
+   - **If car has only data.acd**: Application will prompt to unpack it using quickBMS
    - Click "Edit Car" to open the editor
    - Use the tabs to navigate different aspects:
      - **Engine**: Modify RPM limits, turbo settings, and edit power/coast curves
@@ -83,8 +87,21 @@ python main.py
      - **Aerodynamics**: Adjust drag coefficient and downforce settings
    - Click "Save Changes" to apply modifications
    - A backup file (.bak) is automatically created for each modified file
+   - **After editing**: Application prompts to delete data.acd to ensure changes are used in-game
 
 5. Create additional backups using the "Create Backup" button
+
+## Data.acd Unpacking
+
+The application automatically handles unpacking of non-encrypted data.acd files:
+
+1. **Before editing**: If a car has only a data.acd file (no unpacked data/ folder), the application prompts to unpack it
+2. **Unpacking process**: Uses quickBMS to extract all files to the data/ folder
+3. **After editing**: Prompts to delete data.acd to ensure Assetto Corsa uses the modified files
+
+**Why delete data.acd?** Assetto Corsa prioritizes data.acd over the unpacked data/ folder. If data.acd exists, any changes made to files in data/ will be ignored in-game.
+
+See `DATA_ACD_UNPACKING.md` for detailed documentation.
 
 ## File Structure
 
@@ -92,6 +109,10 @@ python main.py
 AC_Car_Editor/
 ├── main.py                 # Application entry point
 ├── requirements.txt        # Python dependencies
+├── tools/                  # External tools
+│   ├── quickbms/          # quickBMS for unpacking
+│   │   └── quickbms.exe
+│   └── assetto_corsa_acd.bms  # Unpacking script
 ├── src/
 │   ├── core/              # Core functionality
 │   │   ├── config.py      # Configuration manager
@@ -127,8 +148,9 @@ assettocorsa/content/cars/
 ### Important
 
 - Always create a backup before modifying any car
-- Only cars with unpacked `data` folders can be edited
-- Encrypted `data.acd` files are not supported yet
+- Cars with `data.acd` files will be automatically unpacked on first edit
+- After editing, delete data.acd when prompted (or AC will ignore your changes)
+- Encrypted `data.acd` files from Kunos cars cannot be unpacked
 - The application does not modify the original game files until you save changes
 
 ## Development Status
@@ -138,6 +160,8 @@ assettocorsa/content/cars/
 - ✅ INI file parser
 - ✅ LUT file parser with curve support
 - ✅ Car file manager
+- ✅ **Data.acd unpacking with quickBMS**
+- ✅ **Automatic data.acd deletion after editing**
 - ✅ Component library system
 - ✅ Main window GUI
 - ✅ Car browser and selection
