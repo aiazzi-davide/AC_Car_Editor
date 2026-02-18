@@ -1,0 +1,62 @@
+{
+  "ji_audi_rs5": [
+   { 
+  "type": "carPaint", 
+  "name": "Body Paint",
+  "texture": "metal_detail.dds",
+  "mapsTexture": "Body_MAP.dds", 
+  "mapsAutoLevel": true, 
+  "defaultColor": "#FFFFFF" 
+},
+
+{ 
+  "type": "carPaint", 
+  "name": "Rim 1",
+  "texture": "metal_detail_rim.dds",
+  "mapsTexture": "Rim_MAP.dds", 
+  "mapsAutoLevel": true, 
+  "defaultColor": "#FFFFFF" 
+},
+
+{ 
+  "type": "color",
+  "name": "Seat Stitch Color",
+  "texture": "STITCH_2_D.dds",
+  "autoLevel": true,
+  "defaultColor": "#FFFFFF"
+},
+
+   { 
+  "type": "color", 
+  "name": "Leather",
+  "texture": "plastic_detail_1.dds",
+  "mapsAutoLevel": true, 
+  "defaultColor": "#FFFFFF"
+},
+
+   { 
+  "type": "color", 
+  "name": "Seats",
+  "texture": "plastic_detail.dds",
+  "mapsAutoLevel": true, 
+  "defaultColor": "#FFFFFF"
+},
+
+   { 
+  "type": "carPaint", 
+  "name": "Caliper Paint",
+  "texture": "Caliper_paint.dds",
+  "mapsTexture": "Caliper_MAP.dds", 
+  "mapsAutoLevel": true, 
+  "defaultColor": "#FFFFFF"
+},
+
+{ 
+  "type": "licensePlate", 
+  "style": "Europe", 
+  "texture": "Plate_D.dds",
+  "normals": "Plate_NM.dds" 
+},
+
+  ],
+}

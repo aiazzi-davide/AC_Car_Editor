@@ -89,9 +89,9 @@ Creare un'applicazione desktop Windows in Python con PyQt5/6 che permetta di mod
 - [x] Aggiunta campo ADJUST_STEP al tab freni (§4.6)
 - [x] Aggiornamento documentazione (README.md, plan.md)
 
-### Fase 7: Features Avanzate
-- [ ] implementare preview immagine dell'auto
-- [ ] Implementare ricerca/filtro auto
+### Fase 7: Features Avanzate ✅ (2/8 completed)
+- [x] implementare preview immagine dell'auto
+- [x] Implementare ricerca/filtro auto
 - [ ] Implementare sistema undo/redo modifiche
 - [ ] implementare calcolatore potenza/coppia in tempo reale basato su curve .lut e sul moltiplicatore turbo
 - [ ] Implementare supporto per setup auto (track-specific configurations)

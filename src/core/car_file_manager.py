@@ -117,13 +117,53 @@ class CarFileManager:
             try:
                 import json
                 with open(ui_path, 'r', encoding='utf-8') as f:
-                    ui_data = json.load(f)
-                    info['display_name'] = ui_data.get('name', car_name)
-                    info['brand'] = ui_data.get('brand', '')
+                    content = f.read()
+                ui_data = json.loads(content, strict=False)
+                info['display_name'] = ui_data.get('name', car_name)
+                info['brand'] = ui_data.get('brand', '')
             except Exception as e:
                 print(f"Error reading ui_car.json: {e}")
         
         return info
+    
+    def get_car_preview_path(self, car_name: str) -> Optional[str]:
+        """
+        Get path to car preview image.
+        Checks ui/preview.{png,jpg} first (Content Manager style),
+        then falls back to the first skin's preview.jpg (vanilla AC).
+        
+        Args:
+            car_name: Car folder name
+            
+        Returns:
+            Full path to preview image or None if not found
+        """
+        car_path = self.get_car_path(car_name)
+
+        # 1. Check ui/preview.png and ui/preview.jpg (Content Manager / mod cars)
+        ui_path = os.path.join(car_path, 'ui')
+        for ext in ['png', 'jpg']:
+            preview_path = os.path.join(ui_path, f'preview.{ext}')
+            if os.path.exists(preview_path):
+                return preview_path
+
+        # 2. Fall back to first skin's preview image (vanilla AC cars)
+        skins_path = os.path.join(car_path, 'skins')
+        if os.path.isdir(skins_path):
+            try:
+                skins = sorted(os.listdir(skins_path))
+                for skin in skins:
+                    skin_path = os.path.join(skins_path, skin)
+                    if not os.path.isdir(skin_path):
+                        continue
+                    for ext in ['jpg', 'png']:
+                        preview_path = os.path.join(skin_path, f'preview.{ext}')
+                        if os.path.exists(preview_path):
+                            return preview_path
+            except Exception:
+                pass
+
+        return None
     
     def create_backup(self, car_name: str, backup_dir: str = 'backups') -> Optional[str]:
         """

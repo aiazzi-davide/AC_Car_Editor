@@ -1,0 +1,17 @@
+0|0
+500|50
+1000|85
+1500|105     ; Coppia bassa: auto "fiacca"
+2000|120     ; Ancora pigra
+2500|135     ; Inizia a svegliarsi
+2800|145
+3000|155
+3200|165     ; QUI ARRIVA IL CALCIO DEL TURBO
+3500|168     ; Picco massimo di coppia (x Turbo = ~320Nm)
+4000|168
+4500|162
+5000|150     ; Inizia a calare vistosamente
+5500|130     ; Calo netto
+6000|105     ; Potenza ridotta per non superare i 240 km/h
+6500|85      ; Il motore "mura"
+6800|70

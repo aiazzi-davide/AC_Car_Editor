@@ -1,0 +1,50 @@
+{
+  "bodyPaint": {
+    "complex": false,
+    "reflection": 1.0,
+    "gloss": 1.0,
+    "specular": 1.0,
+    "color": "#FF43484B",
+    "flakes": 0.777,
+    "enabled": false
+  },
+  "caliperPaint": {
+    "complex": false,
+    "reflection": 1.0,
+    "gloss": 1.0,
+    "specular": 1.0,
+    "color": "#FFFFFFFF",
+    "flakes": 0.777,
+    "enabled": false
+  },
+  "leather": {
+    "enabled": false,
+    "colors": [
+      "#FFFFFF"
+    ]
+  },
+  "licensePlate": {
+    "style": "Europe"
+  },
+  "rim1": {
+    "complex": true,
+    "reflection": 1.0,
+    "gloss": 1.0,
+    "specular": 1.0,
+    "color": "#FFD1D1D1",
+    "flakes": 0.5,
+    "enabled": false
+  },
+  "seatStitchColor": {
+    "enabled": false,
+    "colors": [
+      "#FFFFFF"
+    ]
+  },
+  "seats": {
+    "enabled": false,
+    "colors": [
+      "#050202"
+    ]
+  }
+}
