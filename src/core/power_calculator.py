@@ -4,9 +4,12 @@ Power/Torque Calculator for Assetto Corsa cars.
 Computes real-time power (HP) and torque (Nm) curves from power.lut data
 and turbo multiplier parameters from engine.ini.
 
-Physics:
-    Torque (Nm) = Power (HP) × 745.7 / (RPM × 2π / 60)
-    With turbo:  Effective_HP = Base_HP × (1 + boost)
+The power.lut file contains **torque in Nm** mapped to RPM, despite its name.
+
+Physics (from AC documentation §4.2):
+    NA engines:    Final_Torque = LUT_value
+    Turbo engines: Final_Torque = LUT_value × (1 + Boost_Pressure)
+    Power (HP) = Torque(Nm) × RPM × 2π / (60 × 745.7)
     Boost at RPM = MAX_BOOST × clamp((RPM / REFERENCE_RPM), 0, 1) ^ GAMMA
 """
 
@@ -19,32 +22,30 @@ class PowerTorqueCalculator:
 
     HP_TO_WATTS = 745.7  # 1 HP = 745.7 W
 
-    def __init__(self, power_points: List[Tuple[float, float]],
+    def __init__(self, torque_points: List[Tuple[float, float]],
                  turbo_configs: Optional[List[Dict]] = None):
         """
         Args:
-            power_points: List of (RPM, HP) tuples from power.lut
+            torque_points: List of (RPM, Nm) tuples from power.lut
             turbo_configs: List of turbo config dicts, each with keys:
                            max_boost, wastegate, reference_rpm, gamma
         """
-        self.power_points = sorted(power_points, key=lambda p: p[0])
+        self.torque_points = sorted(torque_points, key=lambda p: p[0])
         self.turbo_configs = turbo_configs or []
 
     @staticmethod
-    def hp_to_torque_nm(hp: float, rpm: float) -> float:
-        """Convert HP to torque in Nm at a given RPM.
+    def torque_to_hp(torque_nm: float, rpm: float) -> float:
+        """Convert torque in Nm to HP at a given RPM.
 
-        Formula: Torque = HP × 745.7 / (RPM × 2π / 60)
-                        = HP × 745.7 × 60 / (RPM × 2π)
-                        = HP × 7120.82 / RPM   (approx)
+        Formula: HP = Torque(Nm) × RPM × 2π / (60 × 745.7)
         """
         if rpm <= 0:
             return 0.0
-        return hp * PowerTorqueCalculator.HP_TO_WATTS / (rpm * 2.0 * math.pi / 60.0)
+        return torque_nm * rpm * 2.0 * math.pi / (60.0 * PowerTorqueCalculator.HP_TO_WATTS)
 
-    def interpolate_power(self, rpm: float) -> float:
-        """Linearly interpolate base HP from the power curve at a given RPM."""
-        pts = self.power_points
+    def interpolate_torque(self, rpm: float) -> float:
+        """Linearly interpolate base torque (Nm) from the LUT at a given RPM."""
+        pts = self.torque_points
         if not pts:
             return 0.0
         if rpm <= pts[0][0]:
@@ -78,9 +79,9 @@ class PowerTorqueCalculator:
             total += max_boost * (ratio ** gamma)
         return total
 
-    def effective_power(self, rpm: float) -> float:
-        """HP after applying turbo boost: base_HP × (1 + boost)."""
-        base = self.interpolate_power(rpm)
+    def effective_torque(self, rpm: float) -> float:
+        """Torque (Nm) after applying turbo boost: base_torque × (1 + boost)."""
+        base = self.interpolate_torque(rpm)
         boost = self.boost_at_rpm(rpm)
         return base * (1.0 + boost)
 
@@ -89,22 +90,22 @@ class PowerTorqueCalculator:
 
         Returns:
             dict with keys:
-              rpm_values     – list of RPM sample points
-              base_hp        – base HP at each RPM (no turbo)
-              base_torque    – base torque Nm at each RPM
-              effective_hp   – HP with turbo boost
+              rpm_values       – list of RPM sample points
+              base_torque      – base torque Nm at each RPM (from LUT)
+              base_hp          – base HP at each RPM (derived from torque)
               effective_torque – torque Nm with turbo boost
-              boost_curve    – boost bar at each RPM
-              peak_base_hp   – (rpm, hp)
+              effective_hp     – HP with turbo boost (derived from effective torque)
+              boost_curve      – boost bar at each RPM
               peak_base_torque – (rpm, Nm)
-              peak_eff_hp    – (rpm, hp)
-              peak_eff_torque – (rpm, Nm)
+              peak_base_hp     – (rpm, hp)
+              peak_eff_torque  – (rpm, Nm)
+              peak_eff_hp      – (rpm, hp)
         """
-        if not self.power_points:
+        if not self.torque_points:
             return self._empty_result()
 
-        min_rpm = self.power_points[0][0]
-        max_rpm = self.power_points[-1][0]
+        min_rpm = self.torque_points[0][0]
+        max_rpm = self.torque_points[-1][0]
 
         rpm_values = []
         r = min_rpm
@@ -126,47 +127,47 @@ class PowerTorqueCalculator:
         peak_etq = (0, 0.0)
 
         for rpm in rpm_values:
-            bh = self.interpolate_power(rpm)
-            bt = self.hp_to_torque_nm(bh, rpm)
-            eh = self.effective_power(rpm)
-            et = self.hp_to_torque_nm(eh, rpm)
+            bt = self.interpolate_torque(rpm)
+            bh = self.torque_to_hp(bt, rpm)
+            et = self.effective_torque(rpm)
+            eh = self.torque_to_hp(et, rpm)
             b = self.boost_at_rpm(rpm)
 
-            base_hp.append(bh)
             base_torque.append(bt)
-            eff_hp.append(eh)
+            base_hp.append(bh)
             eff_torque.append(et)
+            eff_hp.append(eh)
             boost_curve.append(b)
 
-            if bh > peak_bhp[1]:
-                peak_bhp = (rpm, bh)
             if bt > peak_btq[1]:
                 peak_btq = (rpm, bt)
-            if eh > peak_ehp[1]:
-                peak_ehp = (rpm, eh)
+            if bh > peak_bhp[1]:
+                peak_bhp = (rpm, bh)
             if et > peak_etq[1]:
                 peak_etq = (rpm, et)
+            if eh > peak_ehp[1]:
+                peak_ehp = (rpm, eh)
 
         return {
             'rpm_values': rpm_values,
-            'base_hp': base_hp,
             'base_torque': base_torque,
-            'effective_hp': eff_hp,
+            'base_hp': base_hp,
             'effective_torque': eff_torque,
+            'effective_hp': eff_hp,
             'boost_curve': boost_curve,
-            'peak_base_hp': peak_bhp,
             'peak_base_torque': peak_btq,
-            'peak_eff_hp': peak_ehp,
+            'peak_base_hp': peak_bhp,
             'peak_eff_torque': peak_etq,
+            'peak_eff_hp': peak_ehp,
         }
 
     @staticmethod
     def _empty_result() -> Dict:
         return {
             'rpm_values': [],
-            'base_hp': [], 'base_torque': [],
-            'effective_hp': [], 'effective_torque': [],
+            'base_torque': [], 'base_hp': [],
+            'effective_torque': [], 'effective_hp': [],
             'boost_curve': [],
-            'peak_base_hp': (0, 0.0), 'peak_base_torque': (0, 0.0),
-            'peak_eff_hp': (0, 0.0), 'peak_eff_torque': (0, 0.0),
+            'peak_base_torque': (0, 0.0), 'peak_base_hp': (0, 0.0),
+            'peak_eff_torque': (0, 0.0), 'peak_eff_hp': (0, 0.0),
         }

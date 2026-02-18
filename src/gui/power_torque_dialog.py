@@ -2,7 +2,8 @@
 Power/Torque Calculator Dialog for AC Car Editor.
 
 Displays interactive power (HP) and torque (Nm) curves derived from
-power.lut and turbo parameters, using matplotlib embedded in a PyQt5 dialog.
+power.lut (which stores torque in Nm) and turbo parameters,
+using matplotlib embedded in a PyQt5 dialog.
 """
 
 import os
@@ -27,10 +28,10 @@ from core.power_calculator import PowerTorqueCalculator
 class PowerTorqueDialog(QDialog):
     """Dialog showing real-time power and torque curves."""
 
-    def __init__(self, power_points, turbo_configs=None, parent=None):
+    def __init__(self, torque_points, turbo_configs=None, parent=None):
         """
         Args:
-            power_points: List of (RPM, HP) from power.lut
+            torque_points: List of (RPM, Nm) from power.lut
             turbo_configs: List of turbo config dicts (max_boost, reference_rpm, gamma, wastegate)
             parent: Parent widget
         """
@@ -39,7 +40,7 @@ class PowerTorqueDialog(QDialog):
         self.setWindowTitle("Power / Torque Calculator")
         self.setMinimumSize(900, 600)
 
-        self.calculator = PowerTorqueCalculator(power_points, turbo_configs)
+        self.calculator = PowerTorqueCalculator(torque_points, turbo_configs)
         self.has_turbo = bool(turbo_configs)
 
         self._build_ui()

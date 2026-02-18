@@ -322,7 +322,7 @@ class CarEditorDialog(QDialog):
         curve_grp = QGroupBox("Power & Coast Curves")
         curve_layout = QVBoxLayout()
 
-        power_btn = QPushButton("Edit Power Curve (power.lut)  ·  RPM → HP")
+        power_btn = QPushButton("Edit Power Curve (power.lut)  ·  RPM → Nm")
         power_btn.clicked.connect(self.edit_power_curve)
         curve_layout.addWidget(power_btn)
 
@@ -331,8 +331,8 @@ class CarEditorDialog(QDialog):
         curve_layout.addWidget(coast_btn)
 
         calc_btn = QPushButton("⚡ Power / Torque Calculator")
-        calc_btn.setToolTip("Show real-time power (HP) and torque (Nm) curves,\n"
-                            "including turbo boost effect.")
+        calc_btn.setToolTip("Show real-time power (HP) and torque (Nm) curves\n"
+                            "computed from power.lut (Nm) with turbo boost effect.")
         calc_btn.setStyleSheet("background-color: #2196F3; color: white; font-weight: bold; padding: 8px;")
         calc_btn.clicked.connect(self.open_power_torque_calculator)
         curve_layout.addWidget(calc_btn)
@@ -1307,7 +1307,7 @@ class CarEditorDialog(QDialog):
                                     QMessageBox.Yes | QMessageBox.No) == QMessageBox.No:
                 return
         CurveEditorDialog(lut_file_path=path if os.path.exists(path) else None,
-                          x_label="RPM", y_label="Power (HP)", parent=self).exec_()
+                          x_label="RPM", y_label="Torque (Nm)", parent=self).exec_()
 
     def edit_coast_curve(self):
         path = os.path.join(self.car_data_path, 'coast.lut')
@@ -1327,7 +1327,7 @@ class CarEditorDialog(QDialog):
                                 "power.lut not found. Cannot compute power/torque curves.")
             return
         lut = LUTCurve(path)
-        power_points = lut.get_points()
+        torque_points = lut.get_points()
 
         turbo_configs = []
         if self.has_turbo_check.isChecked():
@@ -1341,7 +1341,7 @@ class CarEditorDialog(QDialog):
                 })
 
         from gui.power_torque_dialog import PowerTorqueDialog
-        dlg = PowerTorqueDialog(power_points, turbo_configs, parent=self)
+        dlg = PowerTorqueDialog(torque_points, turbo_configs, parent=self)
         dlg.exec_()
 
     def open_setup_manager(self):

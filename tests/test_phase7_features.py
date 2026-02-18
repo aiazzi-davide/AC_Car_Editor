@@ -20,7 +20,8 @@ class TestPowerTorqueCalculator(unittest.TestCase):
     """Test power/torque calculator."""
 
     def setUp(self):
-        self.power_points = [
+        # power.lut contains (RPM, Nm) torque values
+        self.torque_points = [
             (1000, 100),
             (2000, 150),
             (3000, 200),
@@ -38,115 +39,123 @@ class TestPowerTorqueCalculator(unittest.TestCase):
             'gamma': 2.5,
         }]
 
-    def test_hp_to_torque(self):
-        """Test HP to Nm conversion."""
-        # At 5252 RPM, 100 HP ≈ 100 lb·ft ≈ 135.58 Nm
-        # Formula: Torque = HP * 745.7 / (RPM * 2π/60)
-        torque = PowerTorqueCalculator.hp_to_torque_nm(100, 5252)
-        # HP * 745.7 / (5252 * 2*pi/60) = 74570 / (5252 * 0.10472)
-        expected = 100 * 745.7 / (5252 * 2 * math.pi / 60)
-        self.assertAlmostEqual(torque, expected, places=1)
+    def test_torque_to_hp(self):
+        """Test Nm to HP conversion."""
+        # Formula: HP = Torque(Nm) × RPM × 2π / (60 × 745.7)
+        hp = PowerTorqueCalculator.torque_to_hp(100, 5252)
+        expected = 100 * 5252 * 2 * math.pi / (60 * 745.7)
+        self.assertAlmostEqual(hp, expected, places=1)
 
-    def test_hp_to_torque_zero_rpm(self):
-        """Torque at zero RPM should be 0."""
-        self.assertEqual(PowerTorqueCalculator.hp_to_torque_nm(100, 0), 0.0)
+    def test_torque_to_hp_zero_rpm(self):
+        """HP at zero RPM should be 0."""
+        self.assertEqual(PowerTorqueCalculator.torque_to_hp(100, 0), 0.0)
 
     def test_interpolation_exact_point(self):
         """Interpolation at an exact curve point should return that value."""
-        calc = PowerTorqueCalculator(self.power_points)
-        self.assertEqual(calc.interpolate_power(3000), 200.0)
+        calc = PowerTorqueCalculator(self.torque_points)
+        self.assertEqual(calc.interpolate_torque(3000), 200.0)
 
     def test_interpolation_between_points(self):
         """Interpolation between two points should give intermediate value."""
-        calc = PowerTorqueCalculator(self.power_points)
-        val = calc.interpolate_power(3500)
+        calc = PowerTorqueCalculator(self.torque_points)
+        val = calc.interpolate_torque(3500)
         self.assertGreater(val, 200)
         self.assertLess(val, 280)
 
     def test_interpolation_before_first_point(self):
         """Before first point, should return first Y value."""
-        calc = PowerTorqueCalculator(self.power_points)
-        self.assertEqual(calc.interpolate_power(500), 100.0)
+        calc = PowerTorqueCalculator(self.torque_points)
+        self.assertEqual(calc.interpolate_torque(500), 100.0)
 
     def test_interpolation_after_last_point(self):
         """After last point, should return last Y value."""
-        calc = PowerTorqueCalculator(self.power_points)
-        self.assertEqual(calc.interpolate_power(10000), 425.0)
+        calc = PowerTorqueCalculator(self.torque_points)
+        self.assertEqual(calc.interpolate_torque(10000), 425.0)
 
     def test_boost_no_turbo(self):
         """Without turbo configs, boost should be 0."""
-        calc = PowerTorqueCalculator(self.power_points)
+        calc = PowerTorqueCalculator(self.torque_points)
         self.assertEqual(calc.boost_at_rpm(5000), 0.0)
 
     def test_boost_at_reference_rpm(self):
         """At reference RPM, boost should equal max_boost."""
-        calc = PowerTorqueCalculator(self.power_points, self.turbo_config)
+        calc = PowerTorqueCalculator(self.torque_points, self.turbo_config)
         boost = calc.boost_at_rpm(3000)
         self.assertAlmostEqual(boost, 1.5, places=3)
 
     def test_boost_above_reference_rpm(self):
         """Above reference RPM, boost is clamped to max_boost."""
-        calc = PowerTorqueCalculator(self.power_points, self.turbo_config)
+        calc = PowerTorqueCalculator(self.torque_points, self.turbo_config)
         boost = calc.boost_at_rpm(8000)
         self.assertAlmostEqual(boost, 1.5, places=3)
 
     def test_boost_below_reference_rpm(self):
         """Below reference RPM, boost should be less than max_boost."""
-        calc = PowerTorqueCalculator(self.power_points, self.turbo_config)
+        calc = PowerTorqueCalculator(self.torque_points, self.turbo_config)
         boost = calc.boost_at_rpm(1500)
         self.assertGreater(boost, 0.0)
         self.assertLess(boost, 1.5)
 
     def test_boost_at_zero_rpm(self):
         """At 0 RPM, boost should be 0."""
-        calc = PowerTorqueCalculator(self.power_points, self.turbo_config)
+        calc = PowerTorqueCalculator(self.torque_points, self.turbo_config)
         self.assertEqual(calc.boost_at_rpm(0), 0.0)
 
-    def test_effective_power_with_turbo(self):
-        """Effective power should be base × (1 + boost)."""
-        calc = PowerTorqueCalculator(self.power_points, self.turbo_config)
-        # At 3000 RPM: base=200, boost=1.5 → effective = 200 * 2.5 = 500
-        eff = calc.effective_power(3000)
+    def test_effective_torque_with_turbo(self):
+        """Effective torque should be base_torque × (1 + boost)."""
+        calc = PowerTorqueCalculator(self.torque_points, self.turbo_config)
+        # At 3000 RPM: base=200 Nm, boost=1.5 → effective = 200 * 2.5 = 500 Nm
+        eff = calc.effective_torque(3000)
         self.assertAlmostEqual(eff, 200 * (1 + 1.5), places=1)
 
-    def test_effective_power_no_turbo(self):
-        """Without turbo, effective equals base."""
-        calc = PowerTorqueCalculator(self.power_points)
-        self.assertEqual(calc.effective_power(3000), 200.0)
+    def test_effective_torque_no_turbo(self):
+        """Without turbo, effective torque equals base torque."""
+        calc = PowerTorqueCalculator(self.torque_points)
+        self.assertEqual(calc.effective_torque(3000), 200.0)
 
     def test_compute_curves_structure(self):
         """compute_curves should return all expected keys."""
-        calc = PowerTorqueCalculator(self.power_points, self.turbo_config)
+        calc = PowerTorqueCalculator(self.torque_points, self.turbo_config)
         result = calc.compute_curves()
-        expected_keys = ['rpm_values', 'base_hp', 'base_torque',
-                         'effective_hp', 'effective_torque', 'boost_curve',
-                         'peak_base_hp', 'peak_base_torque',
-                         'peak_eff_hp', 'peak_eff_torque']
+        expected_keys = ['rpm_values', 'base_torque', 'base_hp',
+                         'effective_torque', 'effective_hp', 'boost_curve',
+                         'peak_base_torque', 'peak_base_hp',
+                         'peak_eff_torque', 'peak_eff_hp']
         for key in expected_keys:
             self.assertIn(key, result)
 
     def test_compute_curves_lengths_match(self):
         """All curve arrays should have the same length."""
-        calc = PowerTorqueCalculator(self.power_points, self.turbo_config)
+        calc = PowerTorqueCalculator(self.torque_points, self.turbo_config)
         result = calc.compute_curves()
         n = len(result['rpm_values'])
-        self.assertEqual(len(result['base_hp']), n)
         self.assertEqual(len(result['base_torque']), n)
-        self.assertEqual(len(result['effective_hp']), n)
+        self.assertEqual(len(result['base_hp']), n)
         self.assertEqual(len(result['effective_torque']), n)
+        self.assertEqual(len(result['effective_hp']), n)
         self.assertEqual(len(result['boost_curve']), n)
 
-    def test_peak_values(self):
-        """Peak values should be correctly identified."""
-        calc = PowerTorqueCalculator(self.power_points)
+    def test_peak_torque_values(self):
+        """Peak torque should be correctly identified from LUT data."""
+        calc = PowerTorqueCalculator(self.torque_points)
         result = calc.compute_curves(rpm_step=100)
-        peak_hp_rpm, peak_hp = result['peak_base_hp']
-        # The peak HP in our data is 430 at 8000 RPM
-        self.assertAlmostEqual(peak_hp, 430.0, places=0)
-        self.assertAlmostEqual(peak_hp_rpm, 8000, delta=100)
+        peak_tq_rpm, peak_tq = result['peak_base_torque']
+        # The peak torque in our data is 430 Nm at 8000 RPM
+        self.assertAlmostEqual(peak_tq, 430.0, places=0)
+        self.assertAlmostEqual(peak_tq_rpm, 8000, delta=100)
+
+    def test_hp_derived_from_torque(self):
+        """HP should be correctly derived from torque × RPM."""
+        calc = PowerTorqueCalculator(self.torque_points)
+        result = calc.compute_curves(rpm_step=100)
+        # At 3000 RPM, torque = 200 Nm
+        # HP = 200 * 3000 * 2π / (60 * 745.7) ≈ 84.2 HP
+        idx = result['rpm_values'].index(3000)
+        expected_hp = 200 * 3000 * 2 * math.pi / (60 * 745.7)
+        self.assertAlmostEqual(result['base_hp'][idx], expected_hp, places=0)
 
     def test_empty_points(self):
-        """Empty power points should return empty result."""
+        """Empty torque points should return empty result."""
         calc = PowerTorqueCalculator([])
         result = calc.compute_curves()
         self.assertEqual(len(result['rpm_values']), 0)
@@ -157,7 +166,7 @@ class TestPowerTorqueCalculator(unittest.TestCase):
             {'max_boost': 0.8, 'reference_rpm': 3000, 'gamma': 2.0, 'wastegate': 0.8},
             {'max_boost': 0.7, 'reference_rpm': 4000, 'gamma': 2.0, 'wastegate': 0.7},
         ]
-        calc = PowerTorqueCalculator(self.power_points, twin_turbo)
+        calc = PowerTorqueCalculator(self.torque_points, twin_turbo)
         boost = calc.boost_at_rpm(5000)
         # Both turbos at full boost: 0.8 + 0.7 = 1.5
         self.assertAlmostEqual(boost, 1.5, places=3)

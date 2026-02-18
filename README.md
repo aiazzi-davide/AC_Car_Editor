@@ -14,7 +14,7 @@ A desktop application for modifying Assetto Corsa car configurations.
 - Edit car parameters:
   - **Engine settings** (RPM limits, limiter frequency, turbo boost, wastegate, engine damage thresholds) ✅
   - **Power and coast curves** (visual curve editor for .lut files) ✅
-  - **Power/Torque Calculator** – real-time chart of HP and Nm with turbo boost effect ✅
+  - **Power/Torque Calculator** – real-time chart of power (HP, derived) and torque (Nm) with turbo boost effect ✅
   - **Suspension settings** (spring rates, dampers, rod length) ✅
   - **Drivetrain settings** (differential, gearbox, clutch, AWD/AWD2 support) ✅
   - **Weight and balance** (total mass, center of gravity, fuel) ✅
@@ -85,7 +85,7 @@ python main.py
      - **Engine**: Modify RPM limits, turbo settings, and edit power/coast curves
        - Click "Edit Power Curve" to open the visual curve editor for power.lut
        - Click "Edit Coast Curve" to open the visual curve editor for coast.lut
-       - Click "⚡ Power / Torque Calculator" to see real-time HP and Nm curves (with turbo effect)
+       - Click "⚡ Power / Torque Calculator" to see real-time power and torque curves (with turbo effect)
        - In the curve editor:
          - Drag points to adjust curve shape (graph stays fixed)
          - Add points using the form (integer X/Y values) at the bottom right
@@ -190,7 +190,7 @@ assettocorsa/content/cars/
 - ✅ Backup system
 - ✅ **Car editor dialog with multiple tabs**
   - **Engine tab**: RPM settings (minimum, maximum, limiter, limiter frequency), turbo settings (max boost, wastegate, default adjustment), engine damage thresholds
-  - **Power and coast curve editor**: Visual matplotlib-based editor for .lut files (power.lut uses HP, not kW)
+  - **Power and coast curve editor**: Visual matplotlib-based editor for .lut files (power.lut stores Nm torque)
   - **Suspension tab**: Front and rear suspension settings (spring rate, damper fast/slow bump/rebound, rod length, camber, toe)
   - **Drivetrain tab**: Traction type (RWD/FWD/AWD/AWD2), differential settings (power, coast, preload), gearbox, clutch
   - **Weight & Fuel tab**: Total mass, inertia, center of gravity, steering, fuel settings
@@ -205,9 +205,9 @@ assettocorsa/content/cars/
   - Side-by-side graph and table view
   - Preset curves (Linear, Turbo Lag, NA, V-Shape Coast)
   - Import/export functionality
-  - Real-time preview with axis labels (RPM vs HP, etc.)
+  - Real-time preview with axis labels (RPM vs Nm, etc.)
 - ✅ **Power/Torque Calculator** (Phase 7)
-  - Real-time HP and Nm curves from power.lut
+  - Torque (Nm) and derived HP curves from power.lut
   - Turbo boost effect visualization (NA vs turbo comparison)
   - Peak power/torque statistics
 - ✅ **Setup Manager** (Phase 7)

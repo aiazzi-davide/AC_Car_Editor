@@ -72,7 +72,7 @@ Creare un'applicazione desktop Windows in Python con PyQt5/6 che permetta di mod
 - [x] Implementare aggiunta nuovi punti (click su grafico o form manuale)
 - [x] Implementare eliminazione punti (selezione + delete key)
 - [x] Implementare zoom e pan del grafico
-- [x] Implementare griglia e labels assi (es: RPM vs HP per power.lut)
+- [x] Implementare griglia e labels assi (es: RPM vs Nm per power.lut)
 - [x] Implementare anteprima valori numerici tabella affianco al grafico
 - [x] Implementare import/export curve da altri file .lut
 - [x] Implementare preset curve comuni (lineare, turbo lag, NA, etc.)
@@ -80,7 +80,7 @@ Creare un'applicazione desktop Windows in Python con PyQt5/6 che permetta di mod
 
 ### Fase 6.7: Revisione Documentazione ✅ COMPLETED
 - [x] Revisione progetto in base alla documentazione `assettocorsa_car_data_documentation.md`
-- [x] Correzione unità di misura power.lut da kW a HP (§4.28, §10.3)
+- [x] Correzione unità di misura power.lut: contiene Nm (coppia), non HP (§4.2)
 - [x] Correzione range STEER_RATIO per valori negativi (§4.1)
 - [x] Aggiunta tipo trazione AWD2 al dropdown drivetrain (§4.3)
 - [x] Fix parser LUT per commenti `;` e commenti inline (§10.2)
@@ -148,7 +148,7 @@ I file .lut contengono curve di dati con formato:
 X_VALUE|Y_VALUE
 ```
 Esempi comuni:
-- **power.lut**: RPM|HP (curva di potenza motore)
+- **power.lut**: RPM|Nm (curva di coppia base motore)
 - **coast.lut**: RPM|Nm (freno motore)
 - **turbo.lut**: RPM|boost pressure
 - **ctrl.lut**: Vari controlli elettronici

@@ -925,7 +925,7 @@ Definisce i nodi grafici delle sospensioni animate. Se vuoto, AC usa le impostaz
 
 | File | Descrizione |
 |------|-------------|
-| `power.lut` | `RPM\|HP` – Curva di potenza motore |
+| `power.lut` | `RPM\|Nm` – Curva di coppia base motore |
 | `throttle.lut` | `input%\|output%` – Mappatura pedale gas |
 | `throttle2.lut` | `input%\|output%` – Mappa gas secondaria (mappe motore alt.) |
 | `tyre_wear_*.lut` | `km\|grip%` – Curva usura pneumatico (nome varia per pack) |
@@ -1506,7 +1506,7 @@ File con prefisso `__cm_` sono generati automaticamente da **Content Manager** (
 | `ers.ini` | ⚠️ | Sistema ERS/ibrido (mod avanzati, gmp) |
 | `script.lua` | ⚠️ | Script Lua CSP (logica fisica custom) |
 | `ctrl_*.ini` | ⚠️ | Controller programmabili AWD/ERS/boost (gmp) |
-| `power.lut` | ✅ | Curva di potenza |
+| `power.lut` | ✅ | Curva di coppia base (RPM\|Nm) |
 | `throttle.lut` | ⚠️ | Mappatura gas |
 | `throttle2.lut` | ⚠️ | Mappatura gas secondaria (mappe motore) |
 | `final.rto` | ⚠️ | Rapporti finali disponibili |
@@ -1552,7 +1552,7 @@ Questi dati vengono aggiornati durante la sessione di gioco e sono indipendenti 
 2. **Parsing LUT:** Le LUT usano `|` come separatore. Possono contenere righe vuote o righe di commento con `;`. L'interpolazione tra punti è **lineare**. Il carattere `"` può comparire nei valori di testo (es. `fuelmaps.lut`).
 
 3. **Unità di misura:**
-   - Potenza (`power.lut`): **HP** (cavalli vapore) — NON kW
+   - Coppia base motore (`power.lut`): **Nm** (Newton·metro) — NON HP
    - Coppie: Newton·metro (Nm)
    - Forze/rigidità molle: Newton (N) o N/m
    - Barre antirollio (ARB): N/m
