@@ -456,6 +456,109 @@
                     "PRESSURE_IDEAL": 29
                 }
             }
+        ],
+        "rto_final": [
+            {
+                "id": "rto_final_street",
+                "name": "Street Final Ratios",
+                "description": "Common final drive ratios for street cars",
+                "tags": [
+                    "street",
+                    "common"
+                ],
+                "ratios": [
+                    4.9,
+                    4.63,
+                    4.35,
+                    4.08,
+                    3.89,
+                    3.7
+                ]
+            },
+            {
+                "id": "rto_final_sport",
+                "name": "Sport Final Ratios",
+                "description": "Sport-oriented final drive ratios",
+                "tags": [
+                    "sport",
+                    "performance"
+                ],
+                "ratios": [
+                    5.12,
+                    4.75,
+                    4.44,
+                    4.1,
+                    3.9
+                ]
+            },
+            {
+                "id": "rto_final_drift",
+                "name": "Drift Final Ratios",
+                "description": "Final drive ratios for drifting (lower for angle)",
+                "tags": [
+                    "drift",
+                    "low-ratio"
+                ],
+                "ratios": [
+                    3.9,
+                    3.7,
+                    3.5,
+                    3.3,
+                    3.15
+                ]
+            }
+        ],
+        "rto_ratios": [
+            {
+                "id": "rto_ratios_street",
+                "name": "Street Gear Ratios",
+                "description": "Alternative street gear ratios",
+                "tags": [
+                    "street",
+                    "comfort"
+                ],
+                "ratios": [
+                    3.25,
+                    1.95,
+                    1.35,
+                    1.03,
+                    0.82
+                ]
+            },
+            {
+                "id": "rto_ratios_sport",
+                "name": "Sport Gear Ratios",
+                "description": "Closer sport ratios for track use",
+                "tags": [
+                    "sport",
+                    "close-ratio"
+                ],
+                "ratios": [
+                    3.78,
+                    2.05,
+                    1.32,
+                    0.97,
+                    0.76,
+                    0.625
+                ]
+            },
+            {
+                "id": "rto_ratios_race",
+                "name": "Race Gear Ratios",
+                "description": "Sequential race gearbox ratios",
+                "tags": [
+                    "race",
+                    "sequential"
+                ],
+                "ratios": [
+                    2.65,
+                    1.78,
+                    1.36,
+                    1.09,
+                    0.92,
+                    0.79
+                ]
+            }
         ]
     }
 }

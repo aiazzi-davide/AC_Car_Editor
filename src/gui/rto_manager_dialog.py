@@ -19,7 +19,7 @@ from core.rto_parser import RTOParser
 class RTOManagerDialog(QDialog):
     """Dialog for managing .rto (ratio) files"""
     
-    def __init__(self, car_data_path, parent=None):
+    def __init__(self, car_data_path, parent=None, engine_ini=None, tyres_ini=None):
         super().__init__(parent)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         
@@ -29,6 +29,15 @@ class RTOManagerDialog(QDialog):
         
         self.final_parser = RTOParser(self.final_rto_path)
         self.ratios_parser = RTOParser(self.ratios_rto_path)
+        
+        # Store paths for speed calculation
+        self.engine_ini_path = engine_ini if engine_ini else os.path.join(car_data_path, 'engine.ini')
+        self.tyres_ini_path = tyres_ini if tyres_ini else os.path.join(car_data_path, 'tyres.ini')
+        
+        # Get tire radius and max RPM for speed calculation
+        from core.speed_calculator import SpeedCalculator
+        self.tire_radius = SpeedCalculator.get_tire_radius_from_ini(self.tyres_ini_path)
+        self.max_rpm = SpeedCalculator.get_max_rpm_from_ini(self.engine_ini_path)
         
         self.init_ui()
         self.load_data()
@@ -92,6 +101,12 @@ class RTOManagerDialog(QDialog):
         desc.setWordWrap(True)
         layout.addWidget(desc)
         
+        # Import from library button
+        import_btn = QPushButton("📥 Import from Library...")
+        import_btn.clicked.connect(self.import_final_from_library)
+        import_btn.setStyleSheet("background-color: #2196F3; color: white; font-weight: bold; padding: 6px;")
+        layout.addWidget(import_btn)
+        
         # List and controls
         list_layout = QHBoxLayout()
         
@@ -140,6 +155,12 @@ class RTOManagerDialog(QDialog):
         edit_grp.setLayout(edit_form)
         layout.addWidget(edit_grp)
         
+        # Speed info label
+        self.final_speed_info = QLabel()
+        self.final_speed_info.setStyleSheet("color: #666; font-style: italic;")
+        self.final_speed_info.setWordWrap(True)
+        layout.addWidget(self.final_speed_info)
+        
         # File status
         self.final_status = QLabel()
         layout.addWidget(self.final_status)
@@ -158,6 +179,12 @@ class RTOManagerDialog(QDialog):
         )
         desc.setWordWrap(True)
         layout.addWidget(desc)
+        
+        # Import from library button
+        import_btn = QPushButton("📥 Import from Library...")
+        import_btn.clicked.connect(self.import_ratios_from_library)
+        import_btn.setStyleSheet("background-color: #2196F3; color: white; font-weight: bold; padding: 6px;")
+        layout.addWidget(import_btn)
         
         # List and controls
         list_layout = QHBoxLayout()
@@ -207,6 +234,12 @@ class RTOManagerDialog(QDialog):
         edit_grp.setLayout(edit_form)
         layout.addWidget(edit_grp)
         
+        # Speed info label
+        self.ratios_speed_info = QLabel()
+        self.ratios_speed_info.setStyleSheet("color: #666; font-style: italic;")
+        self.ratios_speed_info.setWordWrap(True)
+        layout.addWidget(self.ratios_speed_info)
+        
         # File status
         self.ratios_status = QLabel()
         layout.addWidget(self.ratios_status)
@@ -238,6 +271,9 @@ class RTOManagerDialog(QDialog):
             self.ratios_status.setText(f"✅ File: {os.path.basename(self.ratios_rto_path)} ({len(gear_ratios)} ratios)")
         else:
             self.ratios_status.setText(f"⚠️ File: {os.path.basename(self.ratios_rto_path)} (not found - will be created on save)")
+        
+        # Update speed info
+        self._update_speed_info()
     
     # Final ratios methods
     def on_final_selected(self, row):
@@ -347,3 +383,98 @@ class RTOManagerDialog(QDialog):
                 "Error Saving",
                 f"Failed to save RTO files:\n{str(e)}"
             )
+    
+    def import_final_from_library(self):
+        """Import final drive ratios from component library"""
+        from gui.component_selector_dialog import ComponentSelectorDialog
+        from PyQt5.QtWidgets import QDialog as _QD
+        
+        dialog = ComponentSelectorDialog('rto_final', self)
+        if dialog.exec_() == _QD.Accepted:
+            component = dialog.get_selected_component()
+            if component and 'ratios' in component:
+                # Clear current ratios and add from preset
+                self.final_parser.set_ratios(component['ratios'])
+                self.load_data()
+                QMessageBox.information(
+                    self,
+                    "Preset Loaded",
+                    f"Loaded '{component['name']}'\n"
+                    f"{len(component['ratios'])} ratios imported.\n\n"
+                    f"Remember to save changes."
+                )
+    
+    def import_ratios_from_library(self):
+        """Import gear ratios from component library"""
+        from gui.component_selector_dialog import ComponentSelectorDialog
+        from PyQt5.QtWidgets import QDialog as _QD
+        
+        dialog = ComponentSelectorDialog('rto_ratios', self)
+        if dialog.exec_() == _QD.Accepted:
+            component = dialog.get_selected_component()
+            if component and 'ratios' in component:
+                # Clear current ratios and add from preset
+                self.ratios_parser.set_ratios(component['ratios'])
+                self.load_data()
+                QMessageBox.information(
+                    self,
+                    "Preset Loaded",
+                    f"Loaded '{component['name']}'\n"
+                    f"{len(component['ratios'])} ratios imported.\n\n"
+                    f"Remember to save changes."
+                )
+    
+    def _update_speed_info(self):
+        """Update speed estimation info labels"""
+        from core.speed_calculator import SpeedCalculator
+        
+        # Check if we have required data
+        if not self.tire_radius or not self.max_rpm:
+            missing = []
+            if not self.tire_radius:
+                missing.append("tire radius (tyres.ini)")
+            if not self.max_rpm:
+                missing.append("max RPM (engine.ini)")
+            
+            info_text = f"⚠️ Speed estimation unavailable - missing: {', '.join(missing)}"
+            if hasattr(self, 'final_speed_info'):
+                self.final_speed_info.setText(info_text)
+            if hasattr(self, 'ratios_speed_info'):
+                self.ratios_speed_info.setText(info_text)
+            return
+        
+        # Update final ratios speed info
+        if hasattr(self, 'final_speed_info'):
+            final_ratios = self.final_parser.get_ratios()
+            if final_ratios:
+                # Use a typical 1st gear ratio for estimation
+                typical_1st = 3.5
+                speeds = []
+                for final in final_ratios[:3]:  # Show first 3
+                    speed = SpeedCalculator.calculate_max_speed(
+                        typical_1st, final, self.max_rpm, self.tire_radius
+                    )
+                    speeds.append(f"{final:.2f} → ~{speed:.0f} km/h (1st gear)")
+                
+                info_text = f"📊 Speed estimates with typical 1st gear ({typical_1st}): " + " | ".join(speeds)
+                if len(final_ratios) > 3:
+                    info_text += f" (+{len(final_ratios)-3} more)"
+                self.final_speed_info.setText(info_text)
+        
+        # Update gear ratios speed info  
+        if hasattr(self, 'ratios_speed_info'):
+            gear_ratios = self.ratios_parser.get_ratios()
+            if gear_ratios:
+                # Use a typical final ratio for estimation
+                typical_final = 4.1
+                speeds = []
+                for i, gear in enumerate(gear_ratios[:3], 1):  # Show first 3
+                    speed = SpeedCalculator.calculate_max_speed(
+                        gear, typical_final, self.max_rpm, self.tire_radius
+                    )
+                    speeds.append(f"G{i}: ~{speed:.0f} km/h")
+                
+                info_text = f"📊 Speed estimates with final {typical_final}: " + " | ".join(speeds)
+                if len(gear_ratios) > 3:
+                    info_text += f" (+{len(gear_ratios)-3} more gears)"
+                self.ratios_speed_info.setText(info_text)

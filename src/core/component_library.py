@@ -18,6 +18,8 @@ class ComponentLibrary:
         'aero',
         'gears',
         'tyres',
+        'rto_final',
+        'rto_ratios',
     ]
     
     def __init__(self, library_path: str = 'src/components/library.json'):
@@ -436,6 +438,56 @@ class ComponentLibrary:
                     'DY0': 1.52,
                     'PRESSURE_IDEAL': 29,
                 }
+            }
+        ]
+        
+        # RTO Final Drive Ratios presets
+        self.components['rto_final'] = [
+            {
+                'id': 'rto_final_street',
+                'name': 'Street Final Ratios',
+                'description': 'Common final drive ratios for street cars',
+                'tags': ['street', 'common'],
+                'ratios': [4.90, 4.63, 4.35, 4.08, 3.89, 3.70]
+            },
+            {
+                'id': 'rto_final_sport',
+                'name': 'Sport Final Ratios',
+                'description': 'Sport-oriented final drive ratios',
+                'tags': ['sport', 'performance'],
+                'ratios': [5.12, 4.75, 4.44, 4.10, 3.90]
+            },
+            {
+                'id': 'rto_final_drift',
+                'name': 'Drift Final Ratios',
+                'description': 'Final drive ratios for drifting (lower for angle)',
+                'tags': ['drift', 'low-ratio'],
+                'ratios': [3.90, 3.70, 3.50, 3.30, 3.15]
+            }
+        ]
+        
+        # RTO Alternative Gear Sets presets
+        self.components['rto_ratios'] = [
+            {
+                'id': 'rto_ratios_street',
+                'name': 'Street Gear Ratios',
+                'description': 'Alternative street gear ratios',
+                'tags': ['street', 'comfort'],
+                'ratios': [3.250, 1.950, 1.350, 1.030, 0.820]
+            },
+            {
+                'id': 'rto_ratios_sport',
+                'name': 'Sport Gear Ratios',
+                'description': 'Closer sport ratios for track use',
+                'tags': ['sport', 'close-ratio'],
+                'ratios': [3.780, 2.050, 1.320, 0.970, 0.760, 0.625]
+            },
+            {
+                'id': 'rto_ratios_race',
+                'name': 'Race Gear Ratios',
+                'description': 'Sequential race gearbox ratios',
+                'tags': ['race', 'sequential'],
+                'ratios': [2.650, 1.780, 1.360, 1.090, 0.920, 0.790]
             }
         ]
     
