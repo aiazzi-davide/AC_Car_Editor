@@ -156,7 +156,6 @@ class MainWindow(QMainWindow):
         button_layout.addWidget(self.edit_btn)
         
         self.open_folder_btn = QPushButton("Open Folder")
-        self.open_folder_btn.setEnabled(False)
         self.open_folder_btn.clicked.connect(self.open_car_folder)
         button_layout.addWidget(self.open_folder_btn)
         
@@ -224,10 +223,6 @@ class MainWindow(QMainWindow):
         can_edit = car_info['has_data_folder'] or car_info['has_data_acd']
         self.edit_btn.setEnabled(can_edit)
         
-        # Enable open folder button only if car has unpacked data folder
-        can_open_folder = car_info['has_data_folder']
-        self.open_folder_btn.setEnabled(can_open_folder)
-        
         # Enable backup button only if car has unpacked data folder
         can_backup = car_info['has_data_folder']
         self.backup_btn.setEnabled(can_backup)
@@ -280,33 +275,33 @@ class MainWindow(QMainWindow):
             )
     
     def open_car_folder(self):
-        """Open the current car's data folder in the system file explorer."""
+        """Open the current car's folder in the system file explorer."""
         if not self.current_car:
             return
         
         import subprocess
         import platform
         
-        # Get the car's data folder path
-        car_data_path = self.car_manager.get_car_data_path(self.current_car)
+        # Get the car's folder path
+        car_path = self.car_manager.get_car_path(self.current_car)
         
-        if not os.path.exists(car_data_path):
+        if not os.path.exists(car_path):
             QMessageBox.warning(
                 self,
                 "Folder Not Found",
-                f"The car's data folder does not exist:\n{car_data_path}"
+                f"The car's folder does not exist:\n{car_path}"
             )
             return
         
         try:
             system = platform.system()
             if system == 'Windows':
-                subprocess.Popen(['explorer', car_data_path])
+                subprocess.Popen(['explorer', car_path])
             elif system == 'Darwin':  # macOS
-                subprocess.Popen(['open', car_data_path])
+                subprocess.Popen(['open', car_path])
             else:  # Linux and others
-                subprocess.Popen(['xdg-open', car_data_path])
-            self.statusBar.showMessage(f"Opened folder: {car_data_path}")
+                subprocess.Popen(['xdg-open', car_path])
+            self.statusBar.showMessage(f"Opened folder: {car_path}")
         except Exception as e:
             QMessageBox.warning(self, "Error", f"Could not open folder:\n{str(e)}")
             
