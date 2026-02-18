@@ -130,12 +130,6 @@ class CarEditorDialog(QDialog):
 
         btn_layout = QHBoxLayout()
         
-        self.open_folder_btn = QPushButton("Open Folder")
-        self.open_folder_btn.clicked.connect(self.open_car_folder)
-        btn_layout.addWidget(self.open_folder_btn)
-        
-        btn_layout.addStretch()
-        
         self.save_btn = QPushButton("Save Changes")
         self.save_btn.clicked.connect(self.save_changes)
         btn_layout.addWidget(self.save_btn)
@@ -1596,22 +1590,4 @@ class CarEditorDialog(QDialog):
         self._load_aero_data()
         self._load_brakes_data()
         self._load_tyres_data()
-
-    # ------------------------------------------------------------------ Utilities
-
-    def open_car_folder(self):
-        """Open the car's data folder in the system file explorer."""
-        import subprocess
-        import platform
-        
-        try:
-            system = platform.system()
-            if system == 'Windows':
-                subprocess.Popen(['explorer', self.car_data_path])
-            elif system == 'Darwin':  # macOS
-                subprocess.Popen(['open', self.car_data_path])
-            else:  # Linux and others
-                subprocess.Popen(['xdg-open', self.car_data_path])
-        except Exception as e:
-            QMessageBox.warning(self, "Error", f"Could not open folder:\n{str(e)}")
 
