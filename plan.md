@@ -28,7 +28,7 @@ Creare un'applicazione desktop Windows in Python con PyQt5/6 che permetta di mod
 - [x] Implementare parser per file .lut (lookup tables con coppie X|Y)
 - [x] Implementare writer per file .lut (mantenendo formato originale)
 - [x] Implementare classe LUTCurve per gestire curve (add/remove/edit points, interpolazione)
-- [ ] Implementare funzione unpack data.acd non criptato (ricerca tool QuickBMS o implementazione custom)
+- [x] Implementare funzione unpack data.acd non criptato (ricerca tool QuickBMS o implementazione custom)
 - [x] Implementare backup automatico prima delle modifiche
 
 ### Fase 3: Sistema Componenti Pre-Built ✅ COMPLETED
