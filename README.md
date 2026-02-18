@@ -17,7 +17,7 @@ A desktop application for modifying Assetto Corsa car configurations.
   - **Weight and balance** (total mass, center of gravity, fuel) ✅
   - **Aerodynamics** (drag coefficient, downforce, wing angles) ✅
   - **Brakes** (max torque, bias, handbrake, adjust step) ✅
-  - Tire settings (coming soon)
+  - **Tyres (Pneumatici)** (compound selection, dimensions, grip, pressure) ✅
 - **Visual curve editor** for power.lut and coast.lut files:
   - Interactive matplotlib-based graph editor
   - Integer-only values for precise car tuning
@@ -83,9 +83,12 @@ python main.py
          - Export curves to other .lut files
          - Save changes (automatically creates a .bak backup)
      - **Suspension**: Adjust spring rates, damper settings for front and rear
-     - **Differential**: Configure differential power, coast, and preload
-     - **Weight**: Set total mass and center of gravity position
-     - **Aerodynamics**: Adjust drag coefficient and downforce settings
+     - **Drivetrain**: Configure differential power, coast, and preload, select traction type (RWD/FWD/AWD/AWD2)
+     - **Weight & Fuel**: Set total mass, center of gravity position, and fuel tank capacity
+     - **Aerodynamics**: Adjust drag coefficient, downforce settings, and wing configurations
+     - **Brakes**: Set maximum brake torque, brake bias, handbrake torque
+     - **Pneumatici (Tyres)**: Select compound, adjust tyre dimensions (width, radius), grip coefficients (DX0/DY0), and ideal pressure
+   - Click "Open Folder" to open the car's data folder in your system file explorer
    - Click "Save Changes" to apply modifications
    - A backup file (.bak) is automatically created for each modified file
    - **After editing**: Application prompts to delete data.acd to ensure changes are used in-game
