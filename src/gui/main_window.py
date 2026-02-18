@@ -240,9 +240,12 @@ class MainWindow(QMainWindow):
             pixmap = QPixmap(preview_path)
             if not pixmap.isNull():
                 # Scale to fit while maintaining aspect ratio
+                # Use fallback dimensions if the label hasn't been laid out yet
+                label_w = max(self.preview_label.width() - 10, 300)
+                label_h = max(self.preview_label.height() - 10, 150)
                 scaled_pixmap = pixmap.scaled(
-                    self.preview_label.width() - 10,
-                    self.preview_label.height() - 10,
+                    label_w,
+                    label_h,
                     Qt.KeepAspectRatio,
                     Qt.SmoothTransformation
                 )
