@@ -652,6 +652,30 @@ class CarEditorDialog(QDialog):
         self.gear_ratios_grp.setLayout(gear_ratios_form)
         layout.addWidget(self.gear_ratios_grp)
 
+        # --- RTO Files Management ---
+        rto_grp = QGroupBox("Selectable Gear Ratios (final.rto / ratios.rto)")
+        rto_layout = QVBoxLayout()
+        
+        rto_info = QLabel(
+            "RTO files define alternative gear ratios selectable in-game setup menu.\n"
+            "Useful for allowing players to customize their car setup."
+        )
+        rto_info.setWordWrap(True)
+        rto_layout.addWidget(rto_info)
+        
+        manage_rto_btn = QPushButton("⚙ Manage RTO Files...")
+        manage_rto_btn.clicked.connect(self.open_rto_manager)
+        manage_rto_btn.setToolTip("Open RTO file manager to edit final.rto and ratios.rto")
+        rto_layout.addWidget(manage_rto_btn)
+        
+        # Status label for RTO files
+        self.rto_status_label = QLabel()
+        self.rto_status_label.setStyleSheet("color: #666; font-size: 10px;")
+        rto_layout.addWidget(self.rto_status_label)
+        
+        rto_grp.setLayout(rto_layout)
+        layout.addWidget(rto_grp)
+
         # --- Clutch ---
         clutch_grp = QGroupBox("Clutch  (drivetrain.ini › CLUTCH)")
         clutch_form = QFormLayout()
@@ -1019,6 +1043,7 @@ class CarEditorDialog(QDialog):
         self._load_aero_data()
         self._load_brakes_data()
         self._load_tyres_data()
+        self._update_rto_status()
 
     def _load_engine_data(self):
         if not self.engine_ini:
@@ -1408,6 +1433,35 @@ class CarEditorDialog(QDialog):
         from gui.setup_manager_dialog import SetupManagerDialog
         dlg = SetupManagerDialog(self.car_data_path, parent=self)
         dlg.exec_()
+
+    def open_rto_manager(self):
+        """Open the RTO Manager dialog."""
+        from gui.rto_manager_dialog import RTOManagerDialog
+        dlg = RTOManagerDialog(self.car_data_path, parent=self)
+        dlg.exec_()
+        # Update status after dialog closes
+        self._update_rto_status()
+    
+    def _update_rto_status(self):
+        """Update RTO files status label."""
+        if not hasattr(self, 'rto_status_label'):
+            return
+        
+        final_rto = os.path.join(self.car_data_path, 'final.rto')
+        ratios_rto = os.path.join(self.car_data_path, 'ratios.rto')
+        
+        status_parts = []
+        if os.path.exists(final_rto):
+            status_parts.append("✅ final.rto")
+        else:
+            status_parts.append("⚠️ final.rto (not found)")
+        
+        if os.path.exists(ratios_rto):
+            status_parts.append("✅ ratios.rto")
+        else:
+            status_parts.append("⚠️ ratios.rto (not found)")
+        
+        self.rto_status_label.setText(" | ".join(status_parts))
 
     def _toggle_gear_ratios(self):
         """Toggle visibility of gear ratios section."""
