@@ -285,6 +285,28 @@ class TestSetupManager(unittest.TestCase):
         """Should return False for missing preset."""
         self.assertFalse(self.manager.delete_preset('nonexistent'))
 
+    def test_path_traversal_save(self):
+        """Should reject preset names with path traversal attempts."""
+        result = self.manager.save_preset('../../../etc/malicious', {'FUEL': 40})
+        self.assertFalse(result)
+
+    def test_path_traversal_load(self):
+        """Should reject preset names with path traversal attempts."""
+        result = self.manager.load_preset('../../secrets')
+        self.assertIsNone(result)
+
+    def test_path_traversal_delete(self):
+        """Should reject preset names with path separators."""
+        result = self.manager.delete_preset('subdir/preset')
+        self.assertFalse(result)
+
+    def test_empty_preset_name(self):
+        """Should reject empty preset names."""
+        self.assertFalse(self.manager.save_preset('', {'FUEL': 40}))
+        self.assertFalse(self.manager.save_preset('  ', {'FUEL': 40}))
+        self.assertIsNone(self.manager.load_preset(''))
+        self.assertFalse(self.manager.delete_preset(''))
+
 
 def run_tests():
     loader = unittest.TestLoader()

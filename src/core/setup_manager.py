@@ -50,9 +50,10 @@ class SetupManager:
                 continue
             # Skip non-parameter sections
             if section_name in ('DISPLAY_METHOD', 'GEARS'):
-                tab = section.get('TAB', 'GENERIC')
-                if 'NAME' not in section and 'MIN' not in section:
-                    continue
+                continue
+            # Only include sections that have MIN (actual tuning parameters)
+            if 'MIN' not in section:
+                continue
             tab = section.get('TAB', 'GENERIC')
             name = section.get('NAME', section_name)
             param = {
@@ -89,6 +90,19 @@ class SetupManager:
     def _ensure_setups_dir(self):
         os.makedirs(self.setups_dir, exist_ok=True)
 
+    @staticmethod
+    def _safe_preset_name(preset_name: str) -> Optional[str]:
+        """Sanitize preset name to prevent path traversal."""
+        if not preset_name or not isinstance(preset_name, str):
+            return None
+        name = preset_name.strip()
+        if not name:
+            return None
+        # Reject any path separators or parent-directory references
+        if os.sep in name or '/' in name or '\\' in name or '..' in name:
+            return None
+        return name
+
     def list_presets(self) -> List[str]:
         """List available preset names (track names)."""
         if not os.path.isdir(self.setups_dir):
@@ -108,11 +122,14 @@ class SetupManager:
         Returns:
             True if saved successfully
         """
+        name = self._safe_preset_name(preset_name)
+        if not name:
+            return False
         self._ensure_setups_dir()
-        path = os.path.join(self.setups_dir, f'{preset_name}.json')
+        path = os.path.join(self.setups_dir, f'{name}.json')
         try:
             data = {
-                'name': preset_name,
+                'name': name,
                 'values': values,
             }
             with open(path, 'w', encoding='utf-8') as f:
@@ -124,7 +141,10 @@ class SetupManager:
 
     def load_preset(self, preset_name: str) -> Optional[Dict[str, float]]:
         """Load a setup preset and return its values dict."""
-        path = os.path.join(self.setups_dir, f'{preset_name}.json')
+        name = self._safe_preset_name(preset_name)
+        if not name:
+            return None
+        path = os.path.join(self.setups_dir, f'{name}.json')
         if not os.path.exists(path):
             return None
         try:
@@ -137,7 +157,10 @@ class SetupManager:
 
     def delete_preset(self, preset_name: str) -> bool:
         """Delete a saved preset."""
-        path = os.path.join(self.setups_dir, f'{preset_name}.json')
+        name = self._safe_preset_name(preset_name)
+        if not name:
+            return False
+        path = os.path.join(self.setups_dir, f'{name}.json')
         if not os.path.exists(path):
             return False
         try:
