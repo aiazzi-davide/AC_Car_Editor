@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (
     QSplitter, QGroupBox, QTextEdit, QDialog
 )
 from PyQt5.QtCore import Qt, QSize
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QPixmap
 
 # Add parent directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -141,6 +141,15 @@ class MainWindow(QMainWindow):
         self.car_name_label.setStyleSheet("font-size: 18px; font-weight: bold;")
         layout.addWidget(self.car_name_label)
         
+        # Car preview image
+        self.car_preview_label = QLabel()
+        self.car_preview_label.setAlignment(Qt.AlignCenter)
+        self.car_preview_label.setMaximumHeight(300)
+        self.car_preview_label.setScaledContents(False)
+        self.car_preview_label.setText("No preview available")
+        self.car_preview_label.setStyleSheet("border: 1px solid #ccc; background-color: #f0f0f0;")
+        layout.addWidget(self.car_preview_label)
+        
         # Car details
         self.car_details = QTextEdit()
         self.car_details.setReadOnly(True)
@@ -204,6 +213,22 @@ class MainWindow(QMainWindow):
         
         # Update UI
         self.car_name_label.setText(car_info.get('display_name', car_name))
+        
+        # Update preview image
+        preview_path = car_info.get('preview_path')
+        if preview_path and os.path.exists(preview_path):
+            pixmap = QPixmap(preview_path)
+            # Scale to fit while maintaining aspect ratio
+            scaled_pixmap = pixmap.scaled(
+                self.car_preview_label.width() - 10,
+                self.car_preview_label.maximumHeight() - 10,
+                Qt.KeepAspectRatio,
+                Qt.SmoothTransformation
+            )
+            self.car_preview_label.setPixmap(scaled_pixmap)
+        else:
+            self.car_preview_label.clear()
+            self.car_preview_label.setText("No preview available")
         
         # Build details text
         details = []

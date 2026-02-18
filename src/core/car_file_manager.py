@@ -93,6 +93,26 @@ class CarFileManager:
         acd_path = os.path.join(self.get_car_path(car_name), 'data.acd')
         return os.path.exists(acd_path)
     
+    def get_car_preview_path(self, car_name: str) -> Optional[str]:
+        """
+        Get path to car preview image (preview.png or preview.jpg)
+        
+        Args:
+            car_name: Car folder name
+            
+        Returns:
+            Full path to preview image or None if not found
+        """
+        ui_dir = os.path.join(self.get_car_path(car_name), 'ui')
+        
+        # Check for preview.png first, then preview.jpg
+        for ext in ['.png', '.jpg', '.jpeg']:
+            preview_path = os.path.join(ui_dir, f'preview{ext}')
+            if os.path.exists(preview_path):
+                return preview_path
+        
+        return None
+    
     def get_car_info(self, car_name: str) -> Dict[str, Any]:
         """
         Get basic car information
@@ -109,6 +129,7 @@ class CarFileManager:
             'has_data_acd': self.has_data_acd(car_name),
             'display_name': car_name,
             'brand': '',
+            'preview_path': None,
         }
         
         # Try to get display name from ui_car.json
@@ -122,6 +143,9 @@ class CarFileManager:
                     info['brand'] = ui_data.get('brand', '')
             except Exception as e:
                 print(f"Error reading ui_car.json: {e}")
+        
+        # Get preview image path
+        info['preview_path'] = self.get_car_preview_path(car_name)
         
         return info
     

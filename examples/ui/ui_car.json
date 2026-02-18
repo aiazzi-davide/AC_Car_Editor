@@ -1,0 +1,16 @@
+{
+  "name": "Example Car",
+  "brand": "Test Brand",
+  "description": "Test car for AC Car Editor",
+  "tags": ["road", "sports"],
+  "class": "road",
+  "specs": {
+    "bhp": "450",
+    "torque": "500Nm",
+    "weight": "1200kg",
+    "topspeed": "300",
+    "acceleration": "3.5",
+    "pwratio": "2.67"
+  },
+  "year": 2020
+}
