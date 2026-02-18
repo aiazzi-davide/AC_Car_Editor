@@ -19,7 +19,10 @@ A desktop application for modifying Assetto Corsa car configurations.
   - **Drivetrain settings** (differential, gearbox, clutch, AWD/AWD2 support) ✅
     - **Gear Ratio Editor**: Individual gear ratio editing (R, 1-10) with collapsible UI ✅
     - **Gear Ratio Presets**: Import from library (4 presets: Street 5-speed, Sport 6-speed, Race 6-speed, Drift 6-speed) ✅
+    - **Speed Estimation**: Real-time max speed calculation for each gear (based on RPM, tire radius, ratios) ✅
     - **RTO File Manager**: Edit final.rto and ratios.rto for in-game selectable gear ratios ✅
+      - Import RTO presets from library (3 final ratio sets, 3 gear ratio sets)
+      - Speed estimation for alternative ratios
   - **Weight and balance** (total mass, center of gravity, fuel) ✅
   - **Aerodynamics** (drag coefficient, downforce, wing angles) ✅
   - **Brakes** (max torque, bias, handbrake, adjust step) ✅
