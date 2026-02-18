@@ -196,53 +196,65 @@ SUSP_REPAIR_TIME_SEC=30         ; secondi per riparazione sospensioni
 
 ### 4.2 `engine.ini` – Motore
 
+Definisce le caratteristiche fisiche del propulsore, inclusi inerzia, limitatori e sistema di sovralimentazione.
+
 ```ini
 [HEADER]
 VERSION=1
-POWER_CURVE=power.lut           ; file LUT curva di potenza (RPM→HP o Nm)
-COAST_CURVE=FROM_COAST_REF      ; tipo curva frenata motore: FROM_COAST_REF, COAST_DATA, o file .lut
+POWER_CURVE=power.lut           ; file LUT curva di coppia base (RPM|Nm)
+COAST_CURVE=FROM_COAST_REF      ; curva frenata motore (o COAST_DATA, o file .lut)
 
 [ENGINE_DATA]
 ALTITUDE_SENSITIVITY=0.1        ; perdita potenza per altitudine (0=nessuna, 1=massima)
 INERTIA=0.15                    ; inerzia volano in kg·m²
 LIMITER=7500                    ; giri limitatore RPM (0 = disabilitato)
-LIMITER_HZ=30                   ; frequenza attivazione limitatore in Hz
-MINIMUM=750                     ; RPM minimo (al minimo)
-DEFAULT_TURBO_ADJUSTMENT=0.7    ; regolazione turbo predefinita se regolabile dal cockpit
+LIMITER_HZ=30                   ; frequenza attivazione taglio (Hz)
+MINIMUM=750                     ; RPM minimo (idle)
+DEFAULT_TURBO_ADJUSTMENT=1.0    ; % pressione turbo predefinita (0.0 - 1.0)
 
-[COAST_REF]                     ; usato se COAST_CURVE=FROM_COAST_REF
-RPM=7600                        ; RPM di riferimento per la coppia di freno motore
-TORQUE=90                       ; coppia di freno motore in Nm a quel RPM
-NON_LINEARITY=0                 ; 0=lineare, 1=esponenziale
+[TURBO_0]                       ; Sezione Turbocompressore
+LAG_DN=0.980                    ; inerzia calo pressione (valori vicini a 1 = lento)
+LAG_UP=0.982                    ; inerzia salita pressione (spool-up)
+MAX_BOOST=1.3                   ; Pressione massima in BAR
+WASTEGATE=1.3                   ; Pressione apertura wastegate
+DISPLAY_MAX_BOOST=1.3           ; Valore visualizzato nelle app
+REFERENCE_RPM=2600              ; RPM dove il turbo raggiunge la massima efficienza
+GAMMA=2.7                       ; curva risposta gas/turbo
+COCKPIT_ADJUSTABLE=1            ; 1=regolabile in-game (1-0 tasti turbo)
 
-[TURBO_0]                       ; sezione turbocompressore (più turbo: TURBO_1, TURBO_2...)
-LAG_DN=0.980                    ; inerzia pressione in calo (0-1, vicino a 1 = più lento)
-LAG_UP=0.982                    ; inerzia pressione in salita
-MAX_BOOST=1.3                   ; pressione massima in bar
-WASTEGATE=1.3                   ; pressione wastegate in bar
-DISPLAY_MAX_BOOST=1.3           ; valore mostrato nel cockpit
-REFERENCE_RPM=2600              ; RPM a cui il boost raggiunge il massimo
-GAMMA=2.7                       ; curva di risposta del turbo
-COCKPIT_ADJUSTABLE=1            ; 1=regolabile dal cockpit
-
-[DAMAGE]
-TURBO_BOOST_THRESHOLD=1.5       ; soglia boost oltre cui il motore si danneggia
-TURBO_DAMAGE_K=5                ; danno al secondo per (boost - threshold)
-RPM_THRESHOLD=8000              ; RPM sopra cui il motore si danneggia
-RPM_DAMAGE_K=1                  ; danno al secondo per RPM > soglia
 ```
 
-**File `power.lut`:** Mappa `RPM|PotenzaHP` (cavalli, non kW). Esempio:
-```
-0|40
-1000|83
-5000|163
-7500|120
-```
+#### **Calcolo Potenza e Coppia (Fondamentale)**
 
-> **Nota:** La curva di potenza in `power.lut` usa **HP (cavalli vapore)** come unità di uscita, non kW. AC mostra internamente la curva calcolandone la coppia derivata. Il campo `POWER_CURVE` in `engine.ini` punta a questo file oppure a un LUT con coppia in Nm (specificato esplicitamente da alcuni modder — verificare sempre i valori massimi per capire l'unità usata: HP plausibile ~50-1000, Nm plausibile ~100-2000).
+Il file puntato da `POWER_CURVE` (solitamente `power.lut`) contiene valori di **Coppia (Nm)** mappati sugli RPM, **non** la potenza in cavalli, nonostante il nome.
+
+La logica di calcolo cambia drasticamente tra aspirato e turbo:
+
+**1. Motori Aspirati (N/A):**
+I valori nel `power.lut` sono definitivi.
+
+* Formula: `Coppia_Finale = Valore_LUT`
+
+**2. Motori Turbo:**
+I valori nel `power.lut` rappresentano il motore **"spento" (base)** senza l'ausilio del turbo. La pressione del turbo agisce come **moltiplicatore** della coppia base.
+
+* Formula: `Coppia_Finale = Valore_LUT * (1.0 + Pressione_Turbo)`
+
+> **Esempio Pratico (Ferrari F40 Kunos):**
+> * `power.lut`: Picco di **228 Nm** a 4000 rpm.
+> * `engine.ini`: `MAX_BOOST=1.53` (bar).
+> * **Risultato in gioco:** 228 * (1 + 1.53) = **~577 Nm** totali.
+> 
+> 
+
+⚠️ **Attenzione per il Modding:** Se state creando un'auto turbo, non inserite la coppia finale nel LUT, altrimenti l'auto avrà prestazioni doppie (Coppia finale + Boost). Inserite la coppia che il motore avrebbe se fosse aspirato/sgonfio.
 
 ---
+
+### Altre Note Importanti:
+
+* **Unità di misura:** Sebbene AC supporti LUT in HP per vecchi formati, lo standard Kunos (Physics v10+) utilizza **Nm** nel `power.lut`.
+* **App Engine:** Per verificare i valori reali mentre moddate, usate l'app di sviluppo "Engine" in-game, che mostra `Curre Torque` (totale) e `Turbo Boost`.
 
 ### 4.3 `drivetrain.ini` – Trasmissione
 

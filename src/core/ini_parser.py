@@ -73,8 +73,16 @@ class IniParser:
         """
         try:
             value = self.config.get(section, key)
-            # Strip whitespace from value
-            return value.strip() if value else value
+            if value:
+                value = value.strip()
+                # AC INI files often use inline comments without preceding whitespace
+                # (e.g. "LAG_UP=0.9965; some comment"), which configparser's
+                # inline_comment_prefixes doesn't handle. Strip them manually.
+                for prefix in (';', '#'):
+                    idx = value.find(prefix)
+                    if idx != -1:
+                        value = value[:idx].strip()
+            return value if value else value
         except (configparser.NoSectionError, configparser.NoOptionError):
             return default
     
