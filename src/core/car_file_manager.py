@@ -215,28 +215,29 @@ class CarFileManager:
     
     def delete_data_acd(self, car_name: str) -> bool:
         """
-        Delete data.acd file for a car
-        
-        This is necessary after editing car files because AC prioritizes
-        data.acd over the unpacked data/ folder
-        
+        Rename data.acd to data.acd.bak for a car.
+
+        AC prioritizes data.acd over the unpacked data/ folder, so renaming
+        it disables it while keeping a recoverable backup.
+
         Args:
             car_name: Car folder name
-            
+
         Returns:
-            True if deleted successfully or file doesn't exist
+            True if renamed successfully or file doesn't exist
         """
         acd_path = os.path.join(self.get_car_path(car_name), 'data.acd')
-        
+        bak_path = acd_path + '.bak'
+
         if not os.path.exists(acd_path):
             return True
-        
+
         try:
-            os.remove(acd_path)
-            print(f"Deleted data.acd for {car_name}")
+            os.rename(acd_path, bak_path)
+            print(f"Renamed data.acd to data.acd.bak for {car_name}")
             return True
         except Exception as e:
-            print(f"Error deleting data.acd: {e}")
+            print(f"Error renaming data.acd: {e}")
             return False
     
     def _find_quickbms_path(self) -> Optional[str]:

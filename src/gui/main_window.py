@@ -286,7 +286,7 @@ class MainWindow(QMainWindow):
                 "Unpack data.acd",
                 f"Car '{self.current_car}' has a packed data.acd file.\n\n"
                 "Do you want to unpack it for editing?\n\n"
-                "Note: The data.acd file will be deleted after unpacking "
+                "Note: The data.acd file will be renamed to data.acd.bak after unpacking "
                 "to ensure AC uses the unpacked files.",
                 QMessageBox.Yes | QMessageBox.No,
                 QMessageBox.Yes
@@ -325,31 +325,31 @@ class MainWindow(QMainWindow):
         editor = CarEditorDialog(self.current_car, car_data_path, self)
         result = editor.exec_()
         
-        # After editing, prompt to delete data.acd if it still exists
+        # After editing, prompt to rename data.acd if it still exists
         if result == QDialog.Accepted and self.car_manager.has_data_acd(self.current_car):
             reply = QMessageBox.question(
                 self,
-                "Delete data.acd",
+                "Rename data.acd",
                 f"Car '{self.current_car}' still has a data.acd file.\n\n"
                 "Assetto Corsa prioritizes data.acd over the unpacked data folder.\n"
-                "Do you want to delete data.acd to ensure your changes are used in-game?",
+                "Do you want to rename data.acd to data.acd.bak to ensure your changes are used in-game?",
                 QMessageBox.Yes | QMessageBox.No,
                 QMessageBox.Yes
             )
             
             if reply == QMessageBox.Yes:
                 if self.car_manager.delete_data_acd(self.current_car):
-                    self.statusBar.showMessage("data.acd deleted successfully")
+                    self.statusBar.showMessage("data.acd renamed to data.acd.bak")
                     QMessageBox.information(
                         self,
                         "Success",
-                        "data.acd deleted. Your changes will now be used in-game."
+                        "data.acd renamed to data.acd.bak. Your changes will now be used in-game."
                     )
                 else:
                     QMessageBox.warning(
                         self,
                         "Error",
-                        "Failed to delete data.acd. You may need to delete it manually."
+                        "Failed to rename data.acd. You may need to rename it manually."
                     )
         
     def open_component_library(self):
