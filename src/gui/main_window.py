@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
     QListWidget, QLabel, QPushButton, QStatusBar,
     QMenuBar, QAction, QFileDialog, QMessageBox,
-    QSplitter, QGroupBox, QTextEdit
+    QSplitter, QGroupBox, QTextEdit, QDialog
 )
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QIcon
@@ -269,6 +269,53 @@ class MainWindow(QMainWindow):
         if not self.current_car:
             return
         
+        # Check if car has data.acd but no data folder
+        has_acd = self.car_manager.has_data_acd(self.current_car)
+        has_data = self.car_manager.has_data_folder(self.current_car)
+        
+        if has_acd and not has_data:
+            # Need to unpack data.acd
+            reply = QMessageBox.question(
+                self,
+                "Unpack Required",
+                f"Car '{self.current_car}' has data.acd but no data folder.\n\n"
+                "Do you want to unpack it now?\n\n"
+                "Note: After unpacking, data.acd will be deleted so that\n"
+                "Assetto Corsa uses the unpacked data folder.",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.Yes
+            )
+            
+            if reply == QMessageBox.Yes:
+                self.statusBar.showMessage("Unpacking data.acd...")
+                success = self.car_manager.unpack_data_acd(self.current_car, delete_acd=True)
+                
+                if success:
+                    QMessageBox.information(
+                        self,
+                        "Unpack Successful",
+                        "data.acd has been unpacked successfully.\n"
+                        "The data.acd file has been deleted."
+                    )
+                    self.statusBar.showMessage("Unpack successful")
+                    # Refresh car info
+                    self.load_car_info(self.current_car)
+                else:
+                    QMessageBox.warning(
+                        self,
+                        "Unpack Failed",
+                        "Failed to unpack data.acd.\n\n"
+                        "This may be because:\n"
+                        "- The file is encrypted\n"
+                        "- quickBMS is not available (Windows only)\n"
+                        "- An error occurred during extraction\n\n"
+                        "Check console for details."
+                    )
+                    self.statusBar.showMessage("Unpack failed")
+                    return
+            else:
+                return
+        
         # Get car data path
         car_data_path = self.car_manager.get_car_data_path(self.current_car)
         
@@ -276,13 +323,47 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(
                 self,
                 "Error",
-                f"Car data folder not found:\n{car_data_path}"
+                f"Car data folder not found:\n{car_data_path}\n\n"
+                "Please unpack the car first."
             )
             return
         
         # Open car editor dialog
         editor = CarEditorDialog(self.current_car, car_data_path, self)
-        editor.exec_()
+        result = editor.exec_()
+        
+        # After editing, if data.acd still exists, ask if user wants to delete it
+        if result == QDialog.Accepted and self.car_manager.has_data_acd(self.current_car):
+            reply = QMessageBox.question(
+                self,
+                "Delete data.acd",
+                "Changes have been saved to the data folder.\n\n"
+                "data.acd file still exists. Assetto Corsa will use\n"
+                "data.acd instead of your modified data folder.\n\n"
+                "Do you want to delete data.acd now?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.Yes
+            )
+            
+            if reply == QMessageBox.Yes:
+                if self.car_manager.delete_data_acd(self.current_car):
+                    QMessageBox.information(
+                        self,
+                        "Deleted",
+                        "data.acd has been deleted.\n"
+                        "Assetto Corsa will now use your modified data folder."
+                    )
+                    self.statusBar.showMessage("data.acd deleted")
+                    # Refresh car info
+                    self.load_car_info(self.current_car)
+                else:
+                    QMessageBox.warning(
+                        self,
+                        "Delete Failed",
+                        "Failed to delete data.acd.\n"
+                        "You may need to delete it manually."
+                    )
+        
         
     def open_component_library(self):
         """Open component library manager"""
