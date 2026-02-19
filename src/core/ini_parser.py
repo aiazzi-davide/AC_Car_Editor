@@ -20,6 +20,7 @@ class IniParser:
         self.file_path = file_path
         self.config = configparser.ConfigParser(inline_comment_prefixes=(';', '#'))
         self.config.optionxform = str  # Preserve case sensitivity
+        self._dirty = False  # True only after set_value() is called
         
         if os.path.exists(file_path):
             self.load()
@@ -39,11 +40,14 @@ class IniParser:
     
     def save(self, backup=True):
         """
-        Save INI file
-        
+        Save INI file. Does nothing if no values were changed via set_value().
+
         Args:
             backup: Create backup before saving
         """
+        if not self._dirty:
+            return
+
         if backup and os.path.exists(self.file_path):
             backup_path = self.file_path + '.bak'
             try:
@@ -54,7 +58,10 @@ class IniParser:
         
         try:
             with open(self.file_path, 'w', encoding='utf-8') as f:
-                self.config.write(f)
+                # space_around_delimiters=False writes KEY=VALUE (no spaces).
+                # AC requires this exact format; KEY = VALUE causes crashes.
+                self.config.write(f, space_around_delimiters=False)
+            self._dirty = False
         except Exception as e:
             print(f"Error saving INI file {self.file_path}: {e}")
             raise
@@ -88,17 +95,26 @@ class IniParser:
     
     def set_value(self, section: str, key: str, value: Any):
         """
-        Set value in INI file
-        
+        Set value in INI file. Marks the parser dirty only if the value
+        actually differs from what is currently stored.
+
         Args:
             section: Section name
             key: Key name
             value: Value to set
         """
+        new_str = str(value)
         if not self.config.has_section(section):
             self.config.add_section(section)
-        
-        self.config.set(section, key, str(value))
+            self._dirty = True
+        else:
+            try:
+                current = self.config.get(section, key)
+            except configparser.NoOptionError:
+                current = None
+            if current != new_str:
+                self._dirty = True
+        self.config.set(section, key, new_str)
     
     def get_section(self, section: str) -> Dict[str, str]:
         """

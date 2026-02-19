@@ -684,9 +684,10 @@ class CarEditorDialog(QDialog):
         rto_layout = QVBoxLayout()
         
         rto_info = QLabel(
-            "RTO files define alternative gear ratios selectable in-game setup menu.\n"
+            "<span>RTO files define alternative gear ratios selectable in the <b>in-game setup menu</b>.</span><br/>"
             "Useful for allowing players to customize their car setup."
         )
+        rto_info.setTextFormat(Qt.RichText)
         rto_info.setWordWrap(True)
         rto_layout.addWidget(rto_info)
 

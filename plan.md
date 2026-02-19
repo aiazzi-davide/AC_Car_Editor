@@ -101,7 +101,7 @@ Creare un'applicazione desktop Windows in Python con PyQt5/6 che permetta di mod
 - [ ] Supportare altri .lut, implementare un editor generico di lut per altri tipi di curve specifici per ogni macchina (es. traction_control.lut throttle.lut) ci deve essere quindi un selettore di lut disponibili e una sezione per modificarli - Future enhancement
 - [ ] Implementare smooth curve (interpolazione spline opzionale) - Future enhancement
 - [ ] implementare possibilità per rendere un auto stage 1/2/3 con un click: con differenze tra auto turbo e NA (es. se NA stage 1 = mappa più aggressiva, stage 2 = aggiunta turbo, stage 3 = aggiunta turbo + modifiche meccaniche, se turbo stage 1 = aumento boost, stage 2 = aumento boost, stage 3 = aumento boost + modifiche meccaniche, aerodimanica, etc.) - Future enhancement
-- [ ] Implementare sistema undo/redo modifiche
+- [ ] Implementare sistema undo/redo modifiche (tramite file .bak ?) è sufficiente poter ripristinare un bakup dell'ultima modifica
 - [ ] Investigare gestione sound motore (bank files, GUIDs)
 
 ### Fase 8: Testing e Refinement
