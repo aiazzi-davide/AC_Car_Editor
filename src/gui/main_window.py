@@ -21,6 +21,7 @@ from core.car_file_manager import CarFileManager
 from core.component_library import ComponentLibrary
 from gui.car_editor_dialog import CarEditorDialog
 from gui.component_library_dialog import ComponentLibraryDialog
+from gui.ui_editor_dialog import UIEditorDialog
 
 
 class MainWindow(QMainWindow):
@@ -186,6 +187,12 @@ class MainWindow(QMainWindow):
         self.open_folder_btn.clicked.connect(self.open_car_folder)
         button_layout.addWidget(self.open_folder_btn)
         
+        self.edit_ui_btn = QPushButton("Edit UI")
+        self.edit_ui_btn.setToolTip("Edit car name, brand, icons in ui/ folder")
+        self.edit_ui_btn.setEnabled(False)
+        self.edit_ui_btn.clicked.connect(self.edit_ui_metadata)
+        button_layout.addWidget(self.edit_ui_btn)
+        
         self.backup_btn = QPushButton("Create Backup")
         self.backup_btn.setEnabled(False)
         self.backup_btn.clicked.connect(self.create_backup)
@@ -273,6 +280,9 @@ class MainWindow(QMainWindow):
         # Enable edit button if car has data folder OR data.acd
         can_edit = car_info['has_data_folder'] or car_info['has_data_acd']
         self.edit_btn.setEnabled(can_edit)
+        
+        # Enable UI edit button (no data folder required, just ui_car.json)
+        self.edit_ui_btn.setEnabled(True)
         
         # Enable backup button only if car has unpacked data folder
         can_backup = car_info['has_data_folder']
@@ -461,6 +471,22 @@ class MainWindow(QMainWindow):
                         "Failed to rename data.acd. You may need to rename it manually."
                     )
         
+    def edit_ui_metadata(self):
+        """Open UI metadata editor"""
+        if not self.current_car:
+            return
+        
+        car_path = self.car_manager.get_car_path(self.current_car)
+        
+        # Open UI editor dialog
+        editor = UIEditorDialog(self.current_car, car_path, self)
+        result = editor.exec_()
+        
+        if result == QDialog.Accepted:
+            self.statusBar.showMessage(f"UI metadata updated for {self.current_car}")
+            # Refresh car info to show updated name
+            self.on_car_selected(self.car_list.currentItem(), None)
+    
     def open_component_library(self):
         """Open component library manager"""
         dialog = ComponentLibraryDialog(self)
