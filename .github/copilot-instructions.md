@@ -22,16 +22,20 @@
 | `CarFileManager`   | `car_file_manager.py`  | Navigate `content/cars/[car_name]/data/`, unpack via quickBMS, `delete_data_acd()` renames to `.bak`   |
 | `ConfigManager`    | `config.py`            | Store AC path in `config.json` (default: `C:\Program Files (x86)\Steam\steamapps\common\assettocorsa`) |
 | `ComponentLibrary` | `component_library.py` | JSON-based reusable components (schema: `{id, name, description, tags, data}`)                         |
+| `UIManager`        | `ui_manager.py`        | Parse/write `ui/ui_car.json` (car name, brand, tags, specs, etc. for AC menu display)                 |
+| `StageTuner`       | `stage_tuner.py`       | Stage-based tuning (Stage 1/2/3) with NA vs Turbo detection and different upgrade logic                |
 
 ### GUI Classes
 
 | Class                     | File                           | Purpose                                                                              |
 | ------------------------- | ------------------------------ | ------------------------------------------------------------------------------------ |
-| `MainWindow`              | `main_window.py`               | Car list, edit dialog launcher                                                       |
-| `CarEditorDialog`         | `car_editor_dialog.py`         | 7 tabs (Engine, Suspension, Drivetrain, Weight, Aero, Brakes, Pneumatici), each in `QScrollArea` |
+| `MainWindow`              | `main_window.py`               | Car list, edit dialog launcher, UI editor button                                     |
+| `CarEditorDialog`         | `car_editor_dialog.py`         | 7 tabs (Engine, Suspension, Drivetrain, Weight, Aero, Brakes, Pneumatici), each in `QScrollArea`, stage tuning button |
 | `CurveEditorWidget`       | `curve_editor_widget.py`       | Matplotlib-based interactive LUT editor (drag points, add/remove, smooth via PCHIP)  |
 | `ComponentSelectorDialog` | `component_selector_dialog.py` | "Import from Library" buttons in each tab                                            |
 | `ComponentLibraryDialog`  | `component_library_dialog.py`  | Full CRUD component manager                                                          |
+| `UIEditorDialog`          | `ui_editor_dialog.py`          | Edit ui_car.json metadata (name, brand, tags, specs, author)                        |
+| `StageTuningDialog`       | `stage_tuning_dialog.py`       | One-click stage upgrades (1/2/3) with NA vs Turbo logic                             |
 
 ## Critical Patterns
 
@@ -62,6 +66,15 @@ from core.ini_parser import IniParser
 - **Tyres**: Count `FRONT_N` sections → compound selector dropdown, load/save based on selected compound
 - **Suspension details**: `CG_LOCATION` + `WHEELBASE` live in `suspensions.ini [BASIC]`, not `car.ini`
 
+### Stage Tuning System
+
+- **Detection**: `StageTuner._detect_turbo()` checks for `TURBO_0` section in `engine.ini`
+- **Stage tracking**: Uses `[HEADER]` section in `engine.ini` with `STAGE_LEVEL` key (0=stock, 1/2/3=staged)
+- **NA progression**: Stage 1 (+8% power) → Stage 2 (add turbo) → Stage 3 (turbo + mechanical + aero)
+- **Turbo progression**: Stage 1 (+15% boost) → Stage 2 (+30% boost) → Stage 3 (+50% boost + mechanical + aero)
+- **Stage 3 mechanical**: -15% inertia, -5% weight, +500 RPM limiter, +20% differential power
+- **Stage 3 aero**: -15% drag (CD), +15% downforce (CL on wings)
+
 ### Backup Strategy
 
 - **Parser-level**: `parser.save(backup=True)` → `.bak` alongside original
@@ -72,7 +85,7 @@ from core.ini_parser import IniParser
 - **Examples folder**: `examples/data/` (complete real AC car, 47 INI + 14 LUT files), `examples/data.acd` (original packed)
 - **Test fixtures**: `tests/test_data/test_car/` — tests copy fixtures to temp files, never modify originals
 - **Run app**: `python main.py`
-- **Run tests**: `python -m unittest tests.test_core` or `python tests/test_gui.py`
+- **Run tests**: `python -m unittest tests.test_core tests.test_phase7_features tests.test_rto_parser tests.test_speed_calculator tests.test_ui_stage -v` (104 total tests: 23 core + 38 phase7 + 11 RTO + 13 speed + 17 UI/stage + 2 other)
 
 ## Documentation Maintenance
 

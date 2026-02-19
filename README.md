@@ -11,6 +11,14 @@ A desktop application for modifying Assetto Corsa car configurations.
 - Create backups of car data
 - **Automatic unpacking of data.acd files** using quickBMS ✅
 - **Automatic data.acd deletion after editing** to ensure changes are used in-game ✅
+- **UI Metadata Editor** - Edit car name, brand, description, tags, specs, and author info in ui_car.json ✅
+- **Stage Tuning System** - One-click performance upgrades (Stage 1/2/3) with different logic for NA vs Turbo cars ✅
+  - **NA Stage 1**: More aggressive ECU mapping (+8% power)
+  - **NA Stage 2**: Add turbo system (turbo conversion)
+  - **NA Stage 3**: Full turbo build with mechanical and aero upgrades
+  - **Turbo Stage 1**: ECU remap (+15% boost)
+  - **Turbo Stage 2**: Turbo upgrade (+30% boost)
+  - **Turbo Stage 3**: Full build (+50% boost, mechanical, aero, differential upgrades)
 - Edit car parameters:
   - **Engine settings** (RPM limits, limiter frequency, turbo boost, wastegate, engine damage thresholds) ✅
   - **Power and coast curves** (visual curve editor for .lut files) ✅
@@ -84,7 +92,16 @@ python main.py
    - Car preview image is displayed (if available in ui/preview.png or preview.jpg)
    - Car details are shown below the preview
 
-5. Edit a car:
+5. Edit UI Metadata (optional):
+   - Select a car and click "Edit UI" button
+   - Modify car name, brand, class, country, year
+   - Edit description (supports HTML tags like `<br>` for line breaks)
+   - Add/edit tags for filtering (comma-separated)
+   - Update specs (power, torque, weight, top speed, acceleration, power/weight ratio)
+   - Set author name and version
+   - Changes are saved to ui/ui_car.json with automatic backup
+
+6. Edit a car:
    - Select a car (with or without unpacked data folder)
    - **If car has only data.acd**: Application will prompt to unpack it using quickBMS
    - Click "Edit Car" to open the editor
@@ -109,6 +126,12 @@ python main.py
      - **Brakes**: Set maximum brake torque, brake bias, handbrake torque
      - **Pneumatici (Tyres)**: Select compound, adjust tyre dimensions (width, radius), grip coefficients (DX0/DY0), and ideal pressure
    - Click "🔧 Setup Manager" to manage track-specific setup presets (save/load/delete)
+   - Click "🚀 Stage Tuning" for one-click performance upgrades:
+     - **Stage 1**: Light tuning (NA: +8% power, Turbo: +15% boost)
+     - **Stage 2**: Moderate tuning (NA: add turbo, Turbo: +30% boost)
+     - **Stage 3**: Full build (NA/Turbo: major boost/power + weight reduction + aero + mechanical upgrades)
+     - Automatic detection of NA vs turbocharged engines
+     - Backup creation for all modifications
    - Click "Open Folder" to open the car's data folder in your system file explorer
    - Click "Save Changes" to apply modifications
    - A backup file (.bak) is automatically created for each modified file
@@ -221,12 +244,28 @@ assettocorsa/content/cars/
   - Read and display setup.ini parameters grouped by tab
   - Save/load/delete track-specific setup presets as JSON
   - Preset management UI with parameter editing
+- ✅ **UI Metadata Editor** (Phase 7)
+  - Edit ui_car.json: car name, brand, class, country, year
+  - Edit description with HTML support
+  - Manage tags for filtering
+  - Update specs (power, torque, weight, top speed, acceleration, power/weight)
+  - Set author and version information
+  - Automatic backup creation
+- ✅ **Stage Tuning System** (Phase 7)
+  - One-click performance upgrades (Stage 1/2/3)
+  - Automatic detection of NA vs turbocharged engines
+  - Different tuning logic for NA and turbo cars
+  - Stage 1: Light tuning (power/boost increase)
+  - Stage 2: Moderate tuning (NA: turbo conversion, Turbo: more boost)
+  - Stage 3: Full build (power, weight, aero, mechanical, differential upgrades)
+  - Stage marker tracking in engine.ini
+  - Reset to stock functionality
 
 ### Coming Soon
 - Undo/redo system
-- UI folder modifications (car name in menus, icons)
-- Generic LUT editor for all curve types
+- Generic LUT editor for all curve types (traction_control.lut, throttle.lut, etc.)
 - Smooth curve interpolation (spline)
+- Sound engine investigation (bank files, GUIDs)
 
 ## License
 
