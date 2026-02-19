@@ -27,7 +27,7 @@ class IniParser:
     def load(self):
         """Load INI file"""
         try:
-            self.config.read(self.file_path, encoding='utf-8')
+            self.config.read(self.file_path, encoding='utf-8-sig')
         except configparser.ParsingError as e:
             print(f"Error loading INI file {self.file_path}: {e}")
             print(f"Warning: INI file contains parsing errors. The file may have malformed lines.")

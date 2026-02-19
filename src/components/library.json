@@ -250,6 +250,315 @@
                 }
             }
         ],
-        "tyres": []
+        "gears": [
+            {
+                "id": "gears_street_5speed",
+                "name": "Street 5-Speed",
+                "description": "Standard 5-speed manual gearbox for street cars",
+                "tags": [
+                    "street",
+                    "5-speed",
+                    "manual"
+                ],
+                "data": {
+                    "COUNT": 5,
+                    "GEAR_R": -3.4,
+                    "GEAR_1": 3.25,
+                    "GEAR_2": 1.95,
+                    "GEAR_3": 1.35,
+                    "GEAR_4": 1.03,
+                    "GEAR_5": 0.82,
+                    "FINAL": 4.1
+                }
+            },
+            {
+                "id": "gears_sport_6speed",
+                "name": "Sport 6-Speed",
+                "description": "Sport 6-speed gearbox with closer ratios",
+                "tags": [
+                    "sport",
+                    "6-speed",
+                    "manual"
+                ],
+                "data": {
+                    "COUNT": 6,
+                    "GEAR_R": -3.38,
+                    "GEAR_1": 3.78,
+                    "GEAR_2": 2.05,
+                    "GEAR_3": 1.32,
+                    "GEAR_4": 0.97,
+                    "GEAR_5": 0.76,
+                    "GEAR_6": 0.625,
+                    "FINAL": 4.65
+                }
+            },
+            {
+                "id": "gears_race_6speed",
+                "name": "Race 6-Speed",
+                "description": "Racing sequential gearbox with short ratios",
+                "tags": [
+                    "race",
+                    "6-speed",
+                    "sequential"
+                ],
+                "data": {
+                    "COUNT": 6,
+                    "GEAR_R": -2.9,
+                    "GEAR_1": 2.65,
+                    "GEAR_2": 1.78,
+                    "GEAR_3": 1.36,
+                    "GEAR_4": 1.09,
+                    "GEAR_5": 0.92,
+                    "GEAR_6": 0.79,
+                    "FINAL": 3.9
+                }
+            },
+            {
+                "id": "gears_drift_6speed",
+                "name": "Drift 6-Speed",
+                "description": "Drift-oriented gearbox with tall first gear",
+                "tags": [
+                    "drift",
+                    "6-speed",
+                    "manual"
+                ],
+                "data": {
+                    "COUNT": 6,
+                    "GEAR_R": -3.1,
+                    "GEAR_1": 3.58,
+                    "GEAR_2": 2.36,
+                    "GEAR_3": 1.685,
+                    "GEAR_4": 1.312,
+                    "GEAR_5": 1.03,
+                    "GEAR_6": 0.82,
+                    "FINAL": 3.7
+                }
+            }
+        ],
+        "tyres": [
+            {
+                "id": "tyres_street",
+                "name": "Street Tyres",
+                "description": "Standard street tyres for daily driving",
+                "tags": [
+                    "street",
+                    "comfort",
+                    "all-season"
+                ],
+                "data": {
+                    "NAME": "Street",
+                    "SHORT_NAME": "ST",
+                    "WIDTH": 0.225,
+                    "RADIUS": 0.325,
+                    "RIM_RADIUS": 0.2286,
+                    "DX0": 1.3,
+                    "DY0": 1.3,
+                    "PRESSURE_IDEAL": 30
+                }
+            },
+            {
+                "id": "tyres_sport",
+                "name": "Sport Tyres",
+                "description": "High-performance sport tyres for spirited driving",
+                "tags": [
+                    "sport",
+                    "performance",
+                    "summer"
+                ],
+                "data": {
+                    "NAME": "Sport",
+                    "SHORT_NAME": "SP",
+                    "WIDTH": 0.245,
+                    "RADIUS": 0.33,
+                    "RIM_RADIUS": 0.2413,
+                    "DX0": 1.45,
+                    "DY0": 1.4,
+                    "PRESSURE_IDEAL": 32
+                }
+            },
+            {
+                "id": "tyres_semislick",
+                "name": "Semi-Slick Tyres",
+                "description": "Track-focused semi-slick tyres",
+                "tags": [
+                    "track",
+                    "semi-slick",
+                    "race"
+                ],
+                "data": {
+                    "NAME": "Semi-Slick",
+                    "SHORT_NAME": "SS",
+                    "WIDTH": 0.265,
+                    "RADIUS": 0.345,
+                    "RIM_RADIUS": 0.254,
+                    "DX0": 1.6,
+                    "DY0": 1.55,
+                    "PRESSURE_IDEAL": 35
+                }
+            },
+            {
+                "id": "tyres_slick_soft",
+                "name": "Soft Slick Tyres",
+                "description": "Racing slicks - soft compound for maximum grip",
+                "tags": [
+                    "race",
+                    "slick",
+                    "soft"
+                ],
+                "data": {
+                    "NAME": "Soft Slick",
+                    "SHORT_NAME": "SS",
+                    "WIDTH": 0.305,
+                    "RADIUS": 0.33,
+                    "RIM_RADIUS": 0.254,
+                    "DX0": 1.75,
+                    "DY0": 1.7,
+                    "PRESSURE_IDEAL": 27
+                }
+            },
+            {
+                "id": "tyres_slick_medium",
+                "name": "Medium Slick Tyres",
+                "description": "Racing slicks - medium compound for balanced performance",
+                "tags": [
+                    "race",
+                    "slick",
+                    "medium"
+                ],
+                "data": {
+                    "NAME": "Medium Slick",
+                    "SHORT_NAME": "MS",
+                    "WIDTH": 0.305,
+                    "RADIUS": 0.33,
+                    "RIM_RADIUS": 0.254,
+                    "DX0": 1.65,
+                    "DY0": 1.62,
+                    "PRESSURE_IDEAL": 28
+                }
+            },
+            {
+                "id": "tyres_slick_hard",
+                "name": "Hard Slick Tyres",
+                "description": "Racing slicks - hard compound for long-stint durability",
+                "tags": [
+                    "race",
+                    "slick",
+                    "hard"
+                ],
+                "data": {
+                    "NAME": "Hard Slick",
+                    "SHORT_NAME": "HS",
+                    "WIDTH": 0.305,
+                    "RADIUS": 0.33,
+                    "RIM_RADIUS": 0.254,
+                    "DX0": 1.55,
+                    "DY0": 1.52,
+                    "PRESSURE_IDEAL": 29
+                }
+            }
+        ],
+        "rto_final": [
+            {
+                "id": "rto_final_street",
+                "name": "Street Final Ratios",
+                "description": "Common final drive ratios for street cars",
+                "tags": [
+                    "street",
+                    "common"
+                ],
+                "ratios": [
+                    4.9,
+                    4.63,
+                    4.35,
+                    4.08,
+                    3.89,
+                    3.7
+                ]
+            },
+            {
+                "id": "rto_final_sport",
+                "name": "Sport Final Ratios",
+                "description": "Sport-oriented final drive ratios",
+                "tags": [
+                    "sport",
+                    "performance"
+                ],
+                "ratios": [
+                    5.12,
+                    4.75,
+                    4.44,
+                    4.1,
+                    3.9
+                ]
+            },
+            {
+                "id": "rto_final_drift",
+                "name": "Drift Final Ratios",
+                "description": "Final drive ratios for drifting (lower for angle)",
+                "tags": [
+                    "drift",
+                    "low-ratio"
+                ],
+                "ratios": [
+                    3.9,
+                    3.7,
+                    3.5,
+                    3.3,
+                    3.15
+                ]
+            }
+        ],
+        "rto_ratios": [
+            {
+                "id": "rto_ratios_street",
+                "name": "Street Gear Ratios",
+                "description": "Alternative street gear ratios",
+                "tags": [
+                    "street",
+                    "comfort"
+                ],
+                "ratios": [
+                    3.25,
+                    1.95,
+                    1.35,
+                    1.03,
+                    0.82
+                ]
+            },
+            {
+                "id": "rto_ratios_sport",
+                "name": "Sport Gear Ratios",
+                "description": "Closer sport ratios for track use",
+                "tags": [
+                    "sport",
+                    "close-ratio"
+                ],
+                "ratios": [
+                    3.78,
+                    2.05,
+                    1.32,
+                    0.97,
+                    0.76,
+                    0.625
+                ]
+            },
+            {
+                "id": "rto_ratios_race",
+                "name": "Race Gear Ratios",
+                "description": "Sequential race gearbox ratios",
+                "tags": [
+                    "race",
+                    "sequential"
+                ],
+                "ratios": [
+                    2.65,
+                    1.78,
+                    1.36,
+                    1.09,
+                    0.92,
+                    0.79
+                ]
+            }
+        ]
     }
 }

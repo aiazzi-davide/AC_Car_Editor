@@ -133,13 +133,22 @@ File testo con coppie `INPUT|OUTPUT` su ogni riga. Definiscono curve di mappatur
 
 ### 3.3 File `.rto` (Ratio File)
 
-Elenco di rapporti disponibili per il setup. Ogni riga: `VALORE|VALORE` (stesso valore ripetuto).
+Elenco di rapporti disponibili per il setup. Sono supportati due formati:
 
+**Formato standard** — `VALORE|VALORE` (stesso valore decimale ripetuto):
 ```
 4.90|4.90
 4.63|4.63
 4.08|4.08
 ```
+
+**Formato con etichetta frazione** — `LABEL|VALORE` (etichetta denti corona//pignone, valore decimale a destra):
+```
+80//31|3.88
+10//44|4.37
+80//31|3.83
+```
+In questo formato l'etichetta prima del `|` è ignorata; viene usato solo il valore decimale dopo il `|`.
 
 ---
 
@@ -337,6 +346,12 @@ LOCK_N=1                        ; 1=blocca il cambio se la marcia è troppo bass
 [DAMAGE]                        ; danno cambio
 RPM_WINDOW_K=100                ; finestra RPM per calcolo danno cambio (Nm/RPM)
 ```
+
+> **Nota sui Rapporti:** I valori definiti in `drivetrain.ini` sono i rapporti fissi dell'auto.
+> * **Auto Stradali:** Il gioco usa esclusivamente questi valori.
+> * **Auto da Corsa:** Se in `setup.ini` è attivo `USE_GEARSET=1`, questi valori vengono ignorati o usati come default, e il gioco carica i rapporti dai file `.rto` o dalle sezioni `GEAR_SET`.
+> 
+> 
 
 ---
 
@@ -606,56 +621,61 @@ PRESENT=1
 ```
 
 ---
-
 ### 4.9 `setup.ini` – Parametri di Setup
 
-Definisce tutti i parametri configurabili dal menu di setup in-game.
+Definisce quali parametri sono modificabili dal giocatore nel menu di setup. Gestisce anche la logica dei rapporti del cambio (fissi vs modificabili).
+
+> ⚠️ **Formato critico:** Assetto Corsa richiede il formato `CHIAVE=VALORE` **senza spazi** attorno al `=`.
+> Il formato `CHIAVE = VALORE` (con spazi) causa il **crash del gioco** al caricamento.
+> Per questo motivo `setup.ini` non va mai riscritto tramite `configparser.write()` (che aggiunge spazi),
+> ma solo tramite editing testuale diretto che preserva il formato originale riga per riga.
 
 ```ini
 [DISPLAY_METHOD]
-SHOW_CLICKS=1                   ; 1=mostra il numero di click
+SHOW_CLICKS=1                   ; 1=mostra i click, 0=mostra valori continui
 
+; --- GESTIONE CAMBIO (GEARS) ---
 [GEARS]
-USE_GEARSET=1                   ; 1=usa set di marce predefiniti; 0=slider individuali
+USE_GEARSET=0                   ; Interruttore logico fondamentale:
+                                ; 0 = AUTO STRADALE (Rapporti fissi). Il menu "Gears" è disabilitato.
+                                ;     Il gioco usa i valori definiti in drivetrain.ini.
+                                ; 1 = AUTO DA CORSA (Rapporti modificabili). Abilita il menu "Gears".
+                                ;     Il gioco cerca le definizioni qui sotto o nei file .rto.
 
-; Ogni sezione definisce un parametro di setup:
-[PRESSURE_LF]
-SHOW_CLICKS=0
-TAB=TYRES                       ; tab del menu (TYRES, ALIGNMENT, DAMPERS, SUSPENSION, DRIVETRAIN, GENERIC, FUEL)
-NAME=Pressure LF                ; etichetta visualizzata
-MIN=10                          ; valore minimo
-MAX=60                          ; valore massimo
-STEP=1                          ; incremento per click
-POS_X=0.5                       ; posizione nel layout UI
-POS_Y=2
+; --- ESEMPIO CONFIGURAZIONE RACING (da usare solo se USE_GEARSET=1) ---
 
-; Parametri setup comuni:
-; [PRESSURE_LF/RF/LR/RR]       - pressione gomme
-; [CAMBER_LF/RF/LR/RR]         - camber
-; [TOE_OUT_LF/RF/LR/RR]        - convergenza
-; [DAMP_BUMP_LF/RF/LR/RR]      - smorzamento compressione
-; [DAMP_REBOUND_LF/RF/LR/RR]   - smorzamento estensione
-; [SPRING_RATE_LF/RF/LR/RR]    - rigidità molle
-; [ROD_LENGTH_LF/RF/LR/RR]     - altezza da terra (via bieletta)
-; [ARB_FRONT / ARB_REAR]       - rigidità barre antirollio
-; [DIFF_POWER/COAST/PRELOAD]   - differenziale
-; [FRONT_BIAS]                  - ripartizione frenata
-; [FUEL]                        - litri di carburante
-; [BRAKE_POWER_MULT]           - potenza freni
+[FINAL_GEAR_RATIO]              ; Menu per cambiare il rapporto finale (Final Drive)
+RATIOS=final.rto                ; Legge la lista di rapporti dal file data/final.rto
+NAME=Final Ratio
+POS_X=0.5
+POS_Y=0
+HELP=HELP_FINAL_GEAR_RATIO
 
-[GEAR_SET_0]                    ; se USE_GEARSET=1, definisce set di rapporti
-NAME=OEM_S13/S14_5spd
+[GEAR_SET_0]                    ; Definisce un set di rapporti per le marce
+NAME=Lunghi (Example)
 GEAR_1=3.321
-GEAR_2=1.902
-; ...
+GEAR_2=2.000
+; ... (definisce i rapporti specifici per questo set)
+
+; In alternativa a GEAR_SET fissi, si possono usare file .rto per ogni singola marcia:
+[GEAR_1]
+RATIOS=ratios.rto         ; File contenente tutti gli ingranaggi disponibili
 
 [FINAL_GEAR_RATIO]
 RATIOS=final.rto                ; file .rto con i rapporti finali disponibili
+
 ```
 
-**File `final.rto`:** Lista di rapporti finali selezionabili. Formato: `VALORE|VALORE`.
+**File `.rto` (Ratio File):**
+**File `final.rto`:** Lista di rapporti finali selezionabili. Formato: `VALORE|VALORE` (standard) oppure `ETICHETTA|VALORE` (es. `80//31|3.88`).
 **File `ratios.rto`:** Lista di rapporti cambio alternativi.
 
+```text
+3.90|3.90
+4.10|4.10
+4.30|4.30
+
+```
 ---
 
 ### 4.10 `lods.ini` – Livelli di Dettaglio

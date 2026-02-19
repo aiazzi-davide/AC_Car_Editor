@@ -16,7 +16,10 @@ class ComponentLibrary:
         'differential',
         'drivetrain',
         'aero',
+        'gears',
         'tyres',
+        'rto_final',
+        'rto_ratios',
     ]
     
     def __init__(self, library_path: str = 'src/components/library.json'):
@@ -264,6 +267,227 @@ class ComponentLibrary:
                     'REAR_CL_GAIN': 0.008,
                     'DRAG_COEFF': 0.40,
                 }
+            }
+        ]
+        
+        # Gear ratios presets
+        self.components['gears'] = [
+            {
+                'id': 'gears_street_5speed',
+                'name': 'Street 5-Speed',
+                'description': 'Standard 5-speed manual gearbox for street cars',
+                'tags': ['street', '5-speed', 'manual'],
+                'data': {
+                    'COUNT': 5,
+                    'GEAR_R': -3.40,
+                    'GEAR_1': 3.250,
+                    'GEAR_2': 1.950,
+                    'GEAR_3': 1.350,
+                    'GEAR_4': 1.030,
+                    'GEAR_5': 0.820,
+                    'FINAL': 4.10,
+                }
+            },
+            {
+                'id': 'gears_sport_6speed',
+                'name': 'Sport 6-Speed',
+                'description': 'Sport 6-speed gearbox with closer ratios',
+                'tags': ['sport', '6-speed', 'manual'],
+                'data': {
+                    'COUNT': 6,
+                    'GEAR_R': -3.38,
+                    'GEAR_1': 3.780,
+                    'GEAR_2': 2.050,
+                    'GEAR_3': 1.320,
+                    'GEAR_4': 0.970,
+                    'GEAR_5': 0.760,
+                    'GEAR_6': 0.625,
+                    'FINAL': 4.65,
+                }
+            },
+            {
+                'id': 'gears_race_6speed',
+                'name': 'Race 6-Speed',
+                'description': 'Racing sequential gearbox with short ratios',
+                'tags': ['race', '6-speed', 'sequential'],
+                'data': {
+                    'COUNT': 6,
+                    'GEAR_R': -2.90,
+                    'GEAR_1': 2.650,
+                    'GEAR_2': 1.780,
+                    'GEAR_3': 1.360,
+                    'GEAR_4': 1.090,
+                    'GEAR_5': 0.920,
+                    'GEAR_6': 0.790,
+                    'FINAL': 3.90,
+                }
+            },
+            {
+                'id': 'gears_drift_6speed',
+                'name': 'Drift 6-Speed',
+                'description': 'Drift-oriented gearbox with tall first gear',
+                'tags': ['drift', '6-speed', 'manual'],
+                'data': {
+                    'COUNT': 6,
+                    'GEAR_R': -3.10,
+                    'GEAR_1': 3.580,
+                    'GEAR_2': 2.360,
+                    'GEAR_3': 1.685,
+                    'GEAR_4': 1.312,
+                    'GEAR_5': 1.030,
+                    'GEAR_6': 0.820,
+                    'FINAL': 3.70,
+                }
+            }
+        ]
+        
+        # Tyres presets
+        self.components['tyres'] = [
+            {
+                'id': 'tyres_street',
+                'name': 'Street Tyres',
+                'description': 'Standard street tyres for daily driving',
+                'tags': ['street', 'comfort', 'all-season'],
+                'data': {
+                    'NAME': 'Street',
+                    'SHORT_NAME': 'ST',
+                    'WIDTH': 0.225,
+                    'RADIUS': 0.325,
+                    'RIM_RADIUS': 0.2286,
+                    'DX0': 1.30,
+                    'DY0': 1.30,
+                    'PRESSURE_IDEAL': 30,
+                }
+            },
+            {
+                'id': 'tyres_sport',
+                'name': 'Sport Tyres',
+                'description': 'High-performance sport tyres for spirited driving',
+                'tags': ['sport', 'performance', 'summer'],
+                'data': {
+                    'NAME': 'Sport',
+                    'SHORT_NAME': 'SP',
+                    'WIDTH': 0.245,
+                    'RADIUS': 0.330,
+                    'RIM_RADIUS': 0.2413,
+                    'DX0': 1.45,
+                    'DY0': 1.40,
+                    'PRESSURE_IDEAL': 32,
+                }
+            },
+            {
+                'id': 'tyres_semislick',
+                'name': 'Semi-Slick Tyres',
+                'description': 'Track-focused semi-slick tyres',
+                'tags': ['track', 'semi-slick', 'race'],
+                'data': {
+                    'NAME': 'Semi-Slick',
+                    'SHORT_NAME': 'SS',
+                    'WIDTH': 0.265,
+                    'RADIUS': 0.345,
+                    'RIM_RADIUS': 0.254,
+                    'DX0': 1.60,
+                    'DY0': 1.55,
+                    'PRESSURE_IDEAL': 35,
+                }
+            },
+            {
+                'id': 'tyres_slick_soft',
+                'name': 'Soft Slick Tyres',
+                'description': 'Racing slicks - soft compound for maximum grip',
+                'tags': ['race', 'slick', 'soft'],
+                'data': {
+                    'NAME': 'Soft Slick',
+                    'SHORT_NAME': 'SS',
+                    'WIDTH': 0.305,
+                    'RADIUS': 0.330,
+                    'RIM_RADIUS': 0.254,
+                    'DX0': 1.75,
+                    'DY0': 1.70,
+                    'PRESSURE_IDEAL': 27,
+                }
+            },
+            {
+                'id': 'tyres_slick_medium',
+                'name': 'Medium Slick Tyres',
+                'description': 'Racing slicks - medium compound for balanced performance',
+                'tags': ['race', 'slick', 'medium'],
+                'data': {
+                    'NAME': 'Medium Slick',
+                    'SHORT_NAME': 'MS',
+                    'WIDTH': 0.305,
+                    'RADIUS': 0.330,
+                    'RIM_RADIUS': 0.254,
+                    'DX0': 1.65,
+                    'DY0': 1.62,
+                    'PRESSURE_IDEAL': 28,
+                }
+            },
+            {
+                'id': 'tyres_slick_hard',
+                'name': 'Hard Slick Tyres',
+                'description': 'Racing slicks - hard compound for long-stint durability',
+                'tags': ['race', 'slick', 'hard'],
+                'data': {
+                    'NAME': 'Hard Slick',
+                    'SHORT_NAME': 'HS',
+                    'WIDTH': 0.305,
+                    'RADIUS': 0.330,
+                    'RIM_RADIUS': 0.254,
+                    'DX0': 1.55,
+                    'DY0': 1.52,
+                    'PRESSURE_IDEAL': 29,
+                }
+            }
+        ]
+        
+        # RTO Final Drive Ratios presets
+        self.components['rto_final'] = [
+            {
+                'id': 'rto_final_street',
+                'name': 'Street Final Ratios',
+                'description': 'Common final drive ratios for street cars',
+                'tags': ['street', 'common'],
+                'ratios': [4.90, 4.63, 4.35, 4.08, 3.89, 3.70]
+            },
+            {
+                'id': 'rto_final_sport',
+                'name': 'Sport Final Ratios',
+                'description': 'Sport-oriented final drive ratios',
+                'tags': ['sport', 'performance'],
+                'ratios': [5.12, 4.75, 4.44, 4.10, 3.90]
+            },
+            {
+                'id': 'rto_final_drift',
+                'name': 'Drift Final Ratios',
+                'description': 'Final drive ratios for drifting (lower for angle)',
+                'tags': ['drift', 'low-ratio'],
+                'ratios': [3.90, 3.70, 3.50, 3.30, 3.15]
+            }
+        ]
+        
+        # RTO Alternative Gear Sets presets
+        self.components['rto_ratios'] = [
+            {
+                'id': 'rto_ratios_street',
+                'name': 'Street Gear Ratios',
+                'description': 'Alternative street gear ratios',
+                'tags': ['street', 'comfort'],
+                'ratios': [3.250, 1.950, 1.350, 1.030, 0.820]
+            },
+            {
+                'id': 'rto_ratios_sport',
+                'name': 'Sport Gear Ratios',
+                'description': 'Closer sport ratios for track use',
+                'tags': ['sport', 'close-ratio'],
+                'ratios': [3.780, 2.050, 1.320, 0.970, 0.760, 0.625]
+            },
+            {
+                'id': 'rto_ratios_race',
+                'name': 'Race Gear Ratios',
+                'description': 'Sequential race gearbox ratios',
+                'tags': ['race', 'sequential'],
+                'ratios': [2.650, 1.780, 1.360, 1.090, 0.920, 0.790]
             }
         ]
     

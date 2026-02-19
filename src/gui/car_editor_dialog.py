@@ -583,12 +583,14 @@ class CarEditorDialog(QDialog):
 
         self.gear_count = _tip(QSpinBox(), "Number of forward gears.  (GEARS > COUNT)")
         self.gear_count.setRange(1, 10)
+        self.gear_count.valueChanged.connect(self._update_gear_ratio_visibility)
         gbox_form.addRow("Gear Count:", self.gear_count)
 
         self.final_ratio = _tip(QDoubleSpinBox(),
                                 "Final drive ratio.\n"
                                 "Higher = more acceleration, lower top speed.  (GEARS > FINAL)")
         self.final_ratio.setRange(1.0, 12.0); self.final_ratio.setDecimals(3); self.final_ratio.setSingleStep(0.05)
+        self.final_ratio.valueChanged.connect(self._update_gear_speeds)
         gbox_form.addRow("Final Ratio:", self.final_ratio)
 
         self.gearbox_up_time = _tip(QSpinBox(),
@@ -609,8 +611,108 @@ class CarEditorDialog(QDialog):
         self.gearbox_inertia.setRange(0, 1.0); self.gearbox_inertia.setDecimals(4); self.gearbox_inertia.setSingleStep(0.001)
         gbox_form.addRow("Gearbox Inertia:", self.gearbox_inertia)
 
+        # Button to show/hide gear ratios editor
+        self.edit_gear_ratios_btn = QPushButton("⚙ Edit Gear Ratios...")
+        self.edit_gear_ratios_btn.clicked.connect(self._toggle_gear_ratios)
+        gbox_form.addRow("", self.edit_gear_ratios_btn)
+
         gbox_grp.setLayout(gbox_form)
         layout.addWidget(gbox_grp)
+
+        # --- Gear Ratios (collapsible) ---
+        self.gear_ratios_grp = QGroupBox("Individual Gear Ratios  (drivetrain.ini › GEARS)")
+        self.gear_ratios_grp.setVisible(False)  # Hidden by default
+        gear_ratios_form = QFormLayout()
+
+        # Create spinboxes for all possible gears (R + 1-10)
+        self.gear_ratios = {}
+        self.gear_speed_labels = {}  # Store speed labels for each gear
+        self.gear_row_widgets = {}   # Store row container widgets for show/hide
+        
+        self.gear_ratios['GEAR_R'] = _tip(QDoubleSpinBox(),
+                                          "Reverse gear ratio (negative value).  (GEAR_R)")
+        self.gear_ratios['GEAR_R'].setRange(-10.0, 0.0)
+        self.gear_ratios['GEAR_R'].setDecimals(3)
+        self.gear_ratios['GEAR_R'].setSingleStep(0.1)
+        self.gear_ratios['GEAR_R'].valueChanged.connect(self._update_gear_speeds)
+        
+        # Create horizontal layout for reverse gear with speed label
+        reverse_layout = QHBoxLayout()
+        reverse_layout.addWidget(self.gear_ratios['GEAR_R'])
+        self.gear_speed_labels['GEAR_R'] = QLabel("")
+        self.gear_speed_labels['GEAR_R'].setStyleSheet("color: #666; font-style: italic;")
+        reverse_layout.addWidget(self.gear_speed_labels['GEAR_R'])
+        reverse_layout.addStretch()
+        gear_ratios_form.addRow("Reverse:", reverse_layout)
+
+        for i in range(1, 11):  # Support up to 10 gears
+            gear_key = f'GEAR_{i}'
+            self.gear_ratios[gear_key] = _tip(QDoubleSpinBox(),
+                                              f"{i}{'st' if i==1 else 'nd' if i==2 else 'rd' if i==3 else 'th'} gear ratio.\n"
+                                              f"Higher = more torque, lower top speed.  ({gear_key})")
+            self.gear_ratios[gear_key].setRange(0.1, 10.0)
+            self.gear_ratios[gear_key].setDecimals(3)
+            self.gear_ratios[gear_key].setSingleStep(0.1)
+            self.gear_ratios[gear_key].valueChanged.connect(self._update_gear_speeds)
+            
+            # Create horizontal layout for gear with speed label, wrapped in QWidget for visibility control
+            gear_layout = QHBoxLayout()
+            gear_layout.setContentsMargins(0, 0, 0, 0)
+            gear_layout.addWidget(self.gear_ratios[gear_key])
+            self.gear_speed_labels[gear_key] = QLabel("")
+            self.gear_speed_labels[gear_key].setStyleSheet("color: #666; font-style: italic;")
+            gear_layout.addWidget(self.gear_speed_labels[gear_key])
+            gear_layout.addStretch()
+            gear_widget = QWidget()
+            gear_widget.setLayout(gear_layout)
+            self.gear_row_widgets[gear_key] = gear_widget
+
+            gear_ratios_form.addRow(f"{i}{'st' if i==1 else 'nd' if i==2 else 'rd' if i==3 else 'th'} Gear:",
+                                    gear_widget)
+
+        # Import gear ratios from library button
+        import_gears_btn = QPushButton("📥 Import Gear Set from Library...")
+        import_gears_btn.clicked.connect(self.import_gears_component)
+        import_gears_btn.setStyleSheet("background-color: #2196F3; color: white; font-weight: bold; padding: 6px;")
+        gear_ratios_form.addRow("", import_gears_btn)
+
+        self.gear_ratios_grp.setLayout(gear_ratios_form)
+        layout.addWidget(self.gear_ratios_grp)
+
+        # --- RTO Files Management ---
+        rto_grp = QGroupBox("Selectable Gear Ratios (final.rto / ratios.rto)")
+        rto_layout = QVBoxLayout()
+        
+        rto_info = QLabel(
+            "RTO files define alternative gear ratios selectable in-game setup menu.\n"
+            "Useful for allowing players to customize their car setup."
+        )
+        rto_info.setWordWrap(True)
+        rto_layout.addWidget(rto_info)
+
+        rto_disclaimer = QLabel(
+            "⚠️  When .rto files are present, Assetto Corsa uses them to override the gear ratios "
+            "defined in drivetrain.ini. The values edited above are ignored for the affected "
+            "ratios as long as the corresponding .rto file exists."
+        )
+        rto_disclaimer.setWordWrap(True)
+        rto_disclaimer.setStyleSheet(
+            "background-color: #FFF8E1; color: #5D4037; padding: 8px; border-radius: 4px;"
+        )
+        rto_layout.addWidget(rto_disclaimer)
+        
+        manage_rto_btn = QPushButton("⚙ Manage RTO Files...")
+        manage_rto_btn.clicked.connect(self.open_rto_manager)
+        manage_rto_btn.setToolTip("Open RTO file manager to edit final.rto and ratios.rto")
+        rto_layout.addWidget(manage_rto_btn)
+        
+        # Status label for RTO files
+        self.rto_status_label = QLabel()
+        self.rto_status_label.setStyleSheet("color: #666; font-size: 10px;")
+        rto_layout.addWidget(self.rto_status_label)
+        
+        rto_grp.setLayout(rto_layout)
+        layout.addWidget(rto_grp)
 
         # --- Clutch ---
         clutch_grp = QGroupBox("Clutch  (drivetrain.ini › CLUTCH)")
@@ -961,6 +1063,11 @@ class CarEditorDialog(QDialog):
         rear_perf_grp.setLayout(rear_perf_form)
         layout.addWidget(rear_perf_grp)
 
+        import_tyres_btn = QPushButton("Import Tyre Compound from Library...")
+        import_tyres_btn.clicked.connect(self.import_tyres_component)
+        import_tyres_btn.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; padding: 8px;")
+        layout.addWidget(import_tyres_btn)
+
         layout.addStretch()
         return widget
 
@@ -974,6 +1081,7 @@ class CarEditorDialog(QDialog):
         self._load_aero_data()
         self._load_brakes_data()
         self._load_tyres_data()
+        self._update_rto_status()
 
     def _load_engine_data(self):
         if not self.engine_ini:
@@ -1127,6 +1235,20 @@ class CarEditorDialog(QDialog):
             self.gear_count.setValue(gc)
             self.final_ratio.setValue(final)
             self.original_values.update({'gear_count': gc, 'final_ratio': final})
+            
+            # Load individual gear ratios
+            gear_r = self.drivetrain_ini.get_value('GEARS', 'GEAR_R', '-3.5')
+            if gear_r:
+                self.gear_ratios['GEAR_R'].setValue(float(gear_r))
+                self.original_values['gear_r'] = float(gear_r)
+            
+            for i in range(1, 11):
+                gear_key = f'GEAR_{i}'
+                ratio_str = self.drivetrain_ini.get_value('GEARS', gear_key, None)
+                if ratio_str:
+                    ratio = float(ratio_str)
+                    self.gear_ratios[gear_key].setValue(ratio)
+                    self.original_values[f'gear_{i}'] = ratio
 
         if self.drivetrain_ini.has_section('GEARBOX'):
             up   = int(self.drivetrain_ini.get_value('GEARBOX', 'CHANGE_UP_TIME', '250'))
@@ -1350,6 +1472,100 @@ class CarEditorDialog(QDialog):
         dlg = SetupManagerDialog(self.car_data_path, parent=self)
         dlg.exec_()
 
+    def open_rto_manager(self):
+        """Open the RTO Manager dialog."""
+        from gui.rto_manager_dialog import RTOManagerDialog
+        dlg = RTOManagerDialog(self.car_data_path, parent=self)
+        dlg.exec_()
+        # Update status after dialog closes
+        self._update_rto_status()
+    
+    def _update_rto_status(self):
+        """Update RTO files status label."""
+        if not hasattr(self, 'rto_status_label'):
+            return
+        
+        final_rto = os.path.join(self.car_data_path, 'final.rto')
+        ratios_rto = os.path.join(self.car_data_path, 'ratios.rto')
+        
+        status_parts = []
+        if os.path.exists(final_rto):
+            status_parts.append("✅ final.rto")
+        else:
+            status_parts.append("⚠️ final.rto (not found)")
+        
+        if os.path.exists(ratios_rto):
+            status_parts.append("✅ ratios.rto")
+        else:
+            status_parts.append("⚠️ ratios.rto (not found)")
+        
+        self.rto_status_label.setText(" | ".join(status_parts))
+
+    def _update_gear_speeds(self):
+        """Update max speed labels for each gear."""
+        if not hasattr(self, 'gear_speed_labels'):
+            return
+        
+        from core.speed_calculator import SpeedCalculator
+        
+        # Get required data
+        tire_radius = SpeedCalculator.get_tire_radius_from_ini(
+            os.path.join(self.car_data_path, 'tyres.ini')
+        )
+        max_rpm = SpeedCalculator.get_max_rpm_from_ini(
+            os.path.join(self.car_data_path, 'engine.ini')
+        )
+        
+        # If missing data, show N/A
+        if not tire_radius or not max_rpm:
+            for label in self.gear_speed_labels.values():
+                label.setText("(speed: N/A)")
+            return
+        
+        final_ratio = self.final_ratio.value()
+        
+        # Calculate and update speed for each gear
+        for gear_key, speed_label in self.gear_speed_labels.items():
+            gear_ratio = self.gear_ratios[gear_key].value()
+            
+            if gear_ratio != 0 and final_ratio != 0:
+                speed = SpeedCalculator.calculate_max_speed(
+                    gear_ratio, final_ratio, max_rpm, tire_radius
+                )
+                speed_label.setText(f"(~{speed:.0f} km/h)")
+            else:
+                speed_label.setText("(speed: N/A)")
+
+    def _toggle_gear_ratios(self):
+        """Toggle visibility of gear ratios section."""
+        visible = not self.gear_ratios_grp.isVisible()
+        self.gear_ratios_grp.setVisible(visible)
+        if visible:
+            self.edit_gear_ratios_btn.setText("⚙ Hide Gear Ratios")
+            # Update gear ratio spinboxes visibility based on current gear count
+            self._update_gear_ratio_visibility()
+            # Update speed estimates
+            self._update_gear_speeds()
+        else:
+            self.edit_gear_ratios_btn.setText("⚙ Edit Gear Ratios...")
+
+    def _update_gear_ratio_visibility(self):
+        """Show/hide gear ratio rows based on gear count."""
+        count = self.gear_count.value()
+        form = self.gear_ratios_grp.layout()
+        for i in range(1, 11):
+            gear_key = f'GEAR_{i}'
+            visible = i <= count
+            if gear_key in self.gear_row_widgets:
+                self.gear_row_widgets[gear_key].setVisible(visible)
+                for row in range(form.rowCount()):
+                    item = form.itemAt(row, QFormLayout.FieldRole)
+                    if item and item.widget() == self.gear_row_widgets[gear_key]:
+                        label = form.itemAt(row, QFormLayout.LabelRole)
+                        if label and label.widget():
+                            label.widget().setVisible(visible)
+                        break
+
     # ------------------------------------------------------------------ Component imports
 
     def import_engine_component(self):
@@ -1426,6 +1642,44 @@ class CarEditorDialog(QDialog):
                                 f"Applied '{component.get('name', '?')}'\n\nUpdated:\n- " +
                                 "\n- ".join(applied) + "\n\nRemember to save.")
 
+    def import_gears_component(self):
+        """Import gear ratios from component library."""
+        from PyQt5.QtWidgets import QDialog as _QD
+        dialog = ComponentSelectorDialog('gears', self)
+        if dialog.exec_() == _QD.Accepted:
+            c = dialog.get_selected_component()
+            if c:
+                self.apply_gears_component(c)
+
+    def apply_gears_component(self, component):
+        """Apply gear ratios from a component."""
+        data = component.get('data', {})
+        applied = []
+        
+        # Apply gear count if present
+        if 'COUNT' in data:
+            self.gear_count.setValue(int(data['COUNT']))
+            applied.append(f"Gear Count: {data['COUNT']}")
+        
+        # Apply final ratio if present
+        if 'FINAL' in data:
+            self.final_ratio.setValue(float(data['FINAL']))
+            applied.append(f"Final Ratio: {data['FINAL']}")
+        
+        # Apply individual gear ratios
+        for gear_key in ['GEAR_R'] + [f'GEAR_{i}' for i in range(1, 11)]:
+            if gear_key in data and gear_key in self.gear_ratios:
+                self.gear_ratios[gear_key].setValue(float(data[gear_key]))
+                gear_name = "Reverse" if gear_key == 'GEAR_R' else gear_key.replace('GEAR_', '')
+                applied.append(f"{gear_name}: {data[gear_key]}")
+        
+        # Update visibility
+        self._update_gear_ratio_visibility()
+        
+        QMessageBox.information(self, "Gear Set Applied",
+                                f"Applied '{component.get('name', '?')}'\n\nUpdated:\n- " +
+                                "\n- ".join(applied) + "\n\nRemember to save.")
+
     def import_aero_component(self):
         from PyQt5.QtWidgets import QDialog as _QD
         dialog = ComponentSelectorDialog('aero', self)
@@ -1445,6 +1699,50 @@ class CarEditorDialog(QDialog):
         QMessageBox.information(self, "Component Applied",
                                 f"Applied '{component.get('name', '?')}'\n\nUpdated:\n- " +
                                 ("\n- ".join(applied) if applied else "None") + "\n\nRemember to save.")
+
+    def import_tyres_component(self):
+        """Import tyre compound from component library."""
+        from PyQt5.QtWidgets import QDialog as _QD
+        dialog = ComponentSelectorDialog('tyres', self)
+        if dialog.exec_() == _QD.Accepted:
+            c = dialog.get_selected_component()
+            if c:
+                self.apply_tyres_component(c)
+
+    def apply_tyres_component(self, component):
+        """Apply tyre compound from a component to currently selected compound."""
+        data = component.get('data', {})
+        applied = []
+        
+        # Apply dimensions
+        for axle, prefix in [('front', 'FRONT'), ('rear', 'REAR')]:
+            if 'WIDTH' in data:
+                getattr(self, f'{axle}_width').setValue(float(data['WIDTH']))
+                applied.append(f"{prefix} Width")
+            if 'RADIUS' in data:
+                getattr(self, f'{axle}_radius').setValue(float(data['RADIUS']))
+                applied.append(f"{prefix} Radius")
+            if 'RIM_RADIUS' in data:
+                getattr(self, f'{axle}_rim_radius').setValue(float(data['RIM_RADIUS']))
+                applied.append(f"{prefix} Rim Radius")
+        
+        # Apply performance parameters
+        for axle, prefix in [('front', 'FRONT'), ('rear', 'REAR')]:
+            if 'DX0' in data:
+                getattr(self, f'{axle}_dx0').setValue(float(data['DX0']))
+                applied.append(f"{prefix} DX0")
+            if 'DY0' in data:
+                getattr(self, f'{axle}_dy0').setValue(float(data['DY0']))
+                applied.append(f"{prefix} DY0")
+            if 'PRESSURE_IDEAL' in data:
+                getattr(self, f'{axle}_pressure_ideal').setValue(int(data['PRESSURE_IDEAL']))
+                applied.append(f"{prefix} Ideal Pressure")
+        
+        QMessageBox.information(self, "Tyre Compound Applied",
+                                f"Applied '{component.get('name', '?')}'\n\n"
+                                f"Updated {len(applied)} parameters.\n\n"
+                                f"Note: This applies to the currently selected compound.\n"
+                                f"Remember to save.")
 
     # ------------------------------------------------------------------ Save
 
@@ -1540,6 +1838,13 @@ class CarEditorDialog(QDialog):
         if self.drivetrain_ini.has_section('GEARS'):
             self.drivetrain_ini.set_value('GEARS', 'COUNT', str(self.gear_count.value()))
             self.drivetrain_ini.set_value('GEARS', 'FINAL', f"{self.final_ratio.value():.3f}")
+            
+            # Save individual gear ratios
+            self.drivetrain_ini.set_value('GEARS', 'GEAR_R', f"{self.gear_ratios['GEAR_R'].value():.3f}")
+            
+            for i in range(1, self.gear_count.value() + 1):
+                gear_key = f'GEAR_{i}'
+                self.drivetrain_ini.set_value('GEARS', gear_key, f"{self.gear_ratios[gear_key].value():.3f}")
         if self.drivetrain_ini.has_section('GEARBOX'):
             self.drivetrain_ini.set_value('GEARBOX', 'CHANGE_UP_TIME', str(self.gearbox_up_time.value()))
             self.drivetrain_ini.set_value('GEARBOX', 'CHANGE_DN_TIME', str(self.gearbox_dn_time.value()))

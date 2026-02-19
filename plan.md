@@ -89,16 +89,18 @@ Creare un'applicazione desktop Windows in Python con PyQt5/6 che permetta di mod
 - [x] Aggiunta campo ADJUST_STEP al tab freni (§4.6)
 - [x] Aggiornamento documentazione (README.md, plan.md)
 
-### Fase 7: Features Avanzate ✅ (4/8 completed)
+### Fase 7: Features Avanzate ✅ (7/8 completed)
 - [x] implementare preview immagine dell'auto
 - [x] Implementare ricerca/filtro auto
 - [x] implementare calcolatore potenza/coppia in tempo reale basato su curve .lut e sul moltiplicatore turbo
 - [x] Implementare supporto per setup auto (track-specific configurations)
-- [ ] Implementare gestione rapporti cambio (gear ratios)
-- [ ] Implementare possibilità di aggiungere/rimuovere tipi di gomme predefiniti dalla libreria
+- [x] Implementare gestione rapporti cambio (gear ratios) - Editor con spinbox per ogni marcia (R, 1-10), import da libreria con 4 preset, stima velocità massima per ogni marcia
+- [x] Implementare possibilità di aggiungere/rimuovere tipi di gomme predefiniti dalla libreria - 6 preset disponibili (street, sport, semi-slick, soft/medium/hard slick), import in tab Pneumatici
+- [x] Implementare gestione file RTO (final.rto, ratios.rto) - Dialog manager per modificare rapporti finali e set di marce alternativi selezionabili in-game, import da libreria (3 preset finali, 3 preset rapporti), stima velocità
 - [ ] implementare modifiche a cartella ui/ (nome auto in menu, icone, etc.)
 - [ ] Supportare altri .lut, implementare un editor generico di lut per altri tipi di curve specifici per ogni macchina (es. traction_control.lut throttle.lut) ci deve essere quindi un selettore di lut disponibili e una sezione per modificarli - Future enhancement
 - [ ] Implementare smooth curve (interpolazione spline opzionale) - Future enhancement
+- [ ] implementare possibilità per rendere un auto stage 1/2/3 con un click: con differenze tra auto turbo e NA (es. se NA stage 1 = mappa più aggressiva, stage 2 = aggiunta turbo, stage 3 = aggiunta turbo + modifiche meccaniche, se turbo stage 1 = aumento boost, stage 2 = aumento boost, stage 3 = aumento boost + modifiche meccaniche, aerodimanica, etc.) - Future enhancement
 - [ ] Implementare sistema undo/redo modifiche
 - [ ] Investigare gestione sound motore (bank files, GUIDs)
 
