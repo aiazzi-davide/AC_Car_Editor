@@ -133,13 +133,22 @@ File testo con coppie `INPUT|OUTPUT` su ogni riga. Definiscono curve di mappatur
 
 ### 3.3 File `.rto` (Ratio File)
 
-Elenco di rapporti disponibili per il setup. Ogni riga: `VALORE|VALORE` (stesso valore ripetuto).
+Elenco di rapporti disponibili per il setup. Sono supportati due formati:
 
+**Formato standard** — `VALORE|VALORE` (stesso valore decimale ripetuto):
 ```
 4.90|4.90
 4.63|4.63
 4.08|4.08
 ```
+
+**Formato con etichetta frazione** — `LABEL|VALORE` (etichetta denti corona//pignone, valore decimale a destra):
+```
+80//31|3.88
+10//44|4.37
+80//31|3.83
+```
+In questo formato l'etichetta prima del `|` è ignorata; viene usato solo il valore decimale dopo il `|`.
 
 ---
 
@@ -653,7 +662,7 @@ RATIOS=final.rto                ; file .rto con i rapporti finali disponibili
 ```
 
 **File `.rto` (Ratio File):**
-**File `final.rto`:** Lista di rapporti finali selezionabili. Formato: `VALORE|VALORE`.
+**File `final.rto`:** Lista di rapporti finali selezionabili. Formato: `VALORE|VALORE` (standard) oppure `ETICHETTA|VALORE` (es. `80//31|3.88`).
 **File `ratios.rto`:** Lista di rapporti cambio alternativi.
 
 ```text

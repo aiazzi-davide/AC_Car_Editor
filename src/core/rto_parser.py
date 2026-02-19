@@ -2,11 +2,18 @@
 RTO File Parser for Assetto Corsa gear ratio files.
 
 RTO files contain lists of selectable gear ratios.
-Format: Each line contains VALUE|VALUE (same value repeated)
-Example:
-    4.90|4.90
-    4.63|4.63
-    4.08|4.08
+Two formats are supported:
+
+1. Standard: VALUE|VALUE (decimal value repeated on both sides)
+       4.90|4.90
+       4.63|4.63
+
+2. Fraction label: LABEL|VALUE (ring//pinion teeth label, decimal value on the right)
+       80//31|3.88
+       10//44|4.37
+
+In format 2 the label (e.g. ring//pinion teeth counts) is ignored; only the
+decimal value after the last '|' is used.
 """
 
 import os
@@ -45,17 +52,22 @@ class RTOParser:
                     if line.startswith(';') or line.startswith('#'):
                         continue
                     
-                    # Parse VALUE|VALUE format
+                    # Parse VALUE|VALUE or LABEL|VALUE format
                     if '|' in line:
                         parts = line.split('|')
                         if len(parts) >= 2:
+                            # Try the first part first (standard format: VALUE|VALUE).
+                            # Fall back to the last part for label formats like "80//31|3.88".
+                            raw = parts[0].strip()
                             try:
-                                # Use the first value (they should be identical)
-                                value = float(parts[0].strip())
-                                self.ratios.append(value)
+                                value = float(raw)
                             except ValueError:
-                                print(f"Warning: Could not parse ratio value: {line}")
-                                continue
+                                try:
+                                    value = float(parts[-1].strip())
+                                except ValueError:
+                                    print(f"Warning: Could not parse ratio value: {line}")
+                                    continue
+                            self.ratios.append(value)
         except Exception as e:
             print(f"Error loading RTO file {self.file_path}: {e}")
     

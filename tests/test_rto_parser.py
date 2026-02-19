@@ -173,6 +173,36 @@ class TestRTOParser(unittest.TestCase):
         self.assertEqual(len(ratios), 3)
         self.assertAlmostEqual(ratios[0], 4.90, places=2)
 
+    def test_load_fraction_label_format(self):
+        """Test loading .rto file with fraction label format (e.g. 80//31|3.88)"""
+        with open(self.test_file, 'w') as f:
+            f.write("80//31|3.88\n")
+            f.write("10//44|4.37\n")
+            f.write("70//11|1.69\n")
+
+        parser = RTOParser(self.test_file)
+        ratios = parser.get_ratios()
+
+        self.assertEqual(len(ratios), 3)
+        self.assertAlmostEqual(ratios[0], 3.88, places=2)
+        self.assertAlmostEqual(ratios[1], 4.37, places=2)
+        self.assertAlmostEqual(ratios[2], 1.69, places=2)
+
+    def test_load_mixed_formats(self):
+        """Test loading .rto file mixing standard and fraction label formats"""
+        with open(self.test_file, 'w') as f:
+            f.write("4.90|4.90\n")
+            f.write("80//31|3.88\n")
+            f.write("4.08|4.08\n")
+
+        parser = RTOParser(self.test_file)
+        ratios = parser.get_ratios()
+
+        self.assertEqual(len(ratios), 3)
+        self.assertAlmostEqual(ratios[0], 4.90, places=2)
+        self.assertAlmostEqual(ratios[1], 3.88, places=2)
+        self.assertAlmostEqual(ratios[2], 4.08, places=2)
+
 
 if __name__ == '__main__':
     unittest.main()

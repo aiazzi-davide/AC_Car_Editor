@@ -583,6 +583,7 @@ class CarEditorDialog(QDialog):
 
         self.gear_count = _tip(QSpinBox(), "Number of forward gears.  (GEARS > COUNT)")
         self.gear_count.setRange(1, 10)
+        self.gear_count.valueChanged.connect(self._update_gear_ratio_visibility)
         gbox_form.addRow("Gear Count:", self.gear_count)
 
         self.final_ratio = _tip(QDoubleSpinBox(),
@@ -626,6 +627,7 @@ class CarEditorDialog(QDialog):
         # Create spinboxes for all possible gears (R + 1-10)
         self.gear_ratios = {}
         self.gear_speed_labels = {}  # Store speed labels for each gear
+        self.gear_row_widgets = {}   # Store row container widgets for show/hide
         
         self.gear_ratios['GEAR_R'] = _tip(QDoubleSpinBox(),
                                           "Reverse gear ratio (negative value).  (GEAR_R)")
@@ -653,16 +655,20 @@ class CarEditorDialog(QDialog):
             self.gear_ratios[gear_key].setSingleStep(0.1)
             self.gear_ratios[gear_key].valueChanged.connect(self._update_gear_speeds)
             
-            # Create horizontal layout for gear with speed label
+            # Create horizontal layout for gear with speed label, wrapped in QWidget for visibility control
             gear_layout = QHBoxLayout()
+            gear_layout.setContentsMargins(0, 0, 0, 0)
             gear_layout.addWidget(self.gear_ratios[gear_key])
             self.gear_speed_labels[gear_key] = QLabel("")
             self.gear_speed_labels[gear_key].setStyleSheet("color: #666; font-style: italic;")
             gear_layout.addWidget(self.gear_speed_labels[gear_key])
             gear_layout.addStretch()
-            
-            gear_ratios_form.addRow(f"{i}{'st' if i==1 else 'nd' if i==2 else 'rd' if i==3 else 'th'} Gear:", 
-                                    gear_layout)
+            gear_widget = QWidget()
+            gear_widget.setLayout(gear_layout)
+            self.gear_row_widgets[gear_key] = gear_widget
+
+            gear_ratios_form.addRow(f"{i}{'st' if i==1 else 'nd' if i==2 else 'rd' if i==3 else 'th'} Gear:",
+                                    gear_widget)
 
         # Import gear ratios from library button
         import_gears_btn = QPushButton("📥 Import Gear Set from Library...")
@@ -683,6 +689,17 @@ class CarEditorDialog(QDialog):
         )
         rto_info.setWordWrap(True)
         rto_layout.addWidget(rto_info)
+
+        rto_disclaimer = QLabel(
+            "⚠️  When .rto files are present, Assetto Corsa uses them to override the gear ratios "
+            "defined in drivetrain.ini. The values edited above are ignored for the affected "
+            "ratios as long as the corresponding .rto file exists."
+        )
+        rto_disclaimer.setWordWrap(True)
+        rto_disclaimer.setStyleSheet(
+            "background-color: #FFF8E1; color: #5D4037; padding: 8px; border-radius: 4px;"
+        )
+        rto_layout.addWidget(rto_disclaimer)
         
         manage_rto_btn = QPushButton("⚙ Manage RTO Files...")
         manage_rto_btn.clicked.connect(self.open_rto_manager)
@@ -1533,21 +1550,20 @@ class CarEditorDialog(QDialog):
             self.edit_gear_ratios_btn.setText("⚙ Edit Gear Ratios...")
 
     def _update_gear_ratio_visibility(self):
-        """Show/hide gear ratio spinboxes based on gear count."""
+        """Show/hide gear ratio rows based on gear count."""
         count = self.gear_count.value()
+        form = self.gear_ratios_grp.layout()
         for i in range(1, 11):
             gear_key = f'GEAR_{i}'
-            if gear_key in self.gear_ratios:
-                # Show only gears up to current count
-                self.gear_ratios[gear_key].setVisible(i <= count)
-                # Find the corresponding label in the form layout
-                form = self.gear_ratios_grp.layout()
+            visible = i <= count
+            if gear_key in self.gear_row_widgets:
+                self.gear_row_widgets[gear_key].setVisible(visible)
                 for row in range(form.rowCount()):
-                    widget = form.itemAt(row, QFormLayout.FieldRole)
-                    if widget and widget.widget() == self.gear_ratios[gear_key]:
+                    item = form.itemAt(row, QFormLayout.FieldRole)
+                    if item and item.widget() == self.gear_row_widgets[gear_key]:
                         label = form.itemAt(row, QFormLayout.LabelRole)
                         if label and label.widget():
-                            label.widget().setVisible(i <= count)
+                            label.widget().setVisible(visible)
                         break
 
     # ------------------------------------------------------------------ Component imports

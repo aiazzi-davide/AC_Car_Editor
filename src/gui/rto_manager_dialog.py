@@ -14,6 +14,7 @@ from PyQt5.QtCore import Qt
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from core.rto_parser import RTOParser
+from core.ini_parser import IniParser
 
 
 class RTOManagerDialog(QDialog):
@@ -26,6 +27,7 @@ class RTOManagerDialog(QDialog):
         self.car_data_path = car_data_path
         self.final_rto_path = os.path.join(car_data_path, 'final.rto')
         self.ratios_rto_path = os.path.join(car_data_path, 'ratios.rto')
+        self.setup_ini_path = os.path.join(car_data_path, 'setup.ini')
         
         self.final_parser = RTOParser(self.final_rto_path)
         self.ratios_parser = RTOParser(self.ratios_rto_path)
@@ -58,6 +60,17 @@ class RTOManagerDialog(QDialog):
         info_label.setWordWrap(True)
         info_label.setStyleSheet("background-color: #E3F2FD; padding: 10px; border-radius: 5px;")
         layout.addWidget(info_label)
+
+        disclaimer_label = QLabel(
+            "⚠️  When .rto files are present, Assetto Corsa uses them to override the gear ratios "
+            "defined in drivetrain.ini. The values in drivetrain.ini are ignored for the affected "
+            "ratios as long as the corresponding .rto file exists."
+        )
+        disclaimer_label.setWordWrap(True)
+        disclaimer_label.setStyleSheet(
+            "background-color: #FFF8E1; color: #5D4037; padding: 10px; border-radius: 5px;"
+        )
+        layout.addWidget(disclaimer_label)
         
         # Tab widget
         self.tabs = QTabWidget()
@@ -362,14 +375,16 @@ class RTOManagerDialog(QDialog):
     def save_all(self):
         """Save all changes"""
         try:
+            final_had_ratios = len(self.final_parser.get_ratios()) > 0
+
             # Save final ratios
-            if len(self.final_parser.get_ratios()) > 0:
+            if final_had_ratios:
                 self.final_parser.save(backup=True)
-            
+
             # Save gear ratios
             if len(self.ratios_parser.get_ratios()) > 0:
                 self.ratios_parser.save(backup=True)
-            
+
             QMessageBox.information(
                 self,
                 "Success",
@@ -377,11 +392,71 @@ class RTOManagerDialog(QDialog):
                 "Backups created with .bak extension."
             )
             self.load_data()
+
+            # After saving final.rto, check if setup.ini already references it
+            if final_had_ratios and not self._setup_ini_references_final_rto():
+                self._prompt_update_setup_ini()
+
         except Exception as e:
             QMessageBox.critical(
                 self,
                 "Error Saving",
                 f"Failed to save RTO files:\n{str(e)}"
+            )
+
+    def _setup_ini_references_final_rto(self) -> bool:
+        """Return True if setup.ini already enables USE_GEARSET and points to final.rto."""
+        if not os.path.exists(self.setup_ini_path):
+            return False
+        try:
+            parser = IniParser(self.setup_ini_path)
+            use_gearset = str(parser.get_value('GEARS', 'USE_GEARSET', '0')).strip()
+            ratios = str(parser.get_value('FINAL_GEAR_RATIO', 'RATIOS', '')).strip().lower()
+            return use_gearset == '1' and ratios == 'final.rto'
+        except Exception:
+            return False
+
+    def _prompt_update_setup_ini(self):
+        """Ask the user whether to update setup.ini to enable final.rto."""
+        msg = QMessageBox(self)
+        msg.setWindowTitle("Update setup.ini?")
+        msg.setIcon(QMessageBox.Question)
+        msg.setText(
+            "<b>final.rto has been saved, but Assetto Corsa won't use it yet.</b>"
+        )
+        msg.setInformativeText(
+            "For the game to offer selectable final drive ratios, <b>setup.ini</b> must be "
+            "configured as follows:<br><br>"
+            "<tt>[GEARS]<br>USE_GEARSET=1</tt> — enables the gear setup menu in-game<br><br>"
+            "<tt>[FINAL_GEAR_RATIO]<br>RATIOS=final.rto</tt> — points the game to the file "
+            "you just saved<br><br>"
+            "Would you like to update <b>setup.ini</b> automatically?"
+        )
+        msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        msg.setDefaultButton(QMessageBox.Yes)
+        if msg.exec_() == QMessageBox.Yes:
+            self._apply_setup_ini_update()
+
+    def _apply_setup_ini_update(self):
+        """Write USE_GEARSET=1 and [FINAL_GEAR_RATIO] RATIOS=final.rto to setup.ini."""
+        try:
+            parser = IniParser(self.setup_ini_path)
+            parser.set_value('GEARS', 'USE_GEARSET', '1')
+            parser.set_value('FINAL_GEAR_RATIO', 'RATIOS', 'final.rto')
+            parser.save(backup=True)
+            QMessageBox.information(
+                self,
+                "setup.ini Updated",
+                "setup.ini has been updated:\n"
+                "  [GEARS] USE_GEARSET=1\n"
+                "  [FINAL_GEAR_RATIO] RATIOS=final.rto\n\n"
+                "A backup was created as setup.ini.bak."
+            )
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Error Updating setup.ini",
+                f"Could not update setup.ini:\n{str(e)}"
             )
     
     def import_final_from_library(self):
