@@ -625,6 +625,11 @@ PRESENT=1
 
 Definisce quali parametri sono modificabili dal giocatore nel menu di setup. Gestisce anche la logica dei rapporti del cambio (fissi vs modificabili).
 
+> ⚠️ **Formato critico:** Assetto Corsa richiede il formato `CHIAVE=VALORE` **senza spazi** attorno al `=`.
+> Il formato `CHIAVE = VALORE` (con spazi) causa il **crash del gioco** al caricamento.
+> Per questo motivo `setup.ini` non va mai riscritto tramite `configparser.write()` (che aggiunge spazi),
+> ma solo tramite editing testuale diretto che preserva il formato originale riga per riga.
+
 ```ini
 [DISPLAY_METHOD]
 SHOW_CLICKS=1                   ; 1=mostra i click, 0=mostra valori continui

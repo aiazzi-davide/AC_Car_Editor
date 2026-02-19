@@ -14,7 +14,6 @@ from PyQt5.QtCore import Qt
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from core.rto_parser import RTOParser
-from core.ini_parser import IniParser
 
 
 class RTOManagerDialog(QDialog):
@@ -438,12 +437,85 @@ class RTOManagerDialog(QDialog):
             self._apply_setup_ini_update()
 
     def _apply_setup_ini_update(self):
-        """Write USE_GEARSET=1 and [FINAL_GEAR_RATIO] RATIOS=final.rto to setup.ini."""
+        """Write USE_GEARSET=1 and [FINAL_GEAR_RATIO] RATIOS=final.rto to setup.ini.
+        Uses direct text manipulation to preserve the original file format exactly
+        (no spaces around '=', comments and blank lines kept intact).
+        """
         try:
-            parser = IniParser(self.setup_ini_path)
-            parser.set_value('GEARS', 'USE_GEARSET', '1')
-            parser.set_value('FINAL_GEAR_RATIO', 'RATIOS', 'final.rto')
-            parser.save(backup=True)
+            import shutil
+
+            # Backup
+            if os.path.exists(self.setup_ini_path):
+                shutil.copy2(self.setup_ini_path, self.setup_ini_path + '.bak')
+
+            # Read as raw lines
+            encoding = 'utf-8-sig'
+            with open(self.setup_ini_path, 'r', encoding=encoding) as f:
+                lines = f.readlines()
+
+            current_section = None
+            gears_use_gearset_patched = False
+            final_gear_ratio_ratios_patched = False
+            final_gear_ratio_section_exists = False
+            new_lines = []
+
+            for line in lines:
+                stripped = line.strip()
+
+                # Detect section header
+                if stripped.startswith('[') and ']' in stripped:
+                    current_section = stripped[1:stripped.index(']')]
+                    if current_section == 'FINAL_GEAR_RATIO':
+                        final_gear_ratio_section_exists = True
+
+                # Patch USE_GEARSET inside [GEARS]
+                if current_section == 'GEARS' and stripped.upper().startswith('USE_GEARSET'):
+                    line = 'USE_GEARSET=1\n'
+                    gears_use_gearset_patched = True
+
+                # Patch RATIOS inside [FINAL_GEAR_RATIO]
+                if current_section == 'FINAL_GEAR_RATIO' and stripped.upper().startswith('RATIOS'):
+                    line = 'RATIOS=final.rto\n'
+                    final_gear_ratio_ratios_patched = True
+
+                new_lines.append(line)
+
+            # If [GEARS] existed but had no USE_GEARSET line, insert it right after the header
+            if not gears_use_gearset_patched:
+                patched = []
+                current_section = None
+                for line in new_lines:
+                    patched.append(line)
+                    stripped = line.strip()
+                    if stripped.startswith('[') and ']' in stripped:
+                        sec = stripped[1:stripped.index(']')]
+                        if sec == 'GEARS':
+                            patched.append('USE_GEARSET=1\n')
+                new_lines = patched
+
+            # If [FINAL_GEAR_RATIO] section doesn't exist at all, append it
+            if not final_gear_ratio_section_exists:
+                if new_lines and not new_lines[-1].endswith('\n'):
+                    new_lines.append('\n')
+                new_lines.append('\n[FINAL_GEAR_RATIO]\n')
+                new_lines.append('RATIOS=final.rto\n')
+            elif not final_gear_ratio_ratios_patched:
+                # Section exists but had no RATIOS line – insert it after the header
+                patched = []
+                current_section = None
+                for line in new_lines:
+                    patched.append(line)
+                    stripped = line.strip()
+                    if stripped.startswith('[') and ']' in stripped:
+                        sec = stripped[1:stripped.index(']')]
+                        if sec == 'FINAL_GEAR_RATIO':
+                            patched.append('RATIOS=final.rto\n')
+                new_lines = patched
+
+            # Write back preserving original line endings
+            with open(self.setup_ini_path, 'w', encoding='utf-8', newline='') as f:
+                f.writelines(new_lines)
+
             QMessageBox.information(
                 self,
                 "setup.ini Updated",
