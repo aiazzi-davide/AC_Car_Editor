@@ -35,14 +35,46 @@ class RTOManagerDialog(QDialog):
         # Store paths for speed calculation
         self.engine_ini_path = engine_ini if engine_ini else os.path.join(car_data_path, 'engine.ini')
         self.tyres_ini_path = tyres_ini if tyres_ini else os.path.join(car_data_path, 'tyres.ini')
+        self.drivetrain_ini_path = os.path.join(car_data_path, 'drivetrain.ini')
         
         # Get tire radius and max RPM for speed calculation
         from core.speed_calculator import SpeedCalculator
         self.tire_radius = SpeedCalculator.get_tire_radius_from_ini(self.tyres_ini_path)
         self.max_rpm = SpeedCalculator.get_max_rpm_from_ini(self.engine_ini_path)
         
+        # Get actual gear ratios from drivetrain.ini
+        self.gear_ratios = self._read_gear_ratios_from_drivetrain()
+        
         self.init_ui()
         self.load_data()
+    
+    def _read_gear_ratios_from_drivetrain(self):
+        """Read gear ratios from drivetrain.ini [GEARS] section"""
+        gear_ratios = {}
+        
+        if not os.path.exists(self.drivetrain_ini_path):
+            return gear_ratios
+        
+        try:
+            from core.ini_parser import IniParser
+            parser = IniParser(self.drivetrain_ini_path)
+            
+            if parser.has_section('GEARS'):
+                # Read gear count to know how many gears to read
+                gear_count_str = parser.get_value('GEARS', 'COUNT', '6')
+                gear_count = int(float(gear_count_str))
+                
+                # Read each gear ratio
+                for i in range(1, gear_count + 1):
+                    gear_key = f'GEAR_{i}'
+                    ratio_str = parser.get_value('GEARS', gear_key, None)
+                    if ratio_str:
+                        gear_ratios[i] = float(ratio_str)
+                
+        except Exception as e:
+            print(f"Error reading gear ratios from drivetrain.ini: {e}")
+        
+        return gear_ratios
     
     def init_ui(self):
         """Initialize the user interface"""
@@ -518,20 +550,58 @@ class RTOManagerDialog(QDialog):
                 self.ratios_speed_info.setText(info_text)
             return
         
-        # Update final ratios speed info
+        # Update final ratios speed info using actual gear ratios from drivetrain.ini
         if hasattr(self, 'final_speed_info'):
             final_ratios = self.final_parser.get_ratios()
-            if final_ratios:
-                # Use a typical 1st gear ratio for estimation
+            if final_ratios and self.gear_ratios:
+                speeds = []
+                # Show speed for 1st gear and highest gear (or 6th if available)
+                gear_nums = sorted(self.gear_ratios.keys())
+                
+                for final in final_ratios[:3]:  # Show first 3 final ratios
+                    speed_parts = []
+                    
+                    # 1st gear speed
+                    if 1 in self.gear_ratios:
+                        speed_1st = SpeedCalculator.calculate_max_speed(
+                            self.gear_ratios[1], final, self.max_rpm, self.tire_radius
+                        )
+                        speed_parts.append(f"1st: ~{speed_1st:.0f}")
+                    
+                    # Highest gear speed (6th if available, otherwise last gear)
+                    if 6 in self.gear_ratios:
+                        speed_6th = SpeedCalculator.calculate_max_speed(
+                            self.gear_ratios[6], final, self.max_rpm, self.tire_radius
+                        )
+                        speed_parts.append(f"6th: ~{speed_6th:.0f}")
+                    elif gear_nums:
+                        last_gear = gear_nums[-1]
+                        speed_last = SpeedCalculator.calculate_max_speed(
+                            self.gear_ratios[last_gear], final, self.max_rpm, self.tire_radius
+                        )
+                        speed_parts.append(f"{last_gear}th: ~{speed_last:.0f}")
+                    
+                    if speed_parts:
+                        speeds.append(f"{final:.2f} → {', '.join(speed_parts)} km/h")
+                
+                if speeds:
+                    info_text = f"📊 Speed estimates (from drivetrain.ini): " + " | ".join(speeds)
+                    if len(final_ratios) > 3:
+                        info_text += f" (+{len(final_ratios)-3} more)"
+                    self.final_speed_info.setText(info_text)
+                else:
+                    self.final_speed_info.setText("⚠️ No gear ratios found in drivetrain.ini")
+            elif final_ratios:
+                # Fallback to typical 1st gear if no actual gear ratios available
                 typical_1st = 3.5
                 speeds = []
-                for final in final_ratios[:3]:  # Show first 3
+                for final in final_ratios[:3]:
                     speed = SpeedCalculator.calculate_max_speed(
                         typical_1st, final, self.max_rpm, self.tire_radius
                     )
-                    speeds.append(f"{final:.2f} → ~{speed:.0f} km/h (1st gear)")
+                    speeds.append(f"{final:.2f} → ~{speed:.0f} km/h (typical 1st)")
                 
-                info_text = f"📊 Speed estimates with typical 1st gear ({typical_1st}): " + " | ".join(speeds)
+                info_text = f"📊 Speed estimates (no drivetrain.ini - using typical 1st gear {typical_1st}): " + " | ".join(speeds)
                 if len(final_ratios) > 3:
                     info_text += f" (+{len(final_ratios)-3} more)"
                 self.final_speed_info.setText(info_text)
