@@ -4,9 +4,15 @@ Defines colors, fonts, spacing and QSS stylesheets for a modern, consistent UI.
 """
 
 import os
+import sys
 
 # Path to the X icon used in checked checkboxes (forward slashes required for Qt QSS)
-_CHECK_X_PATH = os.path.join(os.path.dirname(__file__), 'assets', 'check_x.svg').replace('\\', '/')
+def _get_assets_dir():
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, 'assets')
+    return os.path.join(os.path.dirname(__file__), 'assets')
+
+_CHECK_X_PATH = os.path.join(_get_assets_dir(), 'check_x.svg').replace('\\', '/')
 
 # ── Color palette ──────────────────────────────────────────────────────
 COLORS = {

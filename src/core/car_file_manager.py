@@ -3,6 +3,7 @@ Car File Manager for handling Assetto Corsa car files and folders
 """
 
 import os
+import sys
 import shutil
 import subprocess
 from pathlib import Path
@@ -324,8 +325,15 @@ class CarFileManager:
         Returns:
             Path to quickbms.exe or None if not found
         """
-        # Try relative to project root
-        possible_paths = [
+        possible_paths = []
+        # PyInstaller bundle: tools/ extracted to _MEIPASS
+        if hasattr(sys, '_MEIPASS'):
+            possible_paths += [
+                os.path.join(sys._MEIPASS, 'tools', 'quickbms', 'quickbms.exe'),
+                os.path.join(sys._MEIPASS, 'tools', 'quickbms.exe'),
+            ]
+        # Normal dev: relative to project root or this file
+        possible_paths += [
             os.path.join('tools', 'quickbms', 'quickbms.exe'),
             os.path.join('tools', 'quickbms.exe'),
             os.path.join(os.path.dirname(__file__), '..', '..', 'tools', 'quickbms', 'quickbms.exe'),
@@ -345,7 +353,10 @@ class CarFileManager:
         Returns:
             Path to script or None if not found
         """
-        possible_paths = [
+        possible_paths = []
+        if hasattr(sys, '_MEIPASS'):
+            possible_paths.append(os.path.join(sys._MEIPASS, 'tools', 'assetto_corsa_acd.bms'))
+        possible_paths += [
             os.path.join('tools', 'assetto_corsa_acd.bms'),
             os.path.join(os.path.dirname(__file__), '..', '..', 'tools', 'assetto_corsa_acd.bms'),
         ]

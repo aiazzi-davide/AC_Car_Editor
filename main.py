@@ -17,6 +17,7 @@ def main():
     """Main application entry point"""
     app = QApplication(sys.argv)
     app.setApplicationName("AC Car Editor")
+    app.setApplicationVersion("0.1.0")
     app.setOrganizationName("AC Car Editor")
 
     # Apply global modern theme
