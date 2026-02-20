@@ -5,6 +5,7 @@ drivetrain.ini, car.ini, aero.ini, brakes.ini).
 """
 
 import os
+import shutil
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QTabWidget,
     QPushButton, QMessageBox, QWidget, QGroupBox,
@@ -19,6 +20,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from core.ini_parser import IniParser
 from core.lut_parser import LUTCurve
 from core.power_calculator import PowerTorqueCalculator
+from core.car_file_manager import CarFileManager
 from gui.curve_editor_dialog import CurveEditorDialog
 from gui.component_selector_dialog import ComponentSelectorDialog
 from gui.stage_tuning_dialog import StageTuningDialog
@@ -149,6 +151,11 @@ class CarEditorDialog(QDialog):
         self.stage_btn.setToolTip("One-click performance upgrades (Stage 1/2/3)")
         self.stage_btn.clicked.connect(self.open_stage_tuning)
         btn_layout.addWidget(self.stage_btn)
+
+        self.restore_btn = QPushButton("↩ Restore Backup")
+        self.restore_btn.setToolTip("Restore all files from their last .bak backup (undo last save)")
+        self.restore_btn.clicked.connect(self.restore_last_backup)
+        btn_layout.addWidget(self.restore_btn)
 
         btn_layout.addStretch()
 
@@ -1955,4 +1962,58 @@ class CarEditorDialog(QDialog):
         self._load_aero_data()
         self._load_brakes_data()
         self._load_tyres_data()
+
+    # ------------------------------------------------------------------ Restore backup
+
+    def restore_last_backup(self):
+        """Restore all .bak files in the car data folder (undo last save)."""
+        data_path = self.car_data_path
+
+        # Collect .bak files
+        bak_files = [
+            f for f in os.listdir(data_path) if f.endswith('.bak')
+        ] if os.path.exists(data_path) else []
+
+        if not bak_files:
+            QMessageBox.information(
+                self,
+                "No Backup Available",
+                "No .bak backup files were found in the car data folder.\n\n"
+                "Backups are created automatically each time you save changes."
+            )
+            return
+
+        reply = QMessageBox.question(
+            self,
+            "Restore Backup",
+            f"This will restore {len(bak_files)} file(s) from their last backup,\n"
+            "undoing the most recent save.\n\n"
+            "Continue?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        if reply != QMessageBox.Yes:
+            return
+
+        restored = CarFileManager.restore_bak_files(data_path)
+
+        # Reinitialise parsers so they re-read the restored files
+        self.init_parsers()
+        self.load_data()
+
+        if restored < len(bak_files):
+            errors_count = len(bak_files) - restored
+            QMessageBox.warning(
+                self,
+                "Restore Partial",
+                f"Restored {restored} file(s), but {errors_count} error(s) occurred.\n"
+                "Check the console for details."
+            )
+        else:
+            QMessageBox.information(
+                self,
+                "Restore Complete",
+                f"Successfully restored {restored} file(s) from backup.\n"
+                "The editor has been reloaded with the restored values."
+            )
 
