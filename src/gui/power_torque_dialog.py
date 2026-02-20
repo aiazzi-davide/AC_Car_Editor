@@ -89,6 +89,17 @@ class PowerTorqueDialog(QDialog):
 
         layout.addLayout(stats_layout)
 
+        # --- Disclaimer ---
+        disclaimer = QLabel(
+            "ℹ️  I valori mostrati sono i valori REALI di potenza nel gioco <b>alle ruote</b>. "
+            "I valori visualizzati in Assetto Corsa (per le auto Kunos) si riferiscono alla potenza "
+            "<b>al cambio (crankshaft)</b> e non alle ruote, quindi possono risultare più alti. "
+            "Assetto Corsa utilizza internamente i valori alle ruote."
+        )
+        disclaimer.setWordWrap(True)
+        disclaimer.setStyleSheet("color: #888; font-style: italic; padding: 4px 2px;")
+        layout.addWidget(disclaimer)
+
         # --- Close button ---
         btn_layout = QHBoxLayout()
         btn_layout.addStretch()
