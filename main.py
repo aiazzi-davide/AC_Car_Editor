@@ -18,7 +18,11 @@ def main():
     app = QApplication(sys.argv)
     app.setApplicationName("AC Car Editor")
     app.setOrganizationName("AC Car Editor")
-    
+
+    # Apply global modern theme
+    from gui.theme import APP_STYLESHEET
+    app.setStyleSheet(APP_STYLESHEET)
+
     window = MainWindow()
     window.show()
     

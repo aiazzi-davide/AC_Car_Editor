@@ -13,6 +13,8 @@ from PyQt5.QtCore import Qt
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from core.stage_tuner import StageTuner
+from gui.theme import COLORS, btn_primary, btn_outline, btn_danger
+from gui.toast import show_toast
 
 
 class StageTuningDialog(QDialog):
@@ -42,11 +44,11 @@ class StageTuningDialog(QDialog):
         info_layout = QVBoxLayout()
         
         self.engine_type_label = QLabel()
-        self.engine_type_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+        self.engine_type_label.setStyleSheet(f"font-weight: bold; font-size: 14px; color: {COLORS['primary']};")
         info_layout.addWidget(self.engine_type_label)
         
         self.current_stage_label = QLabel()
-        self.current_stage_label.setStyleSheet("font-size: 12px;")
+        self.current_stage_label.setStyleSheet(f"font-size: 12px; color: {COLORS['text_secondary']};")
         info_layout.addWidget(self.current_stage_label)
         
         info_group.setLayout(info_layout)
@@ -58,7 +60,7 @@ class StageTuningDialog(QDialog):
         
         stage1_desc = self.tuner.get_stage_description(1)
         stage1_title = QLabel(stage1_desc['title'])
-        stage1_title.setStyleSheet("font-weight: bold; font-size: 13px;")
+        stage1_title.setStyleSheet(f"font-weight: bold; font-size: 13px; color: {COLORS['text']};")
         stage1_layout.addWidget(stage1_title)
         
         stage1_text = QTextEdit()
@@ -67,7 +69,8 @@ class StageTuningDialog(QDialog):
         stage1_text.setMaximumHeight(60)
         stage1_layout.addWidget(stage1_text)
         
-        self.stage1_btn = QPushButton("Apply Stage 1")
+        self.stage1_btn = QPushButton("⚡  Apply Stage 1")
+        self.stage1_btn.setStyleSheet(btn_primary())
         self.stage1_btn.clicked.connect(lambda: self.apply_stage(1))
         stage1_layout.addWidget(self.stage1_btn)
         
@@ -80,7 +83,7 @@ class StageTuningDialog(QDialog):
         
         stage2_desc = self.tuner.get_stage_description(2)
         stage2_title = QLabel(stage2_desc['title'])
-        stage2_title.setStyleSheet("font-weight: bold; font-size: 13px;")
+        stage2_title.setStyleSheet(f"font-weight: bold; font-size: 13px; color: {COLORS['text']};")
         stage2_layout.addWidget(stage2_title)
         
         stage2_text = QTextEdit()
@@ -89,7 +92,8 @@ class StageTuningDialog(QDialog):
         stage2_text.setMaximumHeight(60)
         stage2_layout.addWidget(stage2_text)
         
-        self.stage2_btn = QPushButton("Apply Stage 2")
+        self.stage2_btn = QPushButton("⚡  Apply Stage 2")
+        self.stage2_btn.setStyleSheet(btn_primary())
         self.stage2_btn.clicked.connect(lambda: self.apply_stage(2))
         stage2_layout.addWidget(self.stage2_btn)
         
@@ -102,7 +106,7 @@ class StageTuningDialog(QDialog):
         
         stage3_desc = self.tuner.get_stage_description(3)
         stage3_title = QLabel(stage3_desc['title'])
-        stage3_title.setStyleSheet("font-weight: bold; font-size: 13px;")
+        stage3_title.setStyleSheet(f"font-weight: bold; font-size: 13px; color: {COLORS['text']};")
         stage3_layout.addWidget(stage3_title)
         
         stage3_text = QTextEdit()
@@ -111,7 +115,8 @@ class StageTuningDialog(QDialog):
         stage3_text.setMaximumHeight(100)
         stage3_layout.addWidget(stage3_text)
         
-        self.stage3_btn = QPushButton("Apply Stage 3")
+        self.stage3_btn = QPushButton("⚡  Apply Stage 3")
+        self.stage3_btn.setStyleSheet(btn_primary())
         self.stage3_btn.clicked.connect(lambda: self.apply_stage(3))
         stage3_layout.addWidget(self.stage3_btn)
         
@@ -180,12 +185,7 @@ class StageTuningDialog(QDialog):
                 success = self.tuner.apply_stage_3()
             
             if success:
-                QMessageBox.information(
-                    self,
-                    "Success",
-                    f"{stage_desc['title']} applied successfully!\n\n"
-                    "Backups have been created for all modified files."
-                )
+                show_toast(self, f"✅  {stage_desc['title']} applied successfully! Backups created.", kind='success')
                 self.update_current_stage()
             else:
                 QMessageBox.warning(
@@ -217,11 +217,7 @@ class StageTuningDialog(QDialog):
             return
         
         if self.tuner.reset_to_stock():
-            QMessageBox.information(
-                self,
-                "Success",
-                "Stage marker cleared. Car marked as stock."
-            )
+            show_toast(self, "✅  Stage marker cleared. Car marked as stock.", kind='success')
             self.update_current_stage()
         else:
             QMessageBox.warning(

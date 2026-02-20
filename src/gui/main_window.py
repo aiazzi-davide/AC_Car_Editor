@@ -22,6 +22,8 @@ from core.component_library import ComponentLibrary
 from gui.car_editor_dialog import CarEditorDialog
 from gui.component_library_dialog import ComponentLibraryDialog
 from gui.ui_editor_dialog import UIEditorDialog
+from gui.theme import COLORS, btn_primary, btn_outline, section_title, card_style, muted_text
+from gui.toast import show_toast
 
 
 class MainWindow(QMainWindow):
@@ -157,15 +159,18 @@ class MainWindow(QMainWindow):
         
         # Car name label
         self.car_name_label = QLabel("No car selected")
-        self.car_name_label.setStyleSheet("font-size: 18px; font-weight: bold;")
+        self.car_name_label.setStyleSheet(section_title())
         layout.addWidget(self.car_name_label)
         
         # Preview image
         self.preview_label = QLabel()
         self.preview_label.setAlignment(Qt.AlignCenter)
         self.preview_label.setMinimumHeight(150)
-        self.preview_label.setMaximumHeight(250)
-        self.preview_label.setStyleSheet("QLabel { background-color: #f0f0f0; border: 1px solid #ccc; }")
+        self.preview_label.setMaximumHeight(300)
+        self.preview_label.setStyleSheet(
+            f"QLabel {{ background-color: {COLORS['tab_inactive_bg']}; "
+            f"border: 1px solid {COLORS['border']}; border-radius: 10px; }}"
+        )
         self.preview_label.setText("No preview image")
         layout.addWidget(self.preview_label)
         
@@ -178,22 +183,23 @@ class MainWindow(QMainWindow):
         # Action buttons
         button_layout = QHBoxLayout()
         
-        self.edit_btn = QPushButton("Edit Car")
+        self.edit_btn = QPushButton("✏️  Edit Car")
         self.edit_btn.setEnabled(False)
+        self.edit_btn.setStyleSheet(btn_primary())
         self.edit_btn.clicked.connect(self.edit_car)
         button_layout.addWidget(self.edit_btn)
         
-        self.open_folder_btn = QPushButton("Open Folder")
+        self.open_folder_btn = QPushButton("📁  Open Folder")
         self.open_folder_btn.clicked.connect(self.open_car_folder)
         button_layout.addWidget(self.open_folder_btn)
         
-        self.edit_ui_btn = QPushButton("Edit UI")
+        self.edit_ui_btn = QPushButton("🎨  Edit UI")
         self.edit_ui_btn.setToolTip("Edit car name, brand, icons in ui/ folder")
         self.edit_ui_btn.setEnabled(False)
         self.edit_ui_btn.clicked.connect(self.edit_ui_metadata)
         button_layout.addWidget(self.edit_ui_btn)
         
-        self.backup_btn = QPushButton("Create Backup")
+        self.backup_btn = QPushButton("💾  Backup")
         self.backup_btn.setEnabled(False)
         self.backup_btn.clicked.connect(self.create_backup)
         button_layout.addWidget(self.backup_btn)
@@ -345,11 +351,7 @@ class MainWindow(QMainWindow):
         result = self.car_manager.create_backup(self.current_car, backup_path)
         
         if result:
-            QMessageBox.information(
-                self,
-                "Backup Created",
-                f"Backup created successfully:\n{result}"
-            )
+            show_toast(self, f"✅  Backup created successfully: {result}", kind='success')
             self.statusBar.showMessage("Backup created successfully")
         else:
             QMessageBox.warning(
@@ -459,11 +461,7 @@ class MainWindow(QMainWindow):
             if reply == QMessageBox.Yes:
                 if self.car_manager.delete_data_acd(self.current_car):
                     self.statusBar.showMessage("data.acd renamed to data.acd.bak")
-                    QMessageBox.information(
-                        self,
-                        "Success",
-                        "data.acd renamed to data.acd.bak. Your changes will now be used in-game."
-                    )
+                    show_toast(self, "✅  data.acd renamed — your changes will be used in-game.", kind='success')
                 else:
                     QMessageBox.warning(
                         self,

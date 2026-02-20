@@ -16,6 +16,8 @@ from PyQt5.QtCore import Qt
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from core.component_library import ComponentLibrary
+from gui.theme import COLORS
+from gui.toast import show_toast
 
 
 class ComponentLibraryDialog(QDialog):
@@ -151,7 +153,7 @@ class ComponentLibraryDialog(QDialog):
         info_layout = QFormLayout()
         
         self.name_label = QLabel("-")
-        self.name_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+        self.name_label.setStyleSheet(f"font-weight: bold; font-size: 14px; color: {COLORS['text']};")
         info_layout.addRow("Name:", self.name_label)
         
         self.id_label = QLabel("-")
@@ -267,7 +269,7 @@ class ComponentLibraryDialog(QDialog):
             component = dialog.get_component()
             if self.library.add_component(self.current_component_type, component):
                 self.load_components()
-                QMessageBox.information(self, "Success", "Component added successfully!")
+                show_toast(self, "✅  Component added successfully!", kind='success')
             else:
                 QMessageBox.warning(self, "Error", "Failed to add component. Component ID may already exist.")
                 
@@ -283,7 +285,7 @@ class ComponentLibraryDialog(QDialog):
             component_id = self.current_component.get('id')
             if self.library.update_component(self.current_component_type, component_id, component):
                 self.load_components()
-                QMessageBox.information(self, "Success", "Component updated successfully!")
+                show_toast(self, "✅  Component updated successfully!", kind='success')
             else:
                 QMessageBox.warning(self, "Error", "Failed to update component.")
                 
@@ -307,7 +309,7 @@ class ComponentLibraryDialog(QDialog):
         if reply == QMessageBox.Yes:
             if self.library.delete_component(self.current_component_type, component_id):
                 self.load_components()
-                QMessageBox.information(self, "Success", "Component deleted successfully!")
+                show_toast(self, "✅  Component deleted.", kind='success')
             else:
                 QMessageBox.warning(self, "Error", "Failed to delete component.")
                 
@@ -334,7 +336,7 @@ class ComponentLibraryDialog(QDialog):
             
             if self.library.import_component(file_path, overwrite):
                 self.load_components()
-                QMessageBox.information(self, "Success", "Component imported successfully!")
+                show_toast(self, "✅  Component imported successfully!", kind='success')
             else:
                 QMessageBox.warning(self, "Error", "Failed to import component.")
                 
@@ -350,7 +352,7 @@ class ComponentLibraryDialog(QDialog):
         if file_path:
             if self.library.import_components(file_path):
                 self.load_components()
-                QMessageBox.information(self, "Success", "Components imported successfully!")
+                show_toast(self, "✅  Components imported successfully!", kind='success')
             else:
                 QMessageBox.warning(self, "Error", "Failed to import components.")
                 
@@ -372,7 +374,7 @@ class ComponentLibraryDialog(QDialog):
         
         if file_path:
             if self.library.export_component(self.current_component_type, component_id, file_path):
-                QMessageBox.information(self, "Success", f"Component exported to:\n{file_path}")
+                show_toast(self, f"✅  Component exported to: {file_path}", kind='success')
             else:
                 QMessageBox.warning(self, "Error", "Failed to export component.")
                 
@@ -387,7 +389,7 @@ class ComponentLibraryDialog(QDialog):
         
         if file_path:
             if self.library.export_all_components(file_path):
-                QMessageBox.information(self, "Success", f"All components exported to:\n{file_path}")
+                show_toast(self, f"✅  All components exported to: {file_path}", kind='success')
             else:
                 QMessageBox.warning(self, "Error", "Failed to export components.")
                 

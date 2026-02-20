@@ -24,6 +24,10 @@ from core.car_file_manager import CarFileManager
 from gui.curve_editor_dialog import CurveEditorDialog
 from gui.component_selector_dialog import ComponentSelectorDialog
 from gui.stage_tuning_dialog import StageTuningDialog
+from gui.theme import COLORS, btn_primary, btn_accent, btn_outline, btn_danger, info_banner, muted_text
+from gui.toast import show_toast
+from gui.collapsible import CollapsibleGroupBox
+from gui.segmented_button import SegmentedButtonGroup
 
 
 def _tip(widget, text):
@@ -134,32 +138,34 @@ class CarEditorDialog(QDialog):
 
         btn_layout = QHBoxLayout()
         
-        self.save_btn = QPushButton("Save Changes")
+        self.save_btn = QPushButton("💾  Save Changes")
+        self.save_btn.setStyleSheet(btn_primary())
         self.save_btn.clicked.connect(self.save_changes)
         btn_layout.addWidget(self.save_btn)
 
-        self.reset_btn = QPushButton("Reset")
+        self.reset_btn = QPushButton("↺  Reset")
+        self.reset_btn.setStyleSheet(btn_outline())
         self.reset_btn.clicked.connect(self.reset_values)
         btn_layout.addWidget(self.reset_btn)
 
-        self.setup_btn = QPushButton("🔧 Setup Manager")
+        self.setup_btn = QPushButton("🔧  Setup Manager")
         self.setup_btn.setToolTip("Manage track-specific setup presets")
         self.setup_btn.clicked.connect(self.open_setup_manager)
         btn_layout.addWidget(self.setup_btn)
 
-        self.stage_btn = QPushButton("🚀 Stage Tuning")
+        self.stage_btn = QPushButton("🚀  Stage Tuning")
         self.stage_btn.setToolTip("One-click performance upgrades (Stage 1/2/3)")
         self.stage_btn.clicked.connect(self.open_stage_tuning)
         btn_layout.addWidget(self.stage_btn)
 
-        self.restore_btn = QPushButton("↩ Restore Backup")
+        self.restore_btn = QPushButton("↩  Restore Backup")
         self.restore_btn.setToolTip("Restore all files from their last .bak backup (undo last save)")
         self.restore_btn.clicked.connect(self.restore_last_backup)
         btn_layout.addWidget(self.restore_btn)
 
         btn_layout.addStretch()
 
-        self.cancel_btn = QPushButton("Cancel")
+        self.cancel_btn = QPushButton("✕  Cancel")
         self.cancel_btn.clicked.connect(self.reject)
         btn_layout.addWidget(self.cancel_btn)
 
@@ -268,11 +274,10 @@ class CarEditorDialog(QDialog):
 
         count_row = QHBoxLayout()
         count_row.addWidget(QLabel("Number of turbo units:"))
-        self.turbo_count_combo = _tip(QComboBox(),
+        self.turbo_count_combo = _tip(SegmentedButtonGroup(["Single", "Twin", "Triple"]),
                                       "1 = single turbo (TURBO_0)\n"
                                       "2 = twin turbo (TURBO_0 + TURBO_1)\n"
                                       "3 = triple turbo (TURBO_0–2)")
-        self.turbo_count_combo.addItems(["1 — Single", "2 — Twin", "3 — Triple"])
         self.turbo_count_combo.setEnabled(False)
         self.turbo_count_combo.currentIndexChanged.connect(self._on_turbo_count_changed)
         count_row.addWidget(self.turbo_count_combo)
@@ -294,8 +299,8 @@ class CarEditorDialog(QDialog):
         fi_grp.setLayout(fi_layout)
         layout.addWidget(fi_grp)
 
-        # --- Engine Damage ---
-        dmg_grp = QGroupBox("Engine Damage  (engine.ini › DAMAGE)")
+        # --- Engine Damage (collapsible, secondary) ---
+        dmg_grp = CollapsibleGroupBox("Engine Damage  (engine.ini › DAMAGE)", collapsed=True)
         dmg_form = QFormLayout()
 
         self.turbo_boost_threshold = _tip(QDoubleSpinBox(),
@@ -326,9 +331,9 @@ class CarEditorDialog(QDialog):
         layout.addWidget(dmg_grp)
 
         # --- Library import ---
-        import_btn = QPushButton("Import Engine from Library...")
+        import_btn = QPushButton("📥  Import Engine from Library...")
         import_btn.clicked.connect(self.import_engine_component)
-        import_btn.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; padding: 8px;")
+        import_btn.setStyleSheet(btn_accent())
         layout.addWidget(import_btn)
 
         # --- Curves ---
@@ -343,10 +348,10 @@ class CarEditorDialog(QDialog):
         coast_btn.clicked.connect(self.edit_coast_curve)
         curve_layout.addWidget(coast_btn)
 
-        calc_btn = QPushButton("⚡ Power / Torque Calculator")
+        calc_btn = QPushButton("⚡  Power / Torque Calculator")
         calc_btn.setToolTip("Show real-time power (HP) and torque (Nm) curves\n"
                             "computed from power.lut (Nm) with turbo boost effect.")
-        calc_btn.setStyleSheet("background-color: #2196F3; color: white; font-weight: bold; padding: 8px;")
+        calc_btn.setStyleSheet(btn_primary())
         calc_btn.clicked.connect(self.open_power_torque_calculator)
         curve_layout.addWidget(calc_btn)
 
@@ -538,9 +543,9 @@ class CarEditorDialog(QDialog):
             grp.setLayout(form)
             layout.addWidget(grp)
 
-        import_btn = QPushButton("Import Suspension from Library...")
+        import_btn = QPushButton("📥  Import Suspension from Library...")
         import_btn.clicked.connect(self.import_suspension_component)
-        import_btn.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; padding: 8px;")
+        import_btn.setStyleSheet(btn_accent())
         layout.addWidget(import_btn)
 
         layout.addStretch()
@@ -556,9 +561,9 @@ class CarEditorDialog(QDialog):
         traction_grp = QGroupBox("Traction Layout  (drivetrain.ini › TRACTION)")
         traction_form = QFormLayout()
 
-        self.traction_type = _tip(QComboBox(), "Drive wheel configuration.\n"
-                                            "AWD2 = advanced AWD with controller (drivetrain.ini VERSION=3).  (TYPE)")
-        self.traction_type.addItems(["RWD", "FWD", "AWD", "AWD2"])
+        self.traction_type = _tip(SegmentedButtonGroup(["RWD", "FWD", "AWD", "AWD2"]),
+                                  "Drive wheel configuration.\n"
+                                  "AWD2 = advanced AWD with controller (drivetrain.ini VERSION=3).  (TYPE)")
         traction_form.addRow("Drive Type:", self.traction_type)
 
         traction_grp.setLayout(traction_form)
@@ -653,7 +658,7 @@ class CarEditorDialog(QDialog):
         reverse_layout = QHBoxLayout()
         reverse_layout.addWidget(self.gear_ratios['GEAR_R'])
         self.gear_speed_labels['GEAR_R'] = QLabel("")
-        self.gear_speed_labels['GEAR_R'].setStyleSheet("color: #666; font-style: italic;")
+        self.gear_speed_labels['GEAR_R'].setStyleSheet(muted_text())
         reverse_layout.addWidget(self.gear_speed_labels['GEAR_R'])
         reverse_layout.addStretch()
         gear_ratios_form.addRow("Reverse:", reverse_layout)
@@ -673,7 +678,7 @@ class CarEditorDialog(QDialog):
             gear_layout.setContentsMargins(0, 0, 0, 0)
             gear_layout.addWidget(self.gear_ratios[gear_key])
             self.gear_speed_labels[gear_key] = QLabel("")
-            self.gear_speed_labels[gear_key].setStyleSheet("color: #666; font-style: italic;")
+            self.gear_speed_labels[gear_key].setStyleSheet(muted_text())
             gear_layout.addWidget(self.gear_speed_labels[gear_key])
             gear_layout.addStretch()
             gear_widget = QWidget()
@@ -684,9 +689,9 @@ class CarEditorDialog(QDialog):
                                     gear_widget)
 
         # Import gear ratios from library button
-        import_gears_btn = QPushButton("📥 Import Gear Set from Library...")
+        import_gears_btn = QPushButton("📥  Import Gear Set from Library...")
         import_gears_btn.clicked.connect(self.import_gears_component)
-        import_gears_btn.setStyleSheet("background-color: #2196F3; color: white; font-weight: bold; padding: 6px;")
+        import_gears_btn.setStyleSheet(btn_primary())
         gear_ratios_form.addRow("", import_gears_btn)
 
         self.gear_ratios_grp.setLayout(gear_ratios_form)
@@ -710,9 +715,7 @@ class CarEditorDialog(QDialog):
             "ratios as long as the corresponding .rto file exists."
         )
         rto_disclaimer.setWordWrap(True)
-        rto_disclaimer.setStyleSheet(
-            "background-color: #FFF8E1; color: #5D4037; padding: 8px; border-radius: 4px;"
-        )
+        rto_disclaimer.setStyleSheet(info_banner())
         rto_layout.addWidget(rto_disclaimer)
         
         manage_rto_btn = QPushButton("⚙ Manage RTO Files...")
@@ -722,7 +725,7 @@ class CarEditorDialog(QDialog):
         
         # Status label for RTO files
         self.rto_status_label = QLabel()
-        self.rto_status_label.setStyleSheet("color: #666; font-size: 10px;")
+        self.rto_status_label.setStyleSheet(muted_text() + " font-size: 11px;")
         rto_layout.addWidget(self.rto_status_label)
         
         rto_grp.setLayout(rto_layout)
@@ -741,9 +744,9 @@ class CarEditorDialog(QDialog):
         clutch_grp.setLayout(clutch_form)
         layout.addWidget(clutch_grp)
 
-        import_btn = QPushButton("Import Differential from Library...")
+        import_btn = QPushButton("📥  Import Differential from Library...")
         import_btn.clicked.connect(self.import_differential_component)
-        import_btn.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; padding: 8px;")
+        import_btn.setStyleSheet(btn_accent())
         layout.addWidget(import_btn)
 
         layout.addStretch()
@@ -862,7 +865,7 @@ class CarEditorDialog(QDialog):
                       "WING_0 is typically the car body.  CD = drag coefficient, "
                       "CL = lift (negative value = downforce).")
         info.setWordWrap(True)
-        info.setStyleSheet("color: #555; font-style: italic; padding: 4px;")
+        info.setStyleSheet(f"color: {COLORS['text_secondary']}; font-style: italic; padding: 4px;")
         layout.addWidget(info)
 
         self.wing_widgets = []
@@ -874,9 +877,9 @@ class CarEditorDialog(QDialog):
                 self.wing_widgets.append(w)
                 layout.addWidget(w)
 
-        import_btn = QPushButton("Import Aero from Library...")
+        import_btn = QPushButton("📥  Import Aero from Library...")
         import_btn.clicked.connect(self.import_aero_component)
-        import_btn.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; padding: 8px;")
+        import_btn.setStyleSheet(btn_accent())
         layout.addWidget(import_btn)
 
         layout.addStretch()
@@ -1077,9 +1080,9 @@ class CarEditorDialog(QDialog):
         rear_perf_grp.setLayout(rear_perf_form)
         layout.addWidget(rear_perf_grp)
 
-        import_tyres_btn = QPushButton("Import Tyre Compound from Library...")
+        import_tyres_btn = QPushButton("📥  Import Tyre Compound from Library...")
         import_tyres_btn.clicked.connect(self.import_tyres_component)
-        import_tyres_btn.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; padding: 8px;")
+        import_tyres_btn.setStyleSheet(btn_accent())
         layout.addWidget(import_tyres_btn)
 
         layout.addStretch()
@@ -1612,9 +1615,7 @@ class CarEditorDialog(QDialog):
             self.turbo_0_max_boost.setValue(float(data['TURBO_MAX_BOOST'])); applied.append('Turbo Max Boost')
         if 'TURBO_WASTEGATE' in data:
             self.turbo_0_wastegate.setValue(float(data['TURBO_WASTEGATE'])); applied.append('Turbo Wastegate')
-        QMessageBox.information(self, "Component Applied",
-                                f"Applied '{component.get('name', '?')}'\n\nUpdated:\n- " +
-                                "\n- ".join(applied) + "\n\nRemember to save.")
+        show_toast(self, f"✅  Applied '{component.get('name', '?')}' — {', '.join(applied)}. Remember to save.", kind='success')
 
     def import_suspension_component(self):
         from PyQt5.QtWidgets import QDialog as _QD
@@ -1643,9 +1644,7 @@ class CarEditorDialog(QDialog):
             if key in data:
                 getattr(self, attr).setValue(cast(data[key]))
                 applied.append(key)
-        QMessageBox.information(self, "Component Applied",
-                                f"Applied '{component.get('name', '?')}'\n\nUpdated:\n- " +
-                                "\n- ".join(applied) + "\n\nRemember to save.")
+        show_toast(self, f"✅  Applied '{component.get('name', '?')}' — {len(applied)} params updated. Remember to save.", kind='success')
 
     def import_differential_component(self):
         from PyQt5.QtWidgets import QDialog as _QD
@@ -1661,9 +1660,7 @@ class CarEditorDialog(QDialog):
         if 'POWER'   in data: self.diff_power.setValue(float(data['POWER']));        applied.append('Lock on Power')
         if 'COAST'   in data: self.diff_coast.setValue(float(data['COAST']));        applied.append('Lock on Coast')
         if 'PRELOAD' in data: self.diff_preload.setValue(float(data['PRELOAD']));    applied.append('Preload')
-        QMessageBox.information(self, "Component Applied",
-                                f"Applied '{component.get('name', '?')}'\n\nUpdated:\n- " +
-                                "\n- ".join(applied) + "\n\nRemember to save.")
+        show_toast(self, f"✅  Applied '{component.get('name', '?')}' — {', '.join(applied)}. Remember to save.", kind='success')
 
     def import_gears_component(self):
         """Import gear ratios from component library."""
@@ -1699,9 +1696,7 @@ class CarEditorDialog(QDialog):
         # Update visibility
         self._update_gear_ratio_visibility()
         
-        QMessageBox.information(self, "Gear Set Applied",
-                                f"Applied '{component.get('name', '?')}'\n\nUpdated:\n- " +
-                                "\n- ".join(applied) + "\n\nRemember to save.")
+        show_toast(self, f"✅  Applied '{component.get('name', '?')}' — {len(applied)} ratios updated. Remember to save.", kind='success')
 
     def import_aero_component(self):
         from PyQt5.QtWidgets import QDialog as _QD
@@ -1719,9 +1714,7 @@ class CarEditorDialog(QDialog):
                 if key in data:
                     getattr(self, attr).setValue(float(data[key]))
                     applied.append(key)
-        QMessageBox.information(self, "Component Applied",
-                                f"Applied '{component.get('name', '?')}'\n\nUpdated:\n- " +
-                                ("\n- ".join(applied) if applied else "None") + "\n\nRemember to save.")
+        show_toast(self, f"✅  Applied '{component.get('name', '?')}' — {len(applied)} params updated. Remember to save.", kind='success')
 
     def import_tyres_component(self):
         """Import tyre compound from component library."""
@@ -1761,11 +1754,7 @@ class CarEditorDialog(QDialog):
                 getattr(self, f'{axle}_pressure_ideal').setValue(int(data['PRESSURE_IDEAL']))
                 applied.append(f"{prefix} Ideal Pressure")
         
-        QMessageBox.information(self, "Tyre Compound Applied",
-                                f"Applied '{component.get('name', '?')}'\n\n"
-                                f"Updated {len(applied)} parameters.\n\n"
-                                f"Note: This applies to the currently selected compound.\n"
-                                f"Remember to save.")
+        show_toast(self, f"✅  Applied '{component.get('name', '?')}' — {len(applied)} params updated. Remember to save.", kind='success')
 
     # ------------------------------------------------------------------ Save
 
@@ -1778,9 +1767,8 @@ class CarEditorDialog(QDialog):
             self._save_aero_data()
             self._save_brakes_data()
             self._save_tyres_data()
-            QMessageBox.information(self, "Success",
-                                    "Changes saved successfully!\n"
-                                    "Backups created with .bak extension.")
+            show_toast(self.parent() if self.parent() else self,
+                       "✅  Changes saved successfully! Backups created (.bak).", kind='success')
             self.accept()
         except Exception as e:
             QMessageBox.critical(self, "Error Saving", f"Failed to save changes:\n{str(e)}")
@@ -2010,10 +1998,5 @@ class CarEditorDialog(QDialog):
                 "Check the console for details."
             )
         else:
-            QMessageBox.information(
-                self,
-                "Restore Complete",
-                f"Successfully restored {restored} file(s) from backup.\n"
-                "The editor has been reloaded with the restored values."
-            )
+            show_toast(self, f"✅  Restored {restored} file(s) from backup. Editor reloaded.", kind='success')
 
