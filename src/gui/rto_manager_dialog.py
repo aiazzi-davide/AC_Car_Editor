@@ -14,6 +14,7 @@ from PyQt5.QtCore import Qt
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from core.rto_parser import RTOParser
+from gui.toast import show_toast
 
 
 class RTOManagerDialog(QDialog):
@@ -416,12 +417,7 @@ class RTOManagerDialog(QDialog):
             if len(self.ratios_parser.get_ratios()) > 0:
                 self.ratios_parser.save(backup=True)
 
-            QMessageBox.information(
-                self,
-                "Success",
-                "RTO files saved successfully!\n"
-                "Backups created with .bak extension."
-            )
+            show_toast(self, "✅  RTO files saved! Backups created (.bak).", kind='success')
             self.load_data()
 
             # After saving final.rto, check if setup.ini already references it
@@ -548,14 +544,7 @@ class RTOManagerDialog(QDialog):
             with open(self.setup_ini_path, 'w', encoding='utf-8', newline='') as f:
                 f.writelines(new_lines)
 
-            QMessageBox.information(
-                self,
-                "setup.ini Updated",
-                "setup.ini has been updated:\n"
-                "  [GEARS] USE_GEARSET=1\n"
-                "  [FINAL_GEAR_RATIO] RATIOS=final.rto\n\n"
-                "A backup was created as setup.ini.bak."
-            )
+            show_toast(self, "✅  setup.ini updated with RTO references. Backup created.", kind='success')
         except Exception as e:
             QMessageBox.critical(
                 self,
@@ -575,13 +564,7 @@ class RTOManagerDialog(QDialog):
                 # Clear current ratios and add from preset
                 self.final_parser.set_ratios(component['ratios'])
                 self.load_data()
-                QMessageBox.information(
-                    self,
-                    "Preset Loaded",
-                    f"Loaded '{component['name']}'\n"
-                    f"{len(component['ratios'])} ratios imported.\n\n"
-                    f"Remember to save changes."
-                )
+                show_toast(self, f"✅  Loaded '{component['name']}' — {len(component['ratios'])} ratios. Remember to save.", kind='success')
     
     def import_ratios_from_library(self):
         """Import gear ratios from component library"""
@@ -595,13 +578,7 @@ class RTOManagerDialog(QDialog):
                 # Clear current ratios and add from preset
                 self.ratios_parser.set_ratios(component['ratios'])
                 self.load_data()
-                QMessageBox.information(
-                    self,
-                    "Preset Loaded",
-                    f"Loaded '{component['name']}'\n"
-                    f"{len(component['ratios'])} ratios imported.\n\n"
-                    f"Remember to save changes."
-                )
+                show_toast(self, f"✅  Loaded '{component['name']}' — {len(component['ratios'])} ratios. Remember to save.", kind='success')
     
     def _update_speed_info(self):
         """Update speed estimation info labels"""

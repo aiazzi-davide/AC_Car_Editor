@@ -19,6 +19,8 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt
 
 from core.setup_manager import SetupManager
+from gui.theme import btn_accent
+from gui.toast import show_toast
 
 
 class SetupManagerDialog(QDialog):
@@ -105,7 +107,7 @@ class SetupManagerDialog(QDialog):
         btn_row = QHBoxLayout()
         save_btn = QPushButton("Save Current...")
         save_btn.clicked.connect(self._on_save_preset)
-        save_btn.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold;")
+        save_btn.setStyleSheet(btn_accent())
         btn_row.addWidget(save_btn)
 
         load_btn = QPushButton("Load Selected")
@@ -148,7 +150,7 @@ class SetupManagerDialog(QDialog):
         name = name.strip()
         values = self._current_values()
         if self.manager.save_preset(name, values):
-            QMessageBox.information(self, "Saved", f"Preset '{name}' saved successfully.")
+            show_toast(self, f"✅  Preset '{name}' saved.", kind='success')
             self._refresh_preset_list()
         else:
             QMessageBox.warning(self, "Error", f"Failed to save preset '{name}'.")
@@ -167,7 +169,7 @@ class SetupManagerDialog(QDialog):
             widget = self.param_widgets.get(section)
             if widget:
                 widget.setValue(val)
-        QMessageBox.information(self, "Loaded", f"Preset '{name}' applied to parameters.")
+        show_toast(self, f"✅  Preset '{name}' applied.", kind='success')
 
     def _on_delete_preset(self):
         item = self.preset_list.currentItem()

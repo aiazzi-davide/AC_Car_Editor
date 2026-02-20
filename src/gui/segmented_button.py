@@ -6,7 +6,7 @@ Provides a modern toggle-button strip that is more visually explicit and user-fr
 """
 
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QPushButton, QButtonGroup, QSizePolicy
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import pyqtSignal, Qt
 from gui.theme import COLORS
 
 
@@ -59,7 +59,7 @@ class SegmentedButtonGroup(QWidget):
         for i, text in enumerate(self._options):
             btn = QPushButton(text)
             btn.setCheckable(True)
-            btn.setCursor(1)  # PointingHand
+            btn.setCursor(Qt.PointingHandCursor)
             self._group.addButton(btn, i)
             self._buttons.append(btn)
             layout.addWidget(btn)
