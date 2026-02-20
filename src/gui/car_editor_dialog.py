@@ -21,6 +21,7 @@ from core.lut_parser import LUTCurve
 from core.power_calculator import PowerTorqueCalculator
 from gui.curve_editor_dialog import CurveEditorDialog
 from gui.component_selector_dialog import ComponentSelectorDialog
+from gui.stage_tuning_dialog import StageTuningDialog
 
 
 def _tip(widget, text):
@@ -143,6 +144,11 @@ class CarEditorDialog(QDialog):
         self.setup_btn.setToolTip("Manage track-specific setup presets")
         self.setup_btn.clicked.connect(self.open_setup_manager)
         btn_layout.addWidget(self.setup_btn)
+
+        self.stage_btn = QPushButton("🚀 Stage Tuning")
+        self.stage_btn.setToolTip("One-click performance upgrades (Stage 1/2/3)")
+        self.stage_btn.clicked.connect(self.open_stage_tuning)
+        btn_layout.addWidget(self.stage_btn)
 
         btn_layout.addStretch()
 
@@ -1472,6 +1478,15 @@ class CarEditorDialog(QDialog):
         from gui.setup_manager_dialog import SetupManagerDialog
         dlg = SetupManagerDialog(self.car_data_path, parent=self)
         dlg.exec_()
+
+    def open_stage_tuning(self):
+        """Open the Stage Tuning dialog."""
+        dlg = StageTuningDialog(self.car_name, self.car_data_path, parent=self)
+        result = dlg.exec_()
+        
+        # If stage was applied, reload data to reflect changes
+        if result:
+            self.load_data()
 
     def open_rto_manager(self):
         """Open the RTO Manager dialog."""
