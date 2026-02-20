@@ -43,8 +43,13 @@ class CollapsibleGroupBox(QGroupBox):
 
     def setLayout(self, layout):
         """Override to redirect layout to the content area."""
-        # Remove old content layout and set new one
-        QWidget().setLayout(self._content_layout)
+        # Properly delete the old layout before setting the new one
+        old = self._content.layout()
+        if old is not None:
+            while old.count():
+                old.takeAt(0)
+            from PyQt5.QtWidgets import QWidget as _QW
+            _QW().setLayout(old)  # orphan it so Qt can reclaim memory
         self._content.setLayout(layout)
         self._content_layout = layout
 
