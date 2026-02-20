@@ -113,7 +113,13 @@ class IniParser:
             except configparser.NoOptionError:
                 current = None
             if current != new_str:
-                self._dirty = True
+                # Avoid false-dirty from format differences (e.g. "0.15" vs "0.1500").
+                # If both values are numeric, compare them as floats.
+                try:
+                    if abs(float(current) - float(new_str)) > 1e-9:
+                        self._dirty = True
+                except (TypeError, ValueError):
+                    self._dirty = True
         self.config.set(section, key, new_str)
     
     def get_section(self, section: str) -> Dict[str, str]:

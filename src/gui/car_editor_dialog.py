@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import (
     QSpinBox, QComboBox, QCheckBox, QScrollArea,
     QAbstractSpinBox, QGridLayout
 )
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
 
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -166,6 +166,21 @@ class CarEditorDialog(QDialog):
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         return scroll
 
+    def _values_changed(self, pairs: list) -> bool:
+        """Return True if any (current_value, original_key) pair differs from original_values.
+        Uses numeric comparison for floats to ignore format differences."""
+        for val, key in pairs:
+            orig = self.original_values.get(key)
+            if orig is None:
+                return True
+            try:
+                if abs(float(orig) - float(val)) > 1e-9:
+                    return True
+            except (TypeError, ValueError):
+                if orig != val:
+                    return True
+        return False
+
     def _spin_widget(self, spinbox):
         """Wrap a spinbox with explicit +/- buttons; hide the tiny built-in arrows."""
         spinbox.setButtonSymbols(QAbstractSpinBox.NoButtons)
@@ -241,6 +256,10 @@ class CarEditorDialog(QDialog):
         btn_layout.addWidget(self.restore_btn)
 
         btn_layout.addStretch()
+
+        self.status_label = QLabel("")
+        self.status_label.setStyleSheet("font-weight: bold; padding: 0 8px;")
+        btn_layout.addWidget(self.status_label)
 
         self.cancel_btn = QPushButton("✕  Cancel")
         self.cancel_btn.clicked.connect(self.reject)
@@ -1925,20 +1944,51 @@ class CarEditorDialog(QDialog):
     def save_changes(self):
         try:
             self._save_engine_data()
-            self._save_suspension_data()   # saves suspension_ini (includes BASIC)
+            self._save_suspension_data()
             self._save_drivetrain_data()
-            self._save_weight_data()       # saves car_ini; suspension BASIC already saved above
+            self._save_weight_data()
             self._save_aero_data()
             self._save_brakes_data()
             self._save_tyres_data()
-            show_toast(self.parent() if self.parent() else self,
-                       "✅  Changes saved successfully! Backups created (.bak).", kind='success')
-            self.accept()
+            self.status_label.setStyleSheet("font-weight: bold; color: #2e7d32; padding: 0 8px;")
+            self.status_label.setText("✅  Saved successfully!")
+            QTimer.singleShot(4000, lambda: self.status_label.setText(""))
         except Exception as e:
             QMessageBox.critical(self, "Error Saving", f"Failed to save changes:\n{str(e)}")
 
     def _save_engine_data(self):
         if not self.engine_ini:
+            return
+        # Build list of all engine-related (current_value, original_key) pairs
+        pairs = [
+            (self.minimum_rpm.value(),           'minimum'),
+            (self.limiter_rpm.value(),            'limiter'),
+            (self.limiter_hz.value(),             'limiter_hz'),
+            (self.engine_inertia.value(),         'engine_inertia'),
+            (self.altitude_sensitivity.value(),   'altitude_sensitivity'),
+            (self.default_turbo_adj.value(),      'default_turbo_adj'),
+            (self.coast_ref_rpm.value(),          'coast_ref_rpm'),
+            (self.coast_ref_torque.value(),       'coast_ref_torque'),
+            (self.coast_non_linearity.value(),    'coast_non_linearity'),
+            (self.turbo_boost_threshold.value(),  'turbo_boost_threshold'),
+            (self.turbo_damage_k.value(),         'turbo_damage_k'),
+            (self.rpm_threshold.value(),          'rpm_threshold'),
+            (self.rpm_damage_k.value(),           'rpm_damage_k'),
+            (self.has_turbo_check.isChecked(),    'has_turbo'),
+        ]
+        num_turbos = (self.turbo_count_combo.currentIndex() + 1) if self.has_turbo_check.isChecked() else 0
+        for i in range(num_turbos):
+            pairs += [
+                (getattr(self, f'turbo_{i}_max_boost').value(),   f'turbo_{i}_max_boost'),
+                (getattr(self, f'turbo_{i}_wastegate').value(),   f'turbo_{i}_wastegate'),
+                (getattr(self, f'turbo_{i}_display_max').value(), f'turbo_{i}_display_max'),
+                (getattr(self, f'turbo_{i}_lag_up').value(),      f'turbo_{i}_lag_up'),
+                (getattr(self, f'turbo_{i}_lag_dn').value(),      f'turbo_{i}_lag_dn'),
+                (getattr(self, f'turbo_{i}_ref_rpm').value(),     f'turbo_{i}_ref_rpm'),
+                (getattr(self, f'turbo_{i}_gamma').value(),       f'turbo_{i}_gamma'),
+                (getattr(self, f'turbo_{i}_cockpit_adj').isChecked(), f'turbo_{i}_cockpit_adj'),
+            ]
+        if not self._values_changed(pairs):
             return
         self.engine_ini.set_value('ENGINE_DATA', 'MINIMUM',              str(self.minimum_rpm.value()))
         self.engine_ini.set_value('ENGINE_DATA', 'LIMITER',              str(self.limiter_rpm.value()))
@@ -1976,7 +2026,26 @@ class CarEditorDialog(QDialog):
     def _save_suspension_data(self):
         if not self.suspension_ini:
             return
-
+        pairs = [
+            (self.arb_front.value(),    'arb_front'),
+            (self.arb_rear.value(),     'arb_rear'),
+            (self.cg_location.value(),  'cg_location'),
+            (self.wheelbase.value(),    'wheelbase'),
+        ]
+        for prefix in ('front', 'rear'):
+            pairs += [
+                (getattr(self, f'{prefix}_spring_rate').value(),         f'{prefix}_spring_rate'),
+                (getattr(self, f'{prefix}_progressive_spring').value(),  f'{prefix}_progressive_spring'),
+                (getattr(self, f'{prefix}_damp_bump').value(),           f'{prefix}_damp_bump'),
+                (getattr(self, f'{prefix}_damp_fast_bump').value(),      f'{prefix}_damp_fast_bump'),
+                (getattr(self, f'{prefix}_damp_rebound').value(),        f'{prefix}_damp_rebound'),
+                (getattr(self, f'{prefix}_damp_fast_rebound').value(),   f'{prefix}_damp_fast_rebound'),
+                (getattr(self, f'{prefix}_rod_length').value(),          f'{prefix}_rod_length'),
+                (getattr(self, f'{prefix}_static_camber').value(),       f'{prefix}_static_camber'),
+                (getattr(self, f'{prefix}_toe_out').value(),             f'{prefix}_toe_out'),
+            ]
+        if not self._values_changed(pairs):
+            return
         # Save BASIC section (shared with weight tab)
         if self.suspension_ini.has_section('BASIC'):
             self.suspension_ini.set_value('BASIC', 'CG_LOCATION', f"{self.cg_location.value():.4f}")
@@ -2003,6 +2072,23 @@ class CarEditorDialog(QDialog):
 
     def _save_drivetrain_data(self):
         if not self.drivetrain_ini:
+            return
+        pairs = [
+            (self.traction_type.currentText(), 'traction_type'),
+            (self.diff_power.value(),          'diff_power'),
+            (self.diff_coast.value(),          'diff_coast'),
+            (self.diff_preload.value(),        'diff_preload'),
+            (self.gear_count.value(),          'gear_count'),
+            (self.final_ratio.value(),         'final_ratio'),
+            (self.gear_ratios['GEAR_R'].value(), 'gear_r'),
+            (self.gearbox_up_time.value(),     'gearbox_up_time'),
+            (self.gearbox_dn_time.value(),     'gearbox_dn_time'),
+            (self.gearbox_inertia.value(),     'gearbox_inertia'),
+            (self.clutch_max_torque.value(),   'clutch_max_torque'),
+        ]
+        for i in range(1, 11):
+            pairs.append((self.gear_ratios[f'GEAR_{i}'].value(), f'gear_{i}'))
+        if not self._values_changed(pairs):
             return
         if self.drivetrain_ini.has_section('TRACTION'):
             self.drivetrain_ini.set_value('TRACTION', 'TYPE', self.traction_type.currentText())
@@ -2031,6 +2117,18 @@ class CarEditorDialog(QDialog):
     def _save_weight_data(self):
         if not self.car_ini:
             return
+        if not self._values_changed([
+            (self.total_mass.value(),         'total_mass'),
+            (self.inertia_x.value(),          'inertia_x'),
+            (self.inertia_y.value(),          'inertia_y'),
+            (self.inertia_z.value(),          'inertia_z'),
+            (self.steer_lock.value(),         'steer_lock'),
+            (self.steer_ratio.value(),        'steer_ratio'),
+            (self.fuel_start.value(),         'fuel_start'),
+            (self.fuel_max.value(),           'fuel_max'),
+            (self.fuel_consumption.value(),   'fuel_consumption'),
+        ]):
+            return
         if self.car_ini.has_section('BASIC'):
             self.car_ini.set_value('BASIC', 'TOTALMASS', str(int(self.total_mass.value())))
             inertia_str = (f"{self.inertia_x.value():.2f},"
@@ -2050,6 +2148,15 @@ class CarEditorDialog(QDialog):
     def _save_aero_data(self):
         if not self.aero_ini:
             return
+        pairs = []
+        for i in range(self.wing_count):
+            pairs += [
+                (getattr(self, f'wing_{i}_cd').value(),    f'wing_{i}_cd'),
+                (getattr(self, f'wing_{i}_cl').value(),    f'wing_{i}_cl'),
+                (getattr(self, f'wing_{i}_angle').value(), f'wing_{i}_angle'),
+            ]
+        if not self._values_changed(pairs):
+            return
         for i in range(self.wing_count):
             sec = f'WING_{i}'
             self.aero_ini.set_value(sec, 'CD',    f"{getattr(self, f'wing_{i}_cd').value():.4f}")
@@ -2059,6 +2166,14 @@ class CarEditorDialog(QDialog):
 
     def _save_brakes_data(self):
         if not self.brakes_ini:
+            return
+        if not self._values_changed([
+            (self.brake_max_torque.value(),   'brake_max_torque'),
+            (self.brake_front_share.value(),  'brake_front_share'),
+            (self.brake_handbrake.value(),    'brake_handbrake'),
+            (self.brake_cockpit_adj.isChecked(), 'brake_cockpit_adj'),
+            (self.brake_adjust_step.value(),  'brake_adjust_step'),
+        ]):
             return
         if self.brakes_ini.has_section('DATA'):
             self.brakes_ini.set_value('DATA', 'MAX_TORQUE',        str(int(self.brake_max_torque.value())))
@@ -2073,10 +2188,25 @@ class CarEditorDialog(QDialog):
         """Save tyre data back to tyres.ini for the currently selected compound."""
         if not self.tyres_ini:
             return
-        
-        # Get the currently selected compound
+
         compound_idx = self.compound_selector.currentData()
         if compound_idx is None:
+            return
+
+        if not self._values_changed([
+            (self.front_width.value(),           'front_width'),
+            (self.front_radius.value(),          'front_radius'),
+            (self.front_rim_radius.value(),      'front_rim_radius'),
+            (self.front_dx0.value(),             'front_dx0'),
+            (self.front_dy0.value(),             'front_dy0'),
+            (self.front_pressure_ideal.value(),  'front_pressure_ideal'),
+            (self.rear_width.value(),            'rear_width'),
+            (self.rear_radius.value(),           'rear_radius'),
+            (self.rear_rim_radius.value(),       'rear_rim_radius'),
+            (self.rear_dx0.value(),              'rear_dx0'),
+            (self.rear_dy0.value(),              'rear_dy0'),
+            (self.rear_pressure_ideal.value(),   'rear_pressure_ideal'),
+        ]):
             return
         
         # Determine section names

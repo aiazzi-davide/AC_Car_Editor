@@ -234,7 +234,8 @@ class CarFileManager:
 
         Each file saved with backup=True produces a <file>.bak alongside the
         modified file.  This method copies every <file>.bak back over <file>,
-        effectively reverting the last save operation.
+        deletes the .bak after restoration, and effectively reverts the last
+        save operation.
 
         Args:
             data_path: Path to the car data folder
@@ -254,6 +255,7 @@ class CarFileManager:
                 orig_path = os.path.join(data_path, entry[:-4])  # strip .bak
                 try:
                     shutil.copy2(bak_path, orig_path)
+                    os.remove(bak_path)
                     restored += 1
                 except Exception as e:
                     print(f"Error restoring {entry}: {e}")

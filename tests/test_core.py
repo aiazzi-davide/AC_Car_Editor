@@ -61,8 +61,24 @@ class TestIniParser(unittest.TestCase):
         finally:
             os.unlink(temp_file)
 
-
-class TestLUTParser(unittest.TestCase):
+    def test_set_value_no_dirty_on_format_difference(self):
+        """set_value must NOT mark dirty when only float formatting differs (e.g. '0.15' vs '0.1500')."""
+        import tempfile
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.ini', delete=False) as f:
+            f.write('[ENGINE_DATA]\nINERTIA=0.15\nMINIMUM=800\n')
+            temp_file = f.name
+        try:
+            parser = IniParser(temp_file)
+            self.assertFalse(parser._dirty)
+            # Re-write same values with different string format
+            parser.set_value('ENGINE_DATA', 'INERTIA', '0.1500')
+            parser.set_value('ENGINE_DATA', 'MINIMUM', '800')
+            self.assertFalse(parser._dirty, "Should NOT be dirty — values are numerically identical")
+            # Now change a value — must become dirty
+            parser.set_value('ENGINE_DATA', 'INERTIA', '0.1600')
+            self.assertTrue(parser._dirty, "Should be dirty after a real change")
+        finally:
+            os.unlink(temp_file)
     """Test LUT parser"""
     
     def setUp(self):
@@ -380,14 +396,14 @@ class TestRestoreBakFiles(unittest.TestCase):
         count = self.manager.restore_bak_files('/nonexistent/path')
         self.assertEqual(count, 0)
 
-    def test_bak_file_preserved_after_restore(self):
-        """The .bak file itself is kept after restoration."""
+    def test_bak_file_removed_after_restore(self):
+        """The .bak file is removed after restoration."""
         self._write('engine.ini', 'modified')
         self._write('engine.ini.bak', 'backup')
 
         self.manager.restore_bak_files(self.data_path)
 
-        self.assertTrue(os.path.exists(os.path.join(self.data_path, 'engine.ini.bak')))
+        self.assertFalse(os.path.exists(os.path.join(self.data_path, 'engine.ini.bak')))
 
 
 def run_tests():

@@ -93,12 +93,13 @@ QTabBar::tab {{
     background: {COLORS['tab_inactive_bg']};
     border: 1px solid {COLORS['border']};
     border-bottom: none;
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
-    padding: 8px 18px;
-    margin-right: 2px;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    padding: 5px 15px;
+    margin-right: 3px;
     color: {COLORS['text_secondary']};
     font-weight: 500;
+    min-width: 85px;
 }}
 QTabBar::tab:selected {{
     background: {COLORS['tab_active_bg']};
