@@ -15,6 +15,7 @@ from PyQt5.QtCore import Qt
 
 from core.lut_parser import LUTCurve
 from gui.curve_editor_widget import CurveEditorWidget
+from gui.toast import show_toast
 
 
 class CurveEditorDialog(QDialog):
@@ -163,8 +164,7 @@ class CurveEditorDialog(QDialog):
             curve.save(self.lut_file_path, backup=True)
             self.curve_modified = False
             self.setWindowTitle("Curve Editor")
-            QMessageBox.information(self, "Success", "Curve saved successfully!\n"
-                                  f"Backup created: {self.lut_file_path}.bak")
+            show_toast(self, "✅  Curve saved! Backup created (.bak).", kind='success')
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to save file: {e}")
             
@@ -182,7 +182,7 @@ class CurveEditorDialog(QDialog):
                 self.file_label.setText(f"File: {os.path.basename(file_path)}")
                 self.curve_modified = False
                 self.setWindowTitle("Curve Editor")
-                QMessageBox.information(self, "Success", "Curve saved successfully!")
+                show_toast(self, "✅  Curve saved!", kind='success')
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to save file: {e}")
                 
@@ -199,7 +199,7 @@ class CurveEditorDialog(QDialog):
                 self.editor.load_curve(curve)
                 self.curve_modified = True
                 self.setWindowTitle("Curve Editor *")
-                QMessageBox.information(self, "Success", f"Imported {len(curve.get_points())} points")
+                show_toast(self, f"✅  Imported {len(curve.get_points())} points", kind='success')
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to import file: {e}")
                 
@@ -213,7 +213,7 @@ class CurveEditorDialog(QDialog):
             try:
                 curve = self.editor.get_curve()
                 curve.save(file_path, backup=False)
-                QMessageBox.information(self, "Success", "Curve exported successfully!")
+                show_toast(self, "✅  Curve exported!", kind='success')
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to export file: {e}")
                 

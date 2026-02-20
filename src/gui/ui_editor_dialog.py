@@ -14,6 +14,9 @@ from PyQt5.QtCore import Qt
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from core.ui_manager import UIManager
+from gui.theme import COLORS, btn_primary
+from gui.toast import show_toast
+from gui.segmented_button import SegmentedButtonGroup
 
 
 class UIEditorDialog(QDialog):
@@ -54,8 +57,7 @@ class UIEditorDialog(QDialog):
         self.brand_edit.setToolTip("Car brand/manufacturer (e.g., 'Ferrari', 'Porsche')")
         basic_layout.addRow("Brand:", self.brand_edit)
         
-        self.class_combo = QComboBox()
-        self.class_combo.addItems(['street', 'race', 'drift', 'vintage', 'concept'])
+        self.class_combo = SegmentedButtonGroup(['street', 'race', 'drift', 'vintage', 'concept'])
         self.class_combo.setToolTip("Car class category")
         basic_layout.addRow("Class:", self.class_combo)
         
@@ -147,7 +149,8 @@ class UIEditorDialog(QDialog):
         # Button bar
         btn_layout = QHBoxLayout()
         
-        self.save_btn = QPushButton("Save")
+        self.save_btn = QPushButton("💾  Save")
+        self.save_btn.setStyleSheet(btn_primary())
         self.save_btn.clicked.connect(self.save_changes)
         btn_layout.addWidget(self.save_btn)
         
@@ -217,11 +220,8 @@ class UIEditorDialog(QDialog):
             
             # Save to file
             if self.ui_manager.save(backup=True):
-                QMessageBox.information(
-                    self,
-                    "Success",
-                    "UI metadata saved successfully!"
-                )
+                show_toast(self.parent() if self.parent() else self,
+                           "✅  UI metadata saved successfully!", kind='success')
                 self.accept()
             else:
                 QMessageBox.warning(
