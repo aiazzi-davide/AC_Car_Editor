@@ -138,7 +138,7 @@ python main.py
    - A backup file (.bak) is automatically created for each modified file
    - **After editing**: Application prompts to delete data.acd to ensure changes are used in-game
 
-6. Create additional backups using the "Create Backup" button
+7. Create additional backups using the "Create Backup" button
 
 ## Data.acd Unpacking
 
@@ -149,8 +149,6 @@ The application automatically handles unpacking of non-encrypted data.acd files:
 3. **After editing**: Prompts to delete data.acd to ensure Assetto Corsa uses the modified files
 
 **Why delete data.acd?** Assetto Corsa prioritizes data.acd over the unpacked data/ folder. If data.acd exists, any changes made to files in data/ will be ignored in-game.
-
-See `DATA_ACD_UNPACKING.md` for detailed documentation.
 
 ## File Structure
 
@@ -168,11 +166,29 @@ AC_Car_Editor/
 │   │   ├── car_file_manager.py  # Car file handling
 │   │   ├── ini_parser.py  # INI file parser
 │   │   ├── lut_parser.py  # LUT file parser
+│   │   ├── rto_parser.py  # RTO file parser (final.rto, ratios.rto)
 │   │   ├── power_calculator.py  # Power/torque calculator
+│   │   ├── speed_calculator.py  # Gear speed calculator
 │   │   ├── setup_manager.py     # Track setup manager
-│   │   └── component_library.py  # Component library
+│   │   ├── stage_tuner.py       # Stage tuning system (NA/Turbo)
+│   │   ├── ui_manager.py        # UI metadata manager (ui_car.json)
+│   │   └── component_library.py # Component library
 │   ├── gui/               # GUI components
-│   │   └── main_window.py # Main window
+│   │   ├── main_window.py             # Main window with car browser
+│   │   ├── car_editor_dialog.py       # Car editor (7 tabs)
+│   │   ├── curve_editor_dialog.py     # LUT curve editor dialog
+│   │   ├── curve_editor_widget.py     # Interactive matplotlib curve editor
+│   │   ├── power_torque_dialog.py     # Power/torque calculator dialog
+│   │   ├── rto_manager_dialog.py      # RTO file manager dialog
+│   │   ├── setup_manager_dialog.py    # Track setup manager dialog
+│   │   ├── stage_tuning_dialog.py     # Stage tuning dialog
+│   │   ├── ui_editor_dialog.py        # UI metadata editor dialog
+│   │   ├── component_library_dialog.py # Component library manager
+│   │   ├── component_selector_dialog.py # Component import selector
+│   │   ├── segmented_button.py        # Segmented button widget
+│   │   ├── collapsible.py             # Collapsible section widget
+│   │   ├── theme.py                   # Global theme and styles
+│   │   └── toast.py                   # Toast notification widget
 │   └── components/        # Component library data
 └── backups/               # Backup storage (created automatically)
 ```
