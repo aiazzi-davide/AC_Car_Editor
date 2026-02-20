@@ -5,14 +5,14 @@ A desktop application for modifying Assetto Corsa car configurations.
 ## Features
 
 - Browse and select Assetto Corsa cars
-- **Search and filter cars** by name ✅
-- **Preview car images** from ui/preview.png or preview.jpg ✅
+- **Search and filter cars** by name
+- **Preview car images** from ui/preview.png or preview.jpg
 - View car information
 - Create backups of car data
-- **Automatic unpacking of data.acd files** using quickBMS ✅
-- **Automatic data.acd deletion after editing** to ensure changes are used in-game ✅
-- **UI Metadata Editor** - Edit car name, brand, description, tags, specs, and author info in ui_car.json ✅
-- **Stage Tuning System** - One-click performance upgrades (Stage 1/2/3) with different logic for NA vs Turbo cars ✅
+- **Automatic unpacking of data.acd files** using quickBMS
+- **Automatic data.acd deletion after editing** to ensure changes are used in-game
+- **UI Metadata Editor** - Edit car name, brand, description, tags, specs, and author info in ui_car.json
+- **Stage Tuning System** - One-click performance upgrades (Stage 1/2/3) with different logic for NA vs Turbo cars
   - **NA Stage 1**: More aggressive ECU mapping (+8% power)
   - **NA Stage 2**: Add turbo system (turbo conversion)
   - **NA Stage 3**: Full turbo build with mechanical and aero upgrades
@@ -20,23 +20,23 @@ A desktop application for modifying Assetto Corsa car configurations.
   - **Turbo Stage 2**: Turbo upgrade (+30% boost)
   - **Turbo Stage 3**: Full build (+50% boost, mechanical, aero, differential upgrades)
 - Edit car parameters:
-  - **Engine settings** (RPM limits, limiter frequency, turbo boost, wastegate, engine damage thresholds) ✅
-  - **Power and coast curves** (visual curve editor for .lut files) ✅
-  - **Power/Torque Calculator** – real-time chart of power (HP, derived) and torque (Nm) with turbo boost effect ✅
-  - **Suspension settings** (spring rates, dampers, rod length) ✅
-  - **Drivetrain settings** (differential, gearbox, clutch, AWD/AWD2 support) ✅
-    - **Gear Ratio Editor**: Individual gear ratio editing (R, 1-10) with collapsible UI ✅
-    - **Gear Ratio Presets**: Import from library (4 presets: Street 5-speed, Sport 6-speed, Race 6-speed, Drift 6-speed) ✅
-    - **Speed Estimation**: Real-time max speed calculation for each gear (based on RPM, tire radius, ratios) ✅
-    - **RTO File Manager**: Edit final.rto and ratios.rto for in-game selectable gear ratios ✅
+  - **Engine settings** (RPM limits, limiter frequency, turbo boost, wastegate, engine damage thresholds)
+  - **Power and coast curves** (visual curve editor for .lut files)
+  - **Power/Torque Calculator** – real-time chart of power (HP, derived) and torque (Nm) with turbo boost effect
+  - **Suspension settings** (spring rates, dampers, rod length)
+  - **Drivetrain settings** (differential, gearbox, clutch, AWD/AWD2 support)
+    - **Gear Ratio Editor**: Individual gear ratio editing (R, 1-10) with collapsible UI 
+    - **Gear Ratio Presets**: Import from library (4 presets: Street 5-speed, Sport 6-speed, Race 6-speed, Drift 6-speed) 
+    - **Speed Estimation**: Real-time max speed calculation for each gear (based on RPM, tire radius, ratios)
+    - **RTO File Manager**: Edit final.rto and ratios.rto for in-game selectable gear ratios 
       - Import RTO presets from library (3 final ratio sets, 3 gear ratio sets)
       - Speed estimation for alternative ratios
-  - **Weight and balance** (total mass, center of gravity, fuel) ✅
-  - **Aerodynamics** (drag coefficient, downforce, wing angles) ✅
-  - **Brakes** (max torque, bias, handbrake, adjust step) ✅
-  - **Tyres (Pneumatici)** (compound selection, dimensions, grip, pressure) ✅
-    - **Tire Presets**: Import from library (6 presets: Street, Sport, Semi-Slick, Soft/Medium/Hard Slicks) ✅
-- **Setup Manager** for track-specific presets (save/load/delete per-track setups) ✅
+  - **Weight and balance** (total mass, center of gravity, fuel) 
+  - **Aerodynamics** (drag coefficient, downforce, wing angles) 
+  - **Brakes** (max torque, bias, handbrake, adjust step) 
+  - **Tyres (Pneumatici)** (compound selection, dimensions, grip, pressure) 
+    - **Tire Presets**: Import from library (6 presets: Street, Sport, Semi-Slick, Soft/Medium/Hard Slicks) 
+- **Setup Manager** for track-specific presets (save/load/delete per-track setups) 
 - **Visual curve editor** for power.lut and coast.lut files:
   - Interactive matplotlib-based graph editor
   - Integer-only values for precise car tuning

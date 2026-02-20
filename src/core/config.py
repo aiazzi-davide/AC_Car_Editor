@@ -73,3 +73,12 @@ class ConfigManager:
     def get_backup_path(self):
         """Get backup folder path"""
         return self.config.get('backup_path', 'backups')
+
+    def get_show_disclaimer(self):
+        """Whether to show the startup compatibility disclaimer"""
+        return self.config.get('show_disclaimer', True)
+
+    def set_show_disclaimer(self, value: bool):
+        """Set whether to show the startup compatibility disclaimer"""
+        self.config['show_disclaimer'] = value
+        self.save_config()

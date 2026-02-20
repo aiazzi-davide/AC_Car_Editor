@@ -105,8 +105,8 @@ Creare un'applicazione desktop Windows in Python con PyQt5/6 che permetta di mod
 - [ ] Investigare gestione sound motore (bank files, GUIDs)
 
 ### Fase 8: Testing e Refinement
-- [ ] Testare su varie auto Assetto Corsa (stock e mod)
-- [ ] Testare unpacking data.acd su file non criptati
+- [x] Testare su varie auto Assetto Corsa (stock e mod)
+- [x] Testare unpacking data.acd su file non criptati
 - [ ] Verificare modifiche applicate correttamente in-game
 - [ ] Implementare error handling robusto
 - [ ] Ottimizzare performance caricamento auto

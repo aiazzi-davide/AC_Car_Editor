@@ -3,6 +3,11 @@ Centralized theme and styling for AC Car Editor.
 Defines colors, fonts, spacing and QSS stylesheets for a modern, consistent UI.
 """
 
+import os
+
+# Path to the X icon used in checked checkboxes (forward slashes required for Qt QSS)
+_CHECK_X_PATH = os.path.join(os.path.dirname(__file__), 'assets', 'check_x.svg').replace('\\', '/')
+
 # ── Color palette ──────────────────────────────────────────────────────
 COLORS = {
     # Primary
@@ -228,6 +233,7 @@ QCheckBox::indicator {{
 QCheckBox::indicator:checked {{
     background-color: {COLORS['primary']};
     border-color: {COLORS['primary']};
+    image: url("{_CHECK_X_PATH}");
 }}
 QCheckBox::indicator:hover {{
     border-color: {COLORS['primary']};

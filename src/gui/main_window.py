@@ -8,9 +8,9 @@ from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
     QListWidget, QLabel, QPushButton, QStatusBar,
     QMenuBar, QAction, QFileDialog, QMessageBox,
-    QSplitter, QGroupBox, QTextEdit, QDialog, QLineEdit
+    QSplitter, QGroupBox, QTextEdit, QDialog, QLineEdit, QCheckBox
 )
-from PyQt5.QtCore import Qt, QSize
+from PyQt5.QtCore import Qt, QSize, QTimer
 from PyQt5.QtGui import QIcon, QPixmap
 
 # Add parent directory to path
@@ -46,6 +46,7 @@ class MainWindow(QMainWindow):
         
         self.init_ui()
         self.load_cars()
+        QTimer.singleShot(200, self._show_startup_disclaimer)
         
     def init_ui(self):
         """Initialize user interface"""
@@ -94,6 +95,11 @@ class MainWindow(QMainWindow):
         set_path_action = QAction("Set AC Path...", self)
         set_path_action.triggered.connect(self.set_ac_path)
         file_menu.addAction(set_path_action)
+
+        # Open backups folder
+        open_backups_action = QAction("📁  Open Backups Folder", self)
+        open_backups_action.triggered.connect(self.open_backups_folder)
+        file_menu.addAction(open_backups_action)
         
         file_menu.addSeparator()
         
@@ -161,6 +167,22 @@ class MainWindow(QMainWindow):
         self.car_name_label = QLabel("No car selected")
         self.car_name_label.setStyleSheet(section_title())
         layout.addWidget(self.car_name_label)
+
+        # Disclaimer banner (visible when no car selected)
+        self.disclaimer_label = QLabel(
+            "⚠️  <b>Nota di compatibilità</b><br>"
+            "Questo programma è stato testato principalmente sulle auto ufficiali Kunos.<br>"
+            "Con le auto <b>moddate</b> potrebbe non funzionare correttamente, "
+            "anche se nella maggior parte dei casi funziona comunque.<br>"
+            "Crea sempre un backup prima di modificare qualsiasi auto."
+        )
+        self.disclaimer_label.setWordWrap(True)
+        self.disclaimer_label.setTextFormat(Qt.RichText)
+        self.disclaimer_label.setStyleSheet(
+            "QLabel { background-color: #fff8e1; color: #5d4037; border: 1px solid #ffcc02; "
+            "border-radius: 6px; padding: 10px; font-size: 12px; }"
+        )
+        layout.addWidget(self.disclaimer_label)
         
         # Preview image
         self.preview_label = QLabel()
@@ -212,6 +234,45 @@ class MainWindow(QMainWindow):
         panel.setLayout(layout)
         return panel
         
+    def _show_startup_disclaimer(self):
+        """Show one-time compatibility disclaimer on startup (no system sound)."""
+        if not self.config_manager.get_show_disclaimer():
+            return
+
+        dlg = QDialog(self)
+        dlg.setWindowTitle("Nota di compatibilità")
+        dlg.setFixedWidth(440)
+        layout = QVBoxLayout(dlg)
+        layout.setSpacing(12)
+        layout.setContentsMargins(18, 18, 18, 14)
+
+        text = QLabel(
+            "<b>AC Car Editor</b> è stato testato principalmente sulle auto ufficiali "
+            "<b>Kunos</b>.<br><br>"
+            "Con le auto <b>moddate</b> il programma <i>spesso funziona correttamente</i>, "
+            "ma potrebbe incontrare file INI con strutture non standard o sezioni mancanti.<br><br>"
+            "Si consiglia sempre di creare un <b>backup</b> prima di apportare modifiche."
+        )
+        text.setWordWrap(True)
+        text.setTextFormat(Qt.RichText)
+        layout.addWidget(text)
+
+        dont_show = QCheckBox("Non mostrare più questo messaggio")
+        layout.addWidget(dont_show)
+
+        ok_btn = QPushButton("OK")
+        ok_btn.setDefault(True)
+        ok_btn.clicked.connect(dlg.accept)
+        btn_row = QHBoxLayout()
+        btn_row.addStretch()
+        btn_row.addWidget(ok_btn)
+        layout.addLayout(btn_row)
+
+        dlg.exec_()
+
+        if dont_show.isChecked():
+            self.config_manager.set_show_disclaimer(False)
+
     def load_cars(self):
         """Load list of cars from AC directory"""
         ac_path = self.config_manager.get_ac_path()
@@ -244,6 +305,9 @@ class MainWindow(QMainWindow):
         
         car_name = current.text()
         self.current_car = car_name
+
+        # Hide disclaimer when a car is selected
+        self.disclaimer_label.setVisible(False)
         
         # Get car info
         car_info = self.car_manager.get_car_info(car_name)
@@ -360,6 +424,23 @@ class MainWindow(QMainWindow):
                 "Failed to create backup. Check console for details."
             )
     
+    def open_backups_folder(self):
+        """Open the backups folder in the system file explorer."""
+        import subprocess, platform
+        backup_path = os.path.abspath(self.config_manager.get_backup_path())
+        os.makedirs(backup_path, exist_ok=True)
+        try:
+            system = platform.system()
+            if system == 'Windows':
+                subprocess.Popen(['explorer', backup_path])
+            elif system == 'Darwin':
+                subprocess.Popen(['open', backup_path])
+            else:
+                subprocess.Popen(['xdg-open', backup_path])
+            self.statusBar.showMessage(f"Opened backups folder: {backup_path}")
+        except Exception as e:
+            QMessageBox.warning(self, "Error", f"Could not open folder:\n{str(e)}")
+
     def open_car_folder(self):
         """Open the current car's folder in the system file explorer."""
         if not self.current_car:
