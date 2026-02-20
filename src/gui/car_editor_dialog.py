@@ -10,7 +10,8 @@ from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QTabWidget,
     QPushButton, QMessageBox, QWidget, QGroupBox,
     QFormLayout, QLabel, QDoubleSpinBox,
-    QSpinBox, QComboBox, QCheckBox, QScrollArea
+    QSpinBox, QComboBox, QCheckBox, QScrollArea,
+    QAbstractSpinBox, QGridLayout
 )
 from PyQt5.QtCore import Qt
 
@@ -34,6 +35,54 @@ def _tip(widget, text):
     """Attach a tooltip to a widget and return it."""
     widget.setToolTip(text)
     return widget
+
+
+class _TwoColForm:
+    """Drop-in for QFormLayout that lays out label+widget pairs in 2 columns."""
+    def __init__(self):
+        self._widget = QWidget()
+        self._grid = QGridLayout(self._widget)
+        self._grid.setContentsMargins(4, 4, 4, 4)
+        self._grid.setHorizontalSpacing(10)
+        self._grid.setVerticalSpacing(6)
+        # columns: 0=label-left, 1=widget-left, 2=label-right, 3=widget-right
+        self._grid.setColumnStretch(1, 1)
+        self._grid.setColumnStretch(3, 1)
+        self._grid.setColumnMinimumWidth(0, 130)
+        self._grid.setColumnMinimumWidth(2, 130)
+        self._row = 0
+        self._side = 0   # 0=left column pair, 1=right column pair
+        self._widget_to_label = {}  # Track widget → label mappings
+
+    def addRow(self, label_text_or_widget, widget=None):
+        """Same signature as QFormLayout.addRow()."""
+        if widget is None:
+            # addRow(widget) — full-width widget (e.g. checkboxes, buttons)
+            # Flush pending half-row first
+            if self._side == 1:
+                self._row += 1
+                self._side = 0
+            self._grid.addWidget(label_text_or_widget, self._row, 0, 1, 4)
+            self._row += 1
+            return
+        lbl = QLabel(label_text_or_widget)
+        lbl.setStyleSheet(f"color: {COLORS['text_secondary']}; font-weight: 500;")
+        lbl.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        col = self._side * 2
+        self._grid.addWidget(lbl, self._row, col, Qt.AlignRight | Qt.AlignVCenter)
+        self._grid.addWidget(widget, self._row, col + 1)
+        self._widget_to_label[id(widget)] = lbl
+        self._side += 1
+        if self._side >= 2:
+            self._side = 0
+            self._row += 1
+
+    def done(self):
+        """Call after all addRow()s to flush the last row if needed."""
+        if self._side == 1:
+            self._row += 1
+            self._side = 0
+        return self._widget
 
 
 class CarEditorDialog(QDialog):
@@ -117,6 +166,34 @@ class CarEditorDialog(QDialog):
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         return scroll
 
+    def _spin_widget(self, spinbox):
+        """Wrap a spinbox with explicit +/- buttons; hide the tiny built-in arrows."""
+        spinbox.setButtonSymbols(QAbstractSpinBox.NoButtons)
+        spinbox.setMinimumWidth(100)
+        container = QWidget()
+        h = QHBoxLayout(container)
+        h.setContentsMargins(0, 0, 0, 0)
+        h.setSpacing(3)
+        h.addWidget(spinbox, 1)
+        btn_minus = QPushButton("−")
+        btn_minus.setFixedSize(28, 28)
+        btn_minus.setToolTip("Decrease")
+        btn_minus.clicked.connect(spinbox.stepDown)
+        btn_minus.setStyleSheet(
+            f"QPushButton {{ background: {COLORS['tab_inactive_bg']}; border: 1px solid {COLORS['border']}; "
+            f"border-radius: 6px; font-size: 16px; font-weight: 600; color: {COLORS['text']}; padding: 0; }}"
+            f"QPushButton:hover {{ background: {COLORS['selection']}; border-color: {COLORS['primary']}; color: {COLORS['primary']}; }}"
+            f"QPushButton:pressed {{ background: {COLORS['primary_light']}; }}"
+        )
+        btn_plus = QPushButton("+")
+        btn_plus.setFixedSize(28, 28)
+        btn_plus.setToolTip("Increase")
+        btn_plus.clicked.connect(spinbox.stepUp)
+        btn_plus.setStyleSheet(btn_minus.styleSheet())
+        h.addWidget(btn_minus)
+        h.addWidget(btn_plus)
+        return container
+
     def init_ui(self):
         """Build the tab widget and button bar."""
         self.setWindowTitle(f"Edit Car: {self.car_name}")
@@ -179,19 +256,19 @@ class CarEditorDialog(QDialog):
 
         # --- Basic engine data ---
         basic_grp = QGroupBox("Engine Data  (engine.ini › ENGINE_DATA)")
-        basic_form = QFormLayout()
+        basic_form = _TwoColForm()
 
         self.minimum_rpm = _tip(QSpinBox(), "Idle RPM — minimum engine speed the simulation allows. "
                                 "Typical: 600–1200 RPM.  (MINIMUM)")
         self.minimum_rpm.setRange(0, 5000)
         self.minimum_rpm.setSuffix(" RPM")
-        basic_form.addRow("Idle RPM:", self.minimum_rpm)
+        basic_form.addRow("Idle RPM:", self._spin_widget(self.minimum_rpm))
 
         self.limiter_rpm = _tip(QSpinBox(), "Rev limiter — hard cut RPM ceiling. The game cuts fuel/ignition above this. "
                                 "Typical NA: 6000–9000, turbo: 5500–7500.  (LIMITER)")
         self.limiter_rpm.setRange(1000, 25000)
         self.limiter_rpm.setSuffix(" RPM")
-        basic_form.addRow("Rev Limiter:", self.limiter_rpm)
+        basic_form.addRow("Rev Limiter:", self._spin_widget(self.limiter_rpm))
 
         self.limiter_hz = _tip(QSpinBox(),
                                "Limiter activation frequency in Hz.\n"
@@ -199,7 +276,7 @@ class CarEditorDialog(QDialog):
                                "Typical: 20–50 Hz.  (LIMITER_HZ)")
         self.limiter_hz.setRange(1, 200)
         self.limiter_hz.setSuffix(" Hz")
-        basic_form.addRow("Limiter Frequency:", self.limiter_hz)
+        basic_form.addRow("Limiter Frequency:", self._spin_widget(self.limiter_hz))
 
         self.engine_inertia = _tip(QDoubleSpinBox(),
                                    "Engine rotational inertia in kg·m².\n"
@@ -208,7 +285,7 @@ class CarEditorDialog(QDialog):
         self.engine_inertia.setRange(0.01, 5.0)
         self.engine_inertia.setDecimals(4)
         self.engine_inertia.setSingleStep(0.01)
-        basic_form.addRow("Engine Inertia:", self.engine_inertia)
+        basic_form.addRow("Engine Inertia:", self._spin_widget(self.engine_inertia))
 
         self.altitude_sensitivity = _tip(QDoubleSpinBox(),
                                          "Power loss fraction per 1000 m of altitude.\n"
@@ -217,7 +294,7 @@ class CarEditorDialog(QDialog):
         self.altitude_sensitivity.setRange(0.0, 1.0)
         self.altitude_sensitivity.setDecimals(3)
         self.altitude_sensitivity.setSingleStep(0.01)
-        basic_form.addRow("Altitude Sensitivity:", self.altitude_sensitivity)
+        basic_form.addRow("Altitude Sensitivity:", self._spin_widget(self.altitude_sensitivity))
 
         self.default_turbo_adj = _tip(QDoubleSpinBox(),
                                       "Default turbo adjustment value if boost is cockpit-adjustable.\n"
@@ -225,21 +302,25 @@ class CarEditorDialog(QDialog):
         self.default_turbo_adj.setRange(0.0, 1.0)
         self.default_turbo_adj.setDecimals(2)
         self.default_turbo_adj.setSingleStep(0.05)
-        basic_form.addRow("Default Turbo Adj:", self.default_turbo_adj)
+        basic_form.addRow("Default Turbo Adj:", self._spin_widget(self.default_turbo_adj))
 
-        basic_grp.setLayout(basic_form)
+        grp_inner = basic_form.done()
+        inner_layout = QVBoxLayout()
+        inner_layout.setContentsMargins(0, 0, 0, 0)
+        inner_layout.addWidget(grp_inner)
+        basic_grp.setLayout(inner_layout)
         layout.addWidget(basic_grp)
 
         # --- Coast / engine braking reference ---
         coast_grp = QGroupBox("Engine Braking Reference  (engine.ini › COAST_REF)")
-        coast_form = QFormLayout()
+        coast_form = _TwoColForm()
 
         self.coast_ref_rpm = _tip(QSpinBox(),
                                   "RPM at which the engine drag torque is measured.\n"
                                   "Typically set equal to LIMITER.  (RPM)")
         self.coast_ref_rpm.setRange(0, 25000)
         self.coast_ref_rpm.setSuffix(" RPM")
-        coast_form.addRow("Reference RPM:", self.coast_ref_rpm)
+        coast_form.addRow("Reference RPM:", self._spin_widget(self.coast_ref_rpm))
 
         self.coast_ref_torque = _tip(QDoubleSpinBox(),
                                      "Engine drag torque at reference RPM.\n"
@@ -248,7 +329,7 @@ class CarEditorDialog(QDialog):
         self.coast_ref_torque.setRange(0, 500)
         self.coast_ref_torque.setDecimals(1)
         self.coast_ref_torque.setSuffix(" Nm")
-        coast_form.addRow("Drag Torque:", self.coast_ref_torque)
+        coast_form.addRow("Drag Torque:", self._spin_widget(self.coast_ref_torque))
 
         self.coast_non_linearity = _tip(QDoubleSpinBox(),
                                         "Non-linearity of the coast curve.\n"
@@ -257,9 +338,13 @@ class CarEditorDialog(QDialog):
         self.coast_non_linearity.setRange(0, 1.0)
         self.coast_non_linearity.setDecimals(3)
         self.coast_non_linearity.setSingleStep(0.01)
-        coast_form.addRow("Non-Linearity:", self.coast_non_linearity)
+        coast_form.addRow("Non-Linearity:", self._spin_widget(self.coast_non_linearity))
 
-        coast_grp.setLayout(coast_form)
+        grp_inner = coast_form.done()
+        inner_layout = QVBoxLayout()
+        inner_layout.setContentsMargins(0, 0, 0, 0)
+        inner_layout.addWidget(grp_inner)
+        coast_grp.setLayout(inner_layout)
         layout.addWidget(coast_grp)
 
         # --- Forced induction ---
@@ -301,33 +386,37 @@ class CarEditorDialog(QDialog):
 
         # --- Engine Damage (collapsible, secondary) ---
         dmg_grp = CollapsibleGroupBox("Engine Damage  (engine.ini › DAMAGE)", collapsed=True)
-        dmg_form = QFormLayout()
+        dmg_form = _TwoColForm()
 
         self.turbo_boost_threshold = _tip(QDoubleSpinBox(),
                                           "Boost pressure above which the engine takes damage.\n"
                                           "Set above MAX_BOOST to allow some overboost before damage.  (TURBO_BOOST_THRESHOLD)")
         self.turbo_boost_threshold.setRange(0, 10.0); self.turbo_boost_threshold.setDecimals(2); self.turbo_boost_threshold.setSingleStep(0.1); self.turbo_boost_threshold.setSuffix(" bar")
-        dmg_form.addRow("Turbo Damage Threshold:", self.turbo_boost_threshold)
+        dmg_form.addRow("Turbo Damage Threshold:", self._spin_widget(self.turbo_boost_threshold))
 
         self.turbo_damage_k = _tip(QDoubleSpinBox(),
                                     "Damage rate per second for each bar of boost over threshold.\n"
                                     "Higher = faster engine destruction.  (TURBO_DAMAGE_K)")
         self.turbo_damage_k.setRange(0, 100); self.turbo_damage_k.setDecimals(1); self.turbo_damage_k.setSingleStep(0.5)
-        dmg_form.addRow("Turbo Damage Rate:", self.turbo_damage_k)
+        dmg_form.addRow("Turbo Damage Rate:", self._spin_widget(self.turbo_damage_k))
 
         self.rpm_threshold = _tip(QSpinBox(),
                                    "RPM above which the engine takes damage.\n"
                                    "Usually set above LIMITER by 200–500 RPM.  (RPM_THRESHOLD)")
         self.rpm_threshold.setRange(0, 30000); self.rpm_threshold.setSuffix(" RPM")
-        dmg_form.addRow("RPM Damage Threshold:", self.rpm_threshold)
+        dmg_form.addRow("RPM Damage Threshold:", self._spin_widget(self.rpm_threshold))
 
         self.rpm_damage_k = _tip(QDoubleSpinBox(),
                                   "Damage rate per second for each RPM over threshold.\n"
                                   "Typical: 1.  (RPM_DAMAGE_K)")
         self.rpm_damage_k.setRange(0, 100); self.rpm_damage_k.setDecimals(1); self.rpm_damage_k.setSingleStep(0.5)
-        dmg_form.addRow("RPM Damage Rate:", self.rpm_damage_k)
+        dmg_form.addRow("RPM Damage Rate:", self._spin_widget(self.rpm_damage_k))
 
-        dmg_grp.setLayout(dmg_form)
+        grp_inner = dmg_form.done()
+        inner_layout = QVBoxLayout()
+        inner_layout.setContentsMargins(0, 0, 0, 0)
+        inner_layout.addWidget(grp_inner)
+        dmg_grp.setLayout(inner_layout)
         layout.addWidget(dmg_grp)
 
         # --- Library import ---
@@ -364,57 +453,61 @@ class CarEditorDialog(QDialog):
     def _create_turbo_widget(self, index):
         """Build a QGroupBox with all parameters for one TURBO_N section."""
         gb = QGroupBox(f"Turbo {index + 1}  (TURBO_{index})")
-        form = QFormLayout()
+        form = _TwoColForm()
 
         max_boost = _tip(QDoubleSpinBox(),
                          "Maximum boost pressure in bar.\n"
                          "Stock cars: 0.5–1.5 bar.  Race/tuned: 1.5–3.0+ bar.  (MAX_BOOST)")
         max_boost.setRange(0, 6.0); max_boost.setDecimals(3); max_boost.setSingleStep(0.05); max_boost.setSuffix(" bar")
-        form.addRow("Max Boost:", max_boost)
+        form.addRow("Max Boost:", self._spin_widget(max_boost))
 
         wastegate = _tip(QDoubleSpinBox(),
                          "Wastegate opening pressure.\n"
                          "Should equal MAX_BOOST for stock maps.\n"
                          "Higher than MAX_BOOST = boost creep simulation.  (WASTEGATE)")
         wastegate.setRange(0, 6.0); wastegate.setDecimals(3); wastegate.setSingleStep(0.05); wastegate.setSuffix(" bar")
-        form.addRow("Wastegate:", wastegate)
+        form.addRow("Wastegate:", self._spin_widget(wastegate))
 
         display_max = _tip(QDoubleSpinBox(),
                            "Value shown in the cockpit boost gauge.\n"
                            "Usually matches MAX_BOOST.  (DISPLAY_MAX_BOOST)")
         display_max.setRange(0, 6.0); display_max.setDecimals(3); display_max.setSingleStep(0.05); display_max.setSuffix(" bar")
-        form.addRow("Display Max Boost:", display_max)
+        form.addRow("Display Max Boost:", self._spin_widget(display_max))
 
         lag_up = _tip(QDoubleSpinBox(),
                       "Spool-up lag factor (0–1). Closer to 1.0 = slower spool.\n"
                       "Fast turbo: 0.950–0.975.  Laggy: 0.980–0.995.  (LAG_UP)")
         lag_up.setRange(0.5, 1.0); lag_up.setDecimals(4); lag_up.setSingleStep(0.001)
-        form.addRow("Spool-Up Lag:", lag_up)
+        form.addRow("Spool-Up Lag:", self._spin_widget(lag_up))
 
         lag_dn = _tip(QDoubleSpinBox(),
                       "Spool-down lag factor. Closer to 1.0 = boost bleeds off slowly.\n"
                       "Typical: 0.975–0.990.  (LAG_DN)")
         lag_dn.setRange(0.5, 1.0); lag_dn.setDecimals(4); lag_dn.setSingleStep(0.001)
-        form.addRow("Spool-Down Lag:", lag_dn)
+        form.addRow("Spool-Down Lag:", self._spin_widget(lag_dn))
 
         ref_rpm = _tip(QSpinBox(),
                        "RPM at which full boost is produced.\n"
                        "Lower = less turbo lag.  Typical: 2500–4500 RPM.  (REFERENCE_RPM)")
         ref_rpm.setRange(0, 12000); ref_rpm.setSuffix(" RPM")
-        form.addRow("Full Boost RPM:", ref_rpm)
+        form.addRow("Full Boost RPM:", self._spin_widget(ref_rpm))
 
         gamma = _tip(QDoubleSpinBox(),
                      "Boost curve shape exponent.\n"
                      "Higher = sharper onset above REFERENCE_RPM.\n"
                      "Typical: 1.5–3.0.  (GAMMA)")
         gamma.setRange(0.5, 8.0); gamma.setDecimals(2); gamma.setSingleStep(0.1)
-        form.addRow("Boost Curve Gamma:", gamma)
+        form.addRow("Boost Curve Gamma:", self._spin_widget(gamma))
 
         cockpit_adj = _tip(QCheckBox("Cockpit Adjustable"),
                            "Allow boost adjustment from in-car controls.  (COCKPIT_ADJUSTABLE)")
-        form.addRow("", cockpit_adj)
+        form.addRow(cockpit_adj)
 
-        gb.setLayout(form)
+        grp_inner = form.done()
+        inner_layout = QVBoxLayout()
+        inner_layout.setContentsMargins(0, 0, 0, 0)
+        inner_layout.addWidget(grp_inner)
+        gb.setLayout(inner_layout)
 
         setattr(self, f'turbo_{index}_max_boost',       max_boost)
         setattr(self, f'turbo_{index}_wastegate',       wastegate)
@@ -450,78 +543,82 @@ class CarEditorDialog(QDialog):
 
         # --- ARB ---
         arb_grp = QGroupBox("Anti-Roll Bars  (suspensions.ini › ARB)")
-        arb_form = QFormLayout()
+        arb_form = _TwoColForm()
 
         self.arb_front = _tip(QDoubleSpinBox(),
                               "Front ARB stiffness in Nm/rad.\n"
                               "Higher = less body roll but more understeer tendency.\n"
                               "Street: 5 000–50 000 · Race: up to 200 000+  (FRONT)")
         self.arb_front.setRange(0, 500000); self.arb_front.setDecimals(0); self.arb_front.setSuffix(" Nm/rad")
-        arb_form.addRow("Front ARB:", self.arb_front)
+        arb_form.addRow("Front ARB:", self._spin_widget(self.arb_front))
 
         self.arb_rear = _tip(QDoubleSpinBox(),
                              "Rear ARB stiffness in Nm/rad.\n"
                              "Higher = less roll but more oversteer tendency.  (REAR)")
         self.arb_rear.setRange(0, 500000); self.arb_rear.setDecimals(0); self.arb_rear.setSuffix(" Nm/rad")
-        arb_form.addRow("Rear ARB:", self.arb_rear)
+        arb_form.addRow("Rear ARB:", self._spin_widget(self.arb_rear))
 
-        arb_grp.setLayout(arb_form)
+        grp_inner = arb_form.done()
+        inner_layout = QVBoxLayout()
+        inner_layout.setContentsMargins(0, 0, 0, 0)
+        inner_layout.addWidget(grp_inner)
+        arb_grp.setLayout(inner_layout)
         layout.addWidget(arb_grp)
 
         # --- Front & Rear axle groups ---
         for axle_label, prefix, section in [("Front Suspension", "front", "FRONT"),
                                              ("Rear Suspension",  "rear",  "REAR")]:
             grp = QGroupBox(f"{axle_label}  (suspensions.ini › {section})")
-            form = QFormLayout()
+            form = _TwoColForm()
 
             spring = _tip(QDoubleSpinBox(),
                           "Wheel spring rate (N/m).\n"
                           "Use wheel rate, NOT coil spring rate.\n"
                           "Street: 15 000–80 000 · Race: 80 000–300 000+  (SPRING_RATE)")
             spring.setRange(0, 600000); spring.setDecimals(0); spring.setSuffix(" N/m")
-            form.addRow("Spring Rate:", spring)
+            form.addRow("Spring Rate:", self._spin_widget(spring))
             setattr(self, f'{prefix}_spring_rate', spring)
 
             prog = _tip(QDoubleSpinBox(),
                         "Progressive spring rate increase per metre of compression.\n"
                         "0 = linear spring.  (PROGRESSIVE_SPRING_RATE)")
             prog.setRange(0, 2000000); prog.setDecimals(0); prog.setSuffix(" N/m/m")
-            form.addRow("Progressive Spring:", prog)
+            form.addRow("Progressive Spring:", self._spin_widget(prog))
             setattr(self, f'{prefix}_progressive_spring', prog)
 
             damp_bump = _tip(QDoubleSpinBox(),
                              "Slow bump damping — controls body motion over smooth roads.\n"
                              "Typical street: 1 500–4 000 Ns/m.  (DAMP_BUMP)")
             damp_bump.setRange(0, 60000); damp_bump.setDecimals(0); damp_bump.setSuffix(" Ns/m")
-            form.addRow("Slow Bump:", damp_bump)
+            form.addRow("Slow Bump:", self._spin_widget(damp_bump))
             setattr(self, f'{prefix}_damp_bump', damp_bump)
 
             damp_fast_bump = _tip(QDoubleSpinBox(),
                                   "Fast bump damping — controls wheel motion over sharp bumps.\n"
                                   "Usually 2–3× slow bump.  (DAMP_FAST_BUMP)")
             damp_fast_bump.setRange(0, 60000); damp_fast_bump.setDecimals(0); damp_fast_bump.setSuffix(" Ns/m")
-            form.addRow("Fast Bump:", damp_fast_bump)
+            form.addRow("Fast Bump:", self._spin_widget(damp_fast_bump))
             setattr(self, f'{prefix}_damp_fast_bump', damp_fast_bump)
 
             damp_rebound = _tip(QDoubleSpinBox(),
                                 "Slow rebound damping — controls body recovery after compression.\n"
                                 "Typically 1.2–2× slow bump.  (DAMP_REBOUND)")
             damp_rebound.setRange(0, 60000); damp_rebound.setDecimals(0); damp_rebound.setSuffix(" Ns/m")
-            form.addRow("Slow Rebound:", damp_rebound)
+            form.addRow("Slow Rebound:", self._spin_widget(damp_rebound))
             setattr(self, f'{prefix}_damp_rebound', damp_rebound)
 
             damp_fast_rebound = _tip(QDoubleSpinBox(),
                                      "Fast rebound damping — controls wheel return speed after a bump.\n"
                                      "Usually higher than fast bump.  (DAMP_FAST_REBOUND)")
             damp_fast_rebound.setRange(0, 60000); damp_fast_rebound.setDecimals(0); damp_fast_rebound.setSuffix(" Ns/m")
-            form.addRow("Fast Rebound:", damp_fast_rebound)
+            form.addRow("Fast Rebound:", self._spin_widget(damp_fast_rebound))
             setattr(self, f'{prefix}_damp_fast_rebound', damp_fast_rebound)
 
             rod = _tip(QDoubleSpinBox(),
                        "Push/pull-rod length offset in metres.\n"
                        "Positive = raises ride height · Negative = lowers it.  (ROD_LENGTH)")
             rod.setRange(-0.5, 0.5); rod.setDecimals(4); rod.setSingleStep(0.001); rod.setSuffix(" m")
-            form.addRow("Rod Length:", rod)
+            form.addRow("Rod Length:", self._spin_widget(rod))
             setattr(self, f'{prefix}_rod_length', rod)
 
             camber = _tip(QDoubleSpinBox(),
@@ -529,7 +626,7 @@ class CarEditorDialog(QDialog):
                           "Negative = top of tyre leans inward (most cars).\n"
                           "Street: −0.5 to −2.0°  ·  Race: −2.0 to −4.0°  (STATIC_CAMBER)")
             camber.setRange(-10.0, 5.0); camber.setDecimals(2); camber.setSingleStep(0.1); camber.setSuffix("°")
-            form.addRow("Static Camber:", camber)
+            form.addRow("Static Camber:", self._spin_widget(camber))
             setattr(self, f'{prefix}_static_camber', camber)
 
             toe = _tip(QDoubleSpinBox(),
@@ -537,10 +634,14 @@ class CarEditorDialog(QDialog):
                        "Positive = toe-out (front of tyre points outward).\n"
                        "Front typical: 0 to +0.001 · Rear: −0.001 to 0  (TOE_OUT)")
             toe.setRange(-0.1, 0.1); toe.setDecimals(5); toe.setSingleStep(0.0001)
-            form.addRow("Toe Out:", toe)
+            form.addRow("Toe Out:", self._spin_widget(toe))
             setattr(self, f'{prefix}_toe_out', toe)
 
-            grp.setLayout(form)
+            grp_inner = form.done()
+            inner_layout = QVBoxLayout()
+            inner_layout.setContentsMargins(0, 0, 0, 0)
+            inner_layout.addWidget(grp_inner)
+            grp.setLayout(inner_layout)
             layout.addWidget(grp)
 
         import_btn = QPushButton("📥  Import Suspension from Library...")
@@ -559,109 +660,124 @@ class CarEditorDialog(QDialog):
 
         # --- Traction ---
         traction_grp = QGroupBox("Traction Layout  (drivetrain.ini › TRACTION)")
-        traction_form = QFormLayout()
+        traction_form = _TwoColForm()
 
         self.traction_type = _tip(SegmentedButtonGroup(["RWD", "FWD", "AWD", "AWD2"]),
                                   "Drive wheel configuration.\n"
                                   "AWD2 = advanced AWD with controller (drivetrain.ini VERSION=3).  (TYPE)")
         traction_form.addRow("Drive Type:", self.traction_type)
 
-        traction_grp.setLayout(traction_form)
+        grp_inner = traction_form.done()
+        inner_layout = QVBoxLayout()
+        inner_layout.setContentsMargins(0, 0, 0, 0)
+        inner_layout.addWidget(grp_inner)
+        traction_grp.setLayout(inner_layout)
         layout.addWidget(traction_grp)
 
         # --- Differential ---
         diff_grp = QGroupBox("Differential  (drivetrain.ini › DIFFERENTIAL)")
-        diff_form = QFormLayout()
+        diff_form = _TwoColForm()
 
         self.diff_power = _tip(QDoubleSpinBox(),
                                "LSD locking factor under power.\n"
                                "0.0 = open diff · 1.0 = fully locked (spool).\n"
                                "Street: 0.05–0.20 · Race: 0.30–0.80  (POWER)")
         self.diff_power.setRange(0, 1.0); self.diff_power.setDecimals(3); self.diff_power.setSingleStep(0.05)
-        diff_form.addRow("Lock on Power:", self.diff_power)
+        diff_form.addRow("Lock on Power:", self._spin_widget(self.diff_power))
 
         self.diff_coast = _tip(QDoubleSpinBox(),
                                "LSD locking factor on engine braking.\n"
                                "Higher = more stable but less rotation on corner entry.  (COAST)")
         self.diff_coast.setRange(0, 1.0); self.diff_coast.setDecimals(3); self.diff_coast.setSingleStep(0.05)
-        diff_form.addRow("Lock on Coast:", self.diff_coast)
+        diff_form.addRow("Lock on Coast:", self._spin_widget(self.diff_coast))
 
         self.diff_preload = _tip(QDoubleSpinBox(),
                                  "LSD preload torque — keeps diff partially locked even at zero throttle.\n"
                                  "Street: 0–20 Nm · Race: 30–150 Nm  (PRELOAD)")
         self.diff_preload.setRange(0, 500); self.diff_preload.setDecimals(1); self.diff_preload.setSuffix(" Nm")
-        diff_form.addRow("Preload:", self.diff_preload)
+        diff_form.addRow("Preload:", self._spin_widget(self.diff_preload))
 
-        diff_grp.setLayout(diff_form)
+        grp_inner = diff_form.done()
+        inner_layout = QVBoxLayout()
+        inner_layout.setContentsMargins(0, 0, 0, 0)
+        inner_layout.addWidget(grp_inner)
+        diff_grp.setLayout(inner_layout)
         layout.addWidget(diff_grp)
 
         # --- Gearbox ---
         gbox_grp = QGroupBox("Gearbox  (drivetrain.ini › GEARS / GEARBOX)")
-        gbox_form = QFormLayout()
+        gbox_form = _TwoColForm()
 
         self.gear_count = _tip(QSpinBox(), "Number of forward gears.  (GEARS > COUNT)")
         self.gear_count.setRange(1, 10)
         self.gear_count.valueChanged.connect(self._update_gear_ratio_visibility)
-        gbox_form.addRow("Gear Count:", self.gear_count)
+        gbox_form.addRow("Gear Count:", self._spin_widget(self.gear_count))
 
         self.final_ratio = _tip(QDoubleSpinBox(),
                                 "Final drive ratio.\n"
                                 "Higher = more acceleration, lower top speed.  (GEARS > FINAL)")
         self.final_ratio.setRange(1.0, 12.0); self.final_ratio.setDecimals(3); self.final_ratio.setSingleStep(0.05)
         self.final_ratio.valueChanged.connect(self._update_gear_speeds)
-        gbox_form.addRow("Final Ratio:", self.final_ratio)
+        gbox_form.addRow("Final Ratio:", self._spin_widget(self.final_ratio))
 
         self.gearbox_up_time = _tip(QSpinBox(),
                                     "Upshift time in milliseconds.\n"
                                     "0 = instantaneous (sequential gearbox).\n"
                                     "H-pattern manual: 200–400 ms  (GEARBOX > CHANGE_UP_TIME)")
         self.gearbox_up_time.setRange(0, 1000); self.gearbox_up_time.setSuffix(" ms")
-        gbox_form.addRow("Upshift Time:", self.gearbox_up_time)
+        gbox_form.addRow("Upshift Time:", self._spin_widget(self.gearbox_up_time))
 
         self.gearbox_dn_time = _tip(QSpinBox(),
                                     "Downshift time in milliseconds.\n"
                                     "Usually slightly longer than upshift.  (GEARBOX > CHANGE_DN_TIME)")
         self.gearbox_dn_time.setRange(0, 1000); self.gearbox_dn_time.setSuffix(" ms")
-        gbox_form.addRow("Downshift Time:", self.gearbox_dn_time)
+        gbox_form.addRow("Downshift Time:", self._spin_widget(self.gearbox_dn_time))
 
         self.gearbox_inertia = _tip(QDoubleSpinBox(),
                                     "Gearbox rotational inertia — affects transmission feel.  (GEARBOX > INERTIA)")
         self.gearbox_inertia.setRange(0, 1.0); self.gearbox_inertia.setDecimals(4); self.gearbox_inertia.setSingleStep(0.001)
-        gbox_form.addRow("Gearbox Inertia:", self.gearbox_inertia)
+        gbox_form.addRow("Gearbox Inertia:", self._spin_widget(self.gearbox_inertia))
 
         # Button to show/hide gear ratios editor
         self.edit_gear_ratios_btn = QPushButton("⚙ Edit Gear Ratios...")
         self.edit_gear_ratios_btn.clicked.connect(self._toggle_gear_ratios)
-        gbox_form.addRow("", self.edit_gear_ratios_btn)
+        gbox_form.addRow(self.edit_gear_ratios_btn)
 
-        gbox_grp.setLayout(gbox_form)
+        grp_inner = gbox_form.done()
+        inner_layout = QVBoxLayout()
+        inner_layout.setContentsMargins(0, 0, 0, 0)
+        inner_layout.addWidget(grp_inner)
+        gbox_grp.setLayout(inner_layout)
         layout.addWidget(gbox_grp)
 
         # --- Gear Ratios (collapsible) ---
         self.gear_ratios_grp = QGroupBox("Individual Gear Ratios  (drivetrain.ini › GEARS)")
         self.gear_ratios_grp.setVisible(False)  # Hidden by default
-        gear_ratios_form = QFormLayout()
+        gear_ratios_form = _TwoColForm()
 
         # Create spinboxes for all possible gears (R + 1-10)
         self.gear_ratios = {}
         self.gear_speed_labels = {}  # Store speed labels for each gear
         self.gear_row_widgets = {}   # Store row container widgets for show/hide
-        
+        self.gear_row_labels = {}    # Store form labels for show/hide
+
         self.gear_ratios['GEAR_R'] = _tip(QDoubleSpinBox(),
                                           "Reverse gear ratio (negative value).  (GEAR_R)")
         self.gear_ratios['GEAR_R'].setRange(-10.0, 0.0)
         self.gear_ratios['GEAR_R'].setDecimals(3)
         self.gear_ratios['GEAR_R'].setSingleStep(0.1)
         self.gear_ratios['GEAR_R'].valueChanged.connect(self._update_gear_speeds)
-        
-        # Create horizontal layout for reverse gear with speed label
-        reverse_layout = QHBoxLayout()
-        reverse_layout.addWidget(self.gear_ratios['GEAR_R'])
+
+        # Create container widget for reverse gear with speed label
+        reverse_container = QWidget()
+        reverse_layout = QHBoxLayout(reverse_container)
+        reverse_layout.setContentsMargins(0, 0, 0, 0)
+        reverse_layout.addWidget(self._spin_widget(self.gear_ratios['GEAR_R']))
         self.gear_speed_labels['GEAR_R'] = QLabel("")
         self.gear_speed_labels['GEAR_R'].setStyleSheet(muted_text())
         reverse_layout.addWidget(self.gear_speed_labels['GEAR_R'])
         reverse_layout.addStretch()
-        gear_ratios_form.addRow("Reverse:", reverse_layout)
+        gear_ratios_form.addRow("Reverse:", reverse_container)
 
         for i in range(1, 11):  # Support up to 10 gears
             gear_key = f'GEAR_{i}'
@@ -672,29 +788,33 @@ class CarEditorDialog(QDialog):
             self.gear_ratios[gear_key].setDecimals(3)
             self.gear_ratios[gear_key].setSingleStep(0.1)
             self.gear_ratios[gear_key].valueChanged.connect(self._update_gear_speeds)
-            
-            # Create horizontal layout for gear with speed label, wrapped in QWidget for visibility control
-            gear_layout = QHBoxLayout()
+
+            # Create container widget for gear with speed label
+            gear_container = QWidget()
+            gear_layout = QHBoxLayout(gear_container)
             gear_layout.setContentsMargins(0, 0, 0, 0)
-            gear_layout.addWidget(self.gear_ratios[gear_key])
+            gear_layout.addWidget(self._spin_widget(self.gear_ratios[gear_key]))
             self.gear_speed_labels[gear_key] = QLabel("")
             self.gear_speed_labels[gear_key].setStyleSheet(muted_text())
             gear_layout.addWidget(self.gear_speed_labels[gear_key])
             gear_layout.addStretch()
-            gear_widget = QWidget()
-            gear_widget.setLayout(gear_layout)
-            self.gear_row_widgets[gear_key] = gear_widget
+            self.gear_row_widgets[gear_key] = gear_container
 
             gear_ratios_form.addRow(f"{i}{'st' if i==1 else 'nd' if i==2 else 'rd' if i==3 else 'th'} Gear:",
-                                    gear_widget)
+                                    gear_container)
+            self.gear_row_labels[gear_key] = gear_ratios_form._widget_to_label.get(id(gear_container))
 
         # Import gear ratios from library button
         import_gears_btn = QPushButton("📥  Import Gear Set from Library...")
         import_gears_btn.clicked.connect(self.import_gears_component)
         import_gears_btn.setStyleSheet(btn_primary())
-        gear_ratios_form.addRow("", import_gears_btn)
+        gear_ratios_form.addRow(import_gears_btn)
 
-        self.gear_ratios_grp.setLayout(gear_ratios_form)
+        grp_inner = gear_ratios_form.done()
+        inner_layout = QVBoxLayout()
+        inner_layout.setContentsMargins(0, 0, 0, 0)
+        inner_layout.addWidget(grp_inner)
+        self.gear_ratios_grp.setLayout(inner_layout)
         layout.addWidget(self.gear_ratios_grp)
 
         # --- RTO Files Management ---
@@ -733,15 +853,19 @@ class CarEditorDialog(QDialog):
 
         # --- Clutch ---
         clutch_grp = QGroupBox("Clutch  (drivetrain.ini › CLUTCH)")
-        clutch_form = QFormLayout()
+        clutch_form = _TwoColForm()
 
         self.clutch_max_torque = _tip(QDoubleSpinBox(),
                                       "Maximum clutch torque capacity.\n"
                                       "Should exceed engine peak torque to avoid slipping.  (MAX_TORQUE)")
         self.clutch_max_torque.setRange(0, 3000); self.clutch_max_torque.setDecimals(0); self.clutch_max_torque.setSuffix(" Nm")
-        clutch_form.addRow("Max Clutch Torque:", self.clutch_max_torque)
+        clutch_form.addRow("Max Clutch Torque:", self._spin_widget(self.clutch_max_torque))
 
-        clutch_grp.setLayout(clutch_form)
+        grp_inner = clutch_form.done()
+        inner_layout = QVBoxLayout()
+        inner_layout.setContentsMargins(0, 0, 0, 0)
+        inner_layout.addWidget(grp_inner)
+        clutch_grp.setLayout(inner_layout)
         layout.addWidget(clutch_grp)
 
         import_btn = QPushButton("📥  Import Differential from Library...")
@@ -764,92 +888,108 @@ class CarEditorDialog(QDialog):
 
         # --- Mass & Inertia ---
         mass_grp = QGroupBox("Mass & Inertia  (car.ini › BASIC)")
-        mass_form = QFormLayout()
+        mass_form = _TwoColForm()
 
         self.total_mass = _tip(QDoubleSpinBox(),
                                "Total vehicle mass including driver.\n"
                                "Street: 900–2000 kg · Race: 600–1000 kg  (TOTALMASS)")
         self.total_mass.setRange(100, 10000); self.total_mass.setDecimals(0); self.total_mass.setSuffix(" kg")
-        mass_form.addRow("Total Mass:", self.total_mass)
+        mass_form.addRow("Total Mass:", self._spin_widget(self.total_mass))
 
         self.inertia_x = _tip(QDoubleSpinBox(),
                               "Roll inertia (rotation around longitudinal axis) in t·m².\n"
                               "Affects body lean in direction changes.  (INERTIA[0])")
         self.inertia_x.setRange(0, 50); self.inertia_x.setDecimals(3); self.inertia_x.setSingleStep(0.1); self.inertia_x.setSuffix(" t·m²")
-        mass_form.addRow("Roll Inertia:", self.inertia_x)
+        mass_form.addRow("Roll Inertia:", self._spin_widget(self.inertia_x))
 
         self.inertia_y = _tip(QDoubleSpinBox(),
                               "Pitch inertia (rotation around lateral axis) in t·m².\n"
                               "Affects pitch under braking/acceleration.  (INERTIA[1])")
         self.inertia_y.setRange(0, 50); self.inertia_y.setDecimals(3); self.inertia_y.setSingleStep(0.1); self.inertia_y.setSuffix(" t·m²")
-        mass_form.addRow("Pitch Inertia:", self.inertia_y)
+        mass_form.addRow("Pitch Inertia:", self._spin_widget(self.inertia_y))
 
         self.inertia_z = _tip(QDoubleSpinBox(),
                               "Yaw inertia (rotation around vertical axis) in t·m².\n"
                               "Most important for handling: higher = more stable but slower rotation.  (INERTIA[2])")
         self.inertia_z.setRange(0, 100); self.inertia_z.setDecimals(3); self.inertia_z.setSingleStep(0.1); self.inertia_z.setSuffix(" t·m²")
-        mass_form.addRow("Yaw Inertia:", self.inertia_z)
+        mass_form.addRow("Yaw Inertia:", self._spin_widget(self.inertia_z))
 
-        mass_grp.setLayout(mass_form)
+        grp_inner = mass_form.done()
+        inner_layout = QVBoxLayout()
+        inner_layout.setContentsMargins(0, 0, 0, 0)
+        inner_layout.addWidget(grp_inner)
+        mass_grp.setLayout(inner_layout)
         layout.addWidget(mass_grp)
 
         # --- Balance & wheelbase ---
         bal_grp = QGroupBox("Weight Distribution & Wheelbase  (suspensions.ini › BASIC)")
-        bal_form = QFormLayout()
+        bal_form = _TwoColForm()
 
         self.cg_location = _tip(QDoubleSpinBox(),
                                 "Front axle weight distribution as a fraction (0.0–1.0).\n"
                                 "0.578 = 57.8% front.  FR cars: 0.47–0.52 · FF: 0.58–0.65.  (CG_LOCATION)")
         self.cg_location.setRange(0.0, 1.0); self.cg_location.setDecimals(4); self.cg_location.setSingleStep(0.01)
-        bal_form.addRow("Front Weight Fraction:", self.cg_location)
+        bal_form.addRow("Front Weight Fraction:", self._spin_widget(self.cg_location))
 
         self.wheelbase = _tip(QDoubleSpinBox(),
                               "Distance between front and rear axle centres in metres.  (WHEELBASE)")
         self.wheelbase.setRange(1.0, 5.0); self.wheelbase.setDecimals(4); self.wheelbase.setSingleStep(0.01); self.wheelbase.setSuffix(" m")
-        bal_form.addRow("Wheelbase:", self.wheelbase)
+        bal_form.addRow("Wheelbase:", self._spin_widget(self.wheelbase))
 
-        bal_grp.setLayout(bal_form)
+        grp_inner = bal_form.done()
+        inner_layout = QVBoxLayout()
+        inner_layout.setContentsMargins(0, 0, 0, 0)
+        inner_layout.addWidget(grp_inner)
+        bal_grp.setLayout(inner_layout)
         layout.addWidget(bal_grp)
 
         # --- Steering ---
         steer_grp = QGroupBox("Steering  (car.ini › CONTROLS)")
-        steer_form = QFormLayout()
+        steer_form = _TwoColForm()
 
         self.steer_lock = _tip(QDoubleSpinBox(),
                                "Steering wheel lock-to-lock angle in degrees.\n"
                                "Street: 400–900° · Race: 200–360°  (STEER_LOCK)")
         self.steer_lock.setRange(90, 1080); self.steer_lock.setDecimals(0); self.steer_lock.setSuffix("°")
-        steer_form.addRow("Steering Lock:", self.steer_lock)
+        steer_form.addRow("Steering Lock:", self._spin_widget(self.steer_lock))
 
         self.steer_ratio = _tip(QDoubleSpinBox(),
                                 "Steering gear ratio.\n"
                                 "Lower absolute value = more direct.  Negative = inverted side.\n"
                                 "Street: 15–18 · Sport: 12–15 · Negative = reversed  (STEER_RATIO)")
         self.steer_ratio.setRange(-25, 25); self.steer_ratio.setDecimals(1); self.steer_ratio.setSingleStep(0.5)
-        steer_form.addRow("Steering Ratio:", self.steer_ratio)
+        steer_form.addRow("Steering Ratio:", self._spin_widget(self.steer_ratio))
 
-        steer_grp.setLayout(steer_form)
+        grp_inner = steer_form.done()
+        inner_layout = QVBoxLayout()
+        inner_layout.setContentsMargins(0, 0, 0, 0)
+        inner_layout.addWidget(grp_inner)
+        steer_grp.setLayout(inner_layout)
         layout.addWidget(steer_grp)
 
         # --- Fuel ---
         fuel_grp = QGroupBox("Fuel  (car.ini › FUEL)")
-        fuel_form = QFormLayout()
+        fuel_form = _TwoColForm()
 
         self.fuel_start = _tip(QDoubleSpinBox(), "Default starting fuel load in litres.  (FUEL)")
         self.fuel_start.setRange(0, 300); self.fuel_start.setDecimals(1); self.fuel_start.setSuffix(" L")
-        fuel_form.addRow("Starting Fuel:", self.fuel_start)
+        fuel_form.addRow("Starting Fuel:", self._spin_widget(self.fuel_start))
 
         self.fuel_max = _tip(QDoubleSpinBox(), "Maximum tank capacity in litres.  (MAX_FUEL)")
         self.fuel_max.setRange(0, 500); self.fuel_max.setDecimals(1); self.fuel_max.setSuffix(" L")
-        fuel_form.addRow("Tank Capacity:", self.fuel_max)
+        fuel_form.addRow("Tank Capacity:", self._spin_widget(self.fuel_max))
 
         self.fuel_consumption = _tip(QDoubleSpinBox(),
                                      "Fuel consumption in litres per metre of travel.\n"
                                      "Efficient: 0.0003 · Typical: 0.0030 · Race heavy: 0.005+  (CONSUMPTION)")
         self.fuel_consumption.setRange(0, 0.1); self.fuel_consumption.setDecimals(6); self.fuel_consumption.setSingleStep(0.0001)
-        fuel_form.addRow("Consumption (L/m):", self.fuel_consumption)
+        fuel_form.addRow("Consumption (L/m):", self._spin_widget(self.fuel_consumption))
 
-        fuel_grp.setLayout(fuel_form)
+        grp_inner = fuel_form.done()
+        inner_layout = QVBoxLayout()
+        inner_layout.setContentsMargins(0, 0, 0, 0)
+        inner_layout.addWidget(grp_inner)
+        fuel_grp.setLayout(inner_layout)
         layout.addWidget(fuel_grp)
 
         layout.addStretch()
@@ -891,13 +1031,13 @@ class CarEditorDialog(QDialog):
             name = self.aero_ini.get_value(f'WING_{index}', 'NAME', '')
         title = f"Wing {index}: {name}" if name else f"WING_{index}"
         gb = QGroupBox(f"{title}  (aero.ini › WING_{index})")
-        form = QFormLayout()
+        form = _TwoColForm()
 
         cd = _tip(QDoubleSpinBox(),
                   f"Drag coefficient for this wing element.\n"
                   f"Body: 0.3–1.0 · Small wings: 0.01–0.5 · Large wings: 0.5–3.0+  (CD)")
         cd.setRange(0, 20.0); cd.setDecimals(4); cd.setSingleStep(0.01)
-        form.addRow("Drag (CD):", cd)
+        form.addRow("Drag (CD):", self._spin_widget(cd))
         setattr(self, f'wing_{index}_cd', cd)
 
         cl = _tip(QDoubleSpinBox(),
@@ -905,17 +1045,21 @@ class CarEditorDialog(QDialog):
                   f"Negative = downforce (most ground-effect/wing elements).\n"
                   f"Positive = lift (road car body WING_0 at speed).  (CL)")
         cl.setRange(-10.0, 10.0); cl.setDecimals(4); cl.setSingleStep(0.01)
-        form.addRow("Lift / Downforce (CL):", cl)
+        form.addRow("Lift / Downforce (CL):", self._spin_widget(cl))
         setattr(self, f'wing_{index}_cl', cl)
 
         angle = _tip(QDoubleSpinBox(),
                      f"Wing angle of attack in degrees.\n"
                      f"Increasing angle raises downforce AND drag.  (ANGLE)")
         angle.setRange(-45, 45); angle.setSuffix("°"); angle.setDecimals(2); angle.setSingleStep(1.0)
-        form.addRow("Angle:", angle)
+        form.addRow("Angle:", self._spin_widget(angle))
         setattr(self, f'wing_{index}_angle', angle)
 
-        gb.setLayout(form)
+        grp_inner = form.done()
+        inner_layout = QVBoxLayout()
+        inner_layout.setContentsMargins(0, 0, 0, 0)
+        inner_layout.addWidget(grp_inner)
+        gb.setLayout(inner_layout)
         return gb
 
     # ------------------------------------------------------------------ Brakes tab
@@ -925,37 +1069,41 @@ class CarEditorDialog(QDialog):
         layout = QVBoxLayout(widget)
 
         brake_grp = QGroupBox("Brake System  (brakes.ini › DATA)")
-        brake_form = QFormLayout()
+        brake_form = _TwoColForm()
 
         self.brake_max_torque = _tip(QDoubleSpinBox(),
                                      "Maximum brake torque per wheel in Nm.\n"
                                      "Street: 1 000–3 000 Nm · Race: 3 000–8 000+ Nm  (MAX_TORQUE)")
         self.brake_max_torque.setRange(0, 12000); self.brake_max_torque.setDecimals(0); self.brake_max_torque.setSuffix(" Nm")
-        brake_form.addRow("Max Brake Torque:", self.brake_max_torque)
+        brake_form.addRow("Max Brake Torque:", self._spin_widget(self.brake_max_torque))
 
         self.brake_front_share = _tip(QDoubleSpinBox(),
                                       "Fraction of total braking force applied to the front axle.\n"
                                       "0.64 = 64% front.  Typical street: 0.58–0.70 · Race: 0.55–0.65  (FRONT_SHARE)")
         self.brake_front_share.setRange(0.3, 0.9); self.brake_front_share.setDecimals(3); self.brake_front_share.setSingleStep(0.01)
-        brake_form.addRow("Front Brake Bias:", self.brake_front_share)
+        brake_form.addRow("Front Brake Bias:", self._spin_widget(self.brake_front_share))
 
         self.brake_handbrake = _tip(QDoubleSpinBox(),
                                     "Handbrake torque applied to rear wheels.\n"
                                     "Higher = more aggressive e-brake / handbrake turns.  (HANDBRAKE_TORQUE)")
         self.brake_handbrake.setRange(0, 12000); self.brake_handbrake.setDecimals(0); self.brake_handbrake.setSuffix(" Nm")
-        brake_form.addRow("Handbrake Torque:", self.brake_handbrake)
+        brake_form.addRow("Handbrake Torque:", self._spin_widget(self.brake_handbrake))
 
         self.brake_cockpit_adj = _tip(QCheckBox("Cockpit Brake Bias Adjustable"),
                                       "Allow driver to adjust front/rear brake balance from cockpit.  (COCKPIT_ADJUSTABLE)")
-        brake_form.addRow("", self.brake_cockpit_adj)
+        brake_form.addRow(self.brake_cockpit_adj)
 
         self.brake_adjust_step = _tip(QDoubleSpinBox(),
                                        "Step size for cockpit brake bias adjustment.\n"
                                        "How much the bias changes per click.  Typical: 0.5–1.0.  (ADJUST_STEP)")
         self.brake_adjust_step.setRange(0.1, 5.0); self.brake_adjust_step.setDecimals(1); self.brake_adjust_step.setSingleStep(0.1)
-        brake_form.addRow("Bias Adjust Step:", self.brake_adjust_step)
+        brake_form.addRow("Bias Adjust Step:", self._spin_widget(self.brake_adjust_step))
 
-        brake_grp.setLayout(brake_form)
+        grp_inner = brake_form.done()
+        inner_layout = QVBoxLayout()
+        inner_layout.setContentsMargins(0, 0, 0, 0)
+        inner_layout.addWidget(grp_inner)
+        brake_grp.setLayout(inner_layout)
         layout.addWidget(brake_grp)
 
         layout.addStretch()
@@ -968,7 +1116,7 @@ class CarEditorDialog(QDialog):
 
         # --- Compound Selector ---
         compound_grp = QGroupBox("Compound Selection  (tyres.ini › COMPOUND_DEFAULT)")
-        compound_form = QFormLayout()
+        compound_form = _TwoColForm()
 
         self.compound_selector = _tip(QComboBox(), 
                                       "Select tyre compound to edit.\n"
@@ -983,12 +1131,16 @@ class CarEditorDialog(QDialog):
         
         self.compound_selector.currentIndexChanged.connect(self._on_compound_changed)
         
-        compound_grp.setLayout(compound_form)
+        grp_inner = compound_form.done()
+        inner_layout = QVBoxLayout()
+        inner_layout.setContentsMargins(0, 0, 0, 0)
+        inner_layout.addWidget(grp_inner)
+        compound_grp.setLayout(inner_layout)
         layout.addWidget(compound_grp)
 
         # --- Front Tyre Dimensions ---
         front_dim_grp = QGroupBox("Front Tyre Dimensions  (tyres.ini › FRONT / FRONT_N)")
-        front_dim_form = QFormLayout()
+        front_dim_form = _TwoColForm()
 
         self.front_name = _tip(QLabel(""), "Tyre compound name  (NAME)")
         front_dim_form.addRow("Name:", self.front_name)
@@ -996,24 +1148,28 @@ class CarEditorDialog(QDialog):
         self.front_width = _tip(QDoubleSpinBox(), 
                                "Tyre width in meters.  (WIDTH)")
         self.front_width.setRange(0.1, 0.5); self.front_width.setDecimals(4); self.front_width.setSingleStep(0.005); self.front_width.setSuffix(" m")
-        front_dim_form.addRow("Width:", self.front_width)
+        front_dim_form.addRow("Width:", self._spin_widget(self.front_width))
 
         self.front_radius = _tip(QDoubleSpinBox(),
                                 "Outer radius in meters.  (RADIUS)")
         self.front_radius.setRange(0.2, 0.5); self.front_radius.setDecimals(5); self.front_radius.setSingleStep(0.005); self.front_radius.setSuffix(" m")
-        front_dim_form.addRow("Radius:", self.front_radius)
+        front_dim_form.addRow("Radius:", self._spin_widget(self.front_radius))
 
         self.front_rim_radius = _tip(QDoubleSpinBox(),
                                      "Rim radius in meters.  (RIM_RADIUS)")
         self.front_rim_radius.setRange(0.15, 0.35); self.front_rim_radius.setDecimals(4); self.front_rim_radius.setSingleStep(0.005); self.front_rim_radius.setSuffix(" m")
-        front_dim_form.addRow("Rim Radius:", self.front_rim_radius)
+        front_dim_form.addRow("Rim Radius:", self._spin_widget(self.front_rim_radius))
 
-        front_dim_grp.setLayout(front_dim_form)
+        grp_inner = front_dim_form.done()
+        inner_layout = QVBoxLayout()
+        inner_layout.setContentsMargins(0, 0, 0, 0)
+        inner_layout.addWidget(grp_inner)
+        front_dim_grp.setLayout(inner_layout)
         layout.addWidget(front_dim_grp)
 
         # --- Rear Tyre Dimensions ---
         rear_dim_grp = QGroupBox("Rear Tyre Dimensions  (tyres.ini › REAR / REAR_N)")
-        rear_dim_form = QFormLayout()
+        rear_dim_form = _TwoColForm()
 
         self.rear_name = _tip(QLabel(""), "Tyre compound name  (NAME)")
         rear_dim_form.addRow("Name:", self.rear_name)
@@ -1021,63 +1177,75 @@ class CarEditorDialog(QDialog):
         self.rear_width = _tip(QDoubleSpinBox(),
                               "Tyre width in meters.  (WIDTH)")
         self.rear_width.setRange(0.1, 0.5); self.rear_width.setDecimals(4); self.rear_width.setSingleStep(0.005); self.rear_width.setSuffix(" m")
-        rear_dim_form.addRow("Width:", self.rear_width)
+        rear_dim_form.addRow("Width:", self._spin_widget(self.rear_width))
 
         self.rear_radius = _tip(QDoubleSpinBox(),
                                "Outer radius in meters.  (RADIUS)")
         self.rear_radius.setRange(0.2, 0.5); self.rear_radius.setDecimals(5); self.rear_radius.setSingleStep(0.005); self.rear_radius.setSuffix(" m")
-        rear_dim_form.addRow("Radius:", self.rear_radius)
+        rear_dim_form.addRow("Radius:", self._spin_widget(self.rear_radius))
 
         self.rear_rim_radius = _tip(QDoubleSpinBox(),
                                     "Rim radius in meters.  (RIM_RADIUS)")
         self.rear_rim_radius.setRange(0.15, 0.35); self.rear_rim_radius.setDecimals(4); self.rear_rim_radius.setSingleStep(0.005); self.rear_rim_radius.setSuffix(" m")
-        rear_dim_form.addRow("Rim Radius:", self.rear_rim_radius)
+        rear_dim_form.addRow("Rim Radius:", self._spin_widget(self.rear_rim_radius))
 
-        rear_dim_grp.setLayout(rear_dim_form)
+        grp_inner = rear_dim_form.done()
+        inner_layout = QVBoxLayout()
+        inner_layout.setContentsMargins(0, 0, 0, 0)
+        inner_layout.addWidget(grp_inner)
+        rear_dim_grp.setLayout(inner_layout)
         layout.addWidget(rear_dim_grp)
 
         # --- Front Tyre Performance ---
         front_perf_grp = QGroupBox("Front Tyre Performance  (tyres.ini › FRONT / FRONT_N)")
-        front_perf_form = QFormLayout()
+        front_perf_form = _TwoColForm()
 
         self.front_dx0 = _tip(QDoubleSpinBox(),
                              "Peak longitudinal grip coefficient (braking/acceleration).  (DX0)")
         self.front_dx0.setRange(0.5, 3.0); self.front_dx0.setDecimals(4); self.front_dx0.setSingleStep(0.01)
-        front_perf_form.addRow("Longitudinal Grip (DX0):", self.front_dx0)
+        front_perf_form.addRow("Longitudinal Grip (DX0):", self._spin_widget(self.front_dx0))
 
         self.front_dy0 = _tip(QDoubleSpinBox(),
                              "Peak lateral grip coefficient (cornering).  (DY0)")
         self.front_dy0.setRange(0.5, 3.0); self.front_dy0.setDecimals(4); self.front_dy0.setSingleStep(0.01)
-        front_perf_form.addRow("Lateral Grip (DY0):", self.front_dy0)
+        front_perf_form.addRow("Lateral Grip (DY0):", self._spin_widget(self.front_dy0))
 
         self.front_pressure_ideal = _tip(QSpinBox(),
                                         "Ideal operating pressure in PSI for optimal grip.  (PRESSURE_IDEAL)")
         self.front_pressure_ideal.setRange(15, 60); self.front_pressure_ideal.setSuffix(" PSI")
-        front_perf_form.addRow("Ideal Pressure:", self.front_pressure_ideal)
+        front_perf_form.addRow("Ideal Pressure:", self._spin_widget(self.front_pressure_ideal))
 
-        front_perf_grp.setLayout(front_perf_form)
+        grp_inner = front_perf_form.done()
+        inner_layout = QVBoxLayout()
+        inner_layout.setContentsMargins(0, 0, 0, 0)
+        inner_layout.addWidget(grp_inner)
+        front_perf_grp.setLayout(inner_layout)
         layout.addWidget(front_perf_grp)
 
         # --- Rear Tyre Performance ---
         rear_perf_grp = QGroupBox("Rear Tyre Performance  (tyres.ini › REAR / REAR_N)")
-        rear_perf_form = QFormLayout()
+        rear_perf_form = _TwoColForm()
 
         self.rear_dx0 = _tip(QDoubleSpinBox(),
                             "Peak longitudinal grip coefficient (braking/acceleration).  (DX0)")
         self.rear_dx0.setRange(0.5, 3.0); self.rear_dx0.setDecimals(4); self.rear_dx0.setSingleStep(0.01)
-        rear_perf_form.addRow("Longitudinal Grip (DX0):", self.rear_dx0)
+        rear_perf_form.addRow("Longitudinal Grip (DX0):", self._spin_widget(self.rear_dx0))
 
         self.rear_dy0 = _tip(QDoubleSpinBox(),
                             "Peak lateral grip coefficient (cornering).  (DY0)")
         self.rear_dy0.setRange(0.5, 3.0); self.rear_dy0.setDecimals(4); self.rear_dy0.setSingleStep(0.01)
-        rear_perf_form.addRow("Lateral Grip (DY0):", self.rear_dy0)
+        rear_perf_form.addRow("Lateral Grip (DY0):", self._spin_widget(self.rear_dy0))
 
         self.rear_pressure_ideal = _tip(QSpinBox(),
                                        "Ideal operating pressure in PSI for optimal grip.  (PRESSURE_IDEAL)")
         self.rear_pressure_ideal.setRange(15, 60); self.rear_pressure_ideal.setSuffix(" PSI")
-        rear_perf_form.addRow("Ideal Pressure:", self.rear_pressure_ideal)
+        rear_perf_form.addRow("Ideal Pressure:", self._spin_widget(self.rear_pressure_ideal))
 
-        rear_perf_grp.setLayout(rear_perf_form)
+        grp_inner = rear_perf_form.done()
+        inner_layout = QVBoxLayout()
+        inner_layout.setContentsMargins(0, 0, 0, 0)
+        inner_layout.addWidget(grp_inner)
+        rear_perf_grp.setLayout(inner_layout)
         layout.addWidget(rear_perf_grp)
 
         import_tyres_btn = QPushButton("📥  Import Tyre Compound from Library...")
@@ -1578,19 +1746,15 @@ class CarEditorDialog(QDialog):
     def _update_gear_ratio_visibility(self):
         """Show/hide gear ratio rows based on gear count."""
         count = self.gear_count.value()
-        form = self.gear_ratios_grp.layout()
         for i in range(1, 11):
             gear_key = f'GEAR_{i}'
             visible = i <= count
             if gear_key in self.gear_row_widgets:
                 self.gear_row_widgets[gear_key].setVisible(visible)
-                for row in range(form.rowCount()):
-                    item = form.itemAt(row, QFormLayout.FieldRole)
-                    if item and item.widget() == self.gear_row_widgets[gear_key]:
-                        label = form.itemAt(row, QFormLayout.LabelRole)
-                        if label and label.widget():
-                            label.widget().setVisible(visible)
-                        break
+                if hasattr(self, 'gear_row_labels') and gear_key in self.gear_row_labels:
+                    lbl = self.gear_row_labels[gear_key]
+                    if lbl:
+                        lbl.setVisible(visible)
 
     # ------------------------------------------------------------------ Component imports
 
