@@ -186,7 +186,6 @@ La cartella `examples/` contiene dati reali di un'auto di Assetto Corsa per test
 - Riferimento per struttura corretta dei file AC
 
 ## Estensioni Future
-- Supporto per setup auto (track-specific configurations)
 - Online repository componenti condivisi
 - Integrazione con Content Manager (se possibile)
 - Support per mod auto custom
