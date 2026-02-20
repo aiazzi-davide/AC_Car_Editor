@@ -227,6 +227,41 @@ class CarFileManager:
             print(f"Error restoring backup: {e}")
             return False
     
+    @staticmethod
+    def restore_bak_files(data_path: str) -> int:
+        """
+        Restore all .bak files in a data folder to their originals.
+
+        Each file saved with backup=True produces a <file>.bak alongside the
+        modified file.  This method copies every <file>.bak back over <file>,
+        effectively reverting the last save operation.
+
+        Args:
+            data_path: Path to the car data folder
+
+        Returns:
+            Number of files restored
+        """
+        if not os.path.exists(data_path):
+            return 0
+
+        restored = 0
+        try:
+            for entry in os.listdir(data_path):
+                if not entry.endswith('.bak'):
+                    continue
+                bak_path = os.path.join(data_path, entry)
+                orig_path = os.path.join(data_path, entry[:-4])  # strip .bak
+                try:
+                    shutil.copy2(bak_path, orig_path)
+                    restored += 1
+                except Exception as e:
+                    print(f"Error restoring {entry}: {e}")
+        except Exception as e:
+            print(f"Error listing data folder {data_path}: {e}")
+
+        return restored
+
     def get_ini_file_path(self, car_name: str, ini_name: str) -> str:
         """
         Get path to specific INI file in car data

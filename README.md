@@ -132,6 +132,7 @@ python main.py
      - **Stage 3**: Full build (NA/Turbo: major boost/power + weight reduction + aero + mechanical upgrades)
      - Automatic detection of NA vs turbocharged engines
      - Backup creation for all modifications
+   - Click "↩ Restore Backup" to undo the last save: restores all `.bak` files back to the originals and reloads the editor
    - Click "Open Folder" to open the car's data folder in your system file explorer
    - Click "Save Changes" to apply modifications
    - A backup file (.bak) is automatically created for each modified file
@@ -262,7 +263,6 @@ assettocorsa/content/cars/
   - Reset to stock functionality
 
 ### Coming Soon
-- Undo/redo system
 - Generic LUT editor for all curve types (traction_control.lut, throttle.lut, etc.)
 - Smooth curve interpolation (spline)
 - Sound engine investigation (bank files, GUIDs)

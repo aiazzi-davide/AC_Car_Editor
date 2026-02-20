@@ -327,6 +327,69 @@ class TestComponentLibrary(unittest.TestCase):
         self.assertGreater(len(results), 0)
 
 
+class TestRestoreBakFiles(unittest.TestCase):
+    """Test restore_bak_files method on CarFileManager"""
+
+    def setUp(self):
+        self.temp_dir = tempfile.mkdtemp()
+        self.data_path = os.path.join(self.temp_dir, 'data')
+        os.makedirs(self.data_path)
+        self.manager = CarFileManager(self.temp_dir)
+
+    def tearDown(self):
+        shutil.rmtree(self.temp_dir)
+
+    def _write(self, name, content):
+        path = os.path.join(self.data_path, name)
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(content)
+        return path
+
+    def test_restore_single_bak(self):
+        """Restoring a .bak file overwrites the original with the backup content."""
+        self._write('engine.ini', 'modified content')
+        self._write('engine.ini.bak', 'original content')
+
+        count = self.manager.restore_bak_files(self.data_path)
+
+        self.assertEqual(count, 1)
+        with open(os.path.join(self.data_path, 'engine.ini'), encoding='utf-8') as f:
+            self.assertEqual(f.read(), 'original content')
+
+    def test_restore_multiple_bak(self):
+        """All .bak files in the folder are restored."""
+        self._write('engine.ini', 'new engine')
+        self._write('engine.ini.bak', 'old engine')
+        self._write('suspensions.ini', 'new susp')
+        self._write('suspensions.ini.bak', 'old susp')
+
+        count = self.manager.restore_bak_files(self.data_path)
+
+        self.assertEqual(count, 2)
+
+    def test_restore_no_bak_returns_zero(self):
+        """Returns 0 when no .bak files exist."""
+        self._write('engine.ini', 'some content')
+
+        count = self.manager.restore_bak_files(self.data_path)
+
+        self.assertEqual(count, 0)
+
+    def test_restore_nonexistent_path_returns_zero(self):
+        """Returns 0 gracefully when data path does not exist."""
+        count = self.manager.restore_bak_files('/nonexistent/path')
+        self.assertEqual(count, 0)
+
+    def test_bak_file_preserved_after_restore(self):
+        """The .bak file itself is kept after restoration."""
+        self._write('engine.ini', 'modified')
+        self._write('engine.ini.bak', 'backup')
+
+        self.manager.restore_bak_files(self.data_path)
+
+        self.assertTrue(os.path.exists(os.path.join(self.data_path, 'engine.ini.bak')))
+
+
 def run_tests():
     """Run all tests"""
     loader = unittest.TestLoader()
