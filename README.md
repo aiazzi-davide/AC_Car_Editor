@@ -1,5 +1,7 @@
 # AC Car Editor
 
+**Version 0.1.0** — [Changelog](CHANGELOG.md)
+
 A desktop application for modifying Assetto Corsa car configurations.
 
 ## Features
@@ -220,9 +222,24 @@ assettocorsa/content/cars/
 - Encrypted `data.acd` files from Kunos cars cannot be unpacked
 - The application does not modify the original game files until you save changes
 
+## Latest Release
+
+**[v0.1.0](CHANGELOG.md)** — Prima versione pubblica (2026-02-20)
+
+- Full car editor with 7 tabs (Engine, Suspension, Drivetrain, Weight, Aero, Brakes, Pneumatici)
+- Visual curve editor for `.lut` files with matplotlib
+- Stage Tuning System (Stage 1/2/3, NA vs Turbo)
+- RTO File Manager, Gear Ratio Editor, Speed Estimation
+- UI Metadata Editor, Setup Manager, Component Library
+- Restore Backup, Modern theme, Toast notifications
+
+See [CHANGELOG.md](CHANGELOG.md) for full details.
+
+---
+
 ## Development Status
 
-### Implemented (Phase 1-7 partial)
+### Implemented (Phase 1-7)
 - ✅ Project structure and configuration
 - ✅ INI file parser
 - ✅ LUT file parser with curve support
