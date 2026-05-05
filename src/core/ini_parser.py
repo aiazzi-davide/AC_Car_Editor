@@ -140,6 +140,13 @@ class IniParser:
         """Get all section names"""
         return self.config.sections()
     
+    def remove_section(self, section: str) -> bool:
+        """Remove a section from the INI file. Returns True if the section existed."""
+        removed = self.config.remove_section(section)
+        if removed:
+            self._dirty = True
+        return removed
+
     def has_section(self, section: str) -> bool:
         """Check if section exists"""
         return self.config.has_section(section)
