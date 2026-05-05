@@ -221,6 +221,101 @@ class TestCarEditorDialog(unittest.TestCase):
         self.assertEqual(parser2.get_value('SETTINGS', 'DRAG_COEFF'), '0.30')
         self.assertEqual(parser2.get_value('FRONT', 'LIFTCOEFF'), '-0.20')
     
+    def test_add_wing_to_aero_ini(self):
+        """Test adding a new WING_N section to aero.ini (simulates _add_wing logic)."""
+        parser = IniParser(self.temp_aero_ini)
+
+        # Initially no WING sections in the test aero.ini
+        self.assertFalse(parser.has_section('WING_0'))
+
+        # Simulate _add_wing: count existing wings, then add a new section
+        idx = 0
+        while parser.has_section(f'WING_{idx}'):
+            idx += 1
+
+        sec = f'WING_{idx}'
+        parser.set_value(sec, 'NAME', f'Wing {idx}')
+        parser.set_value(sec, 'CD', '0.5000')
+        parser.set_value(sec, 'CL', '0.0000')
+        parser.set_value(sec, 'ANGLE', '0.00')
+
+        # Section must now exist in-memory
+        self.assertTrue(parser.has_section('WING_0'))
+        self.assertEqual(parser.get_value('WING_0', 'CD'), '0.5000')
+        self.assertEqual(parser.get_value('WING_0', 'CL'), '0.0000')
+        self.assertEqual(parser.get_value('WING_0', 'ANGLE'), '0.00')
+        self.assertEqual(parser.get_value('WING_0', 'NAME'), 'Wing 0')
+
+        # Save and reload to confirm persistence
+        parser.save(backup=False)
+        parser2 = IniParser(self.temp_aero_ini)
+        self.assertTrue(parser2.has_section('WING_0'))
+        self.assertEqual(parser2.get_value('WING_0', 'CD'), '0.5000')
+
+    def test_add_multiple_wings_sequentially_persists(self):
+        """Test that multiple wings can be added sequentially."""
+        parser = IniParser(self.temp_aero_ini)
+
+        for i in range(3):
+            sec = f'WING_{i}'
+            parser.set_value(sec, 'CD', f'{0.3 + i * 0.1:.4f}')
+            parser.set_value(sec, 'CL', '0.0000')
+            parser.set_value(sec, 'ANGLE', '0.00')
+
+        parser.save(backup=False)
+
+        parser2 = IniParser(self.temp_aero_ini)
+        for i in range(3):
+            self.assertTrue(parser2.has_section(f'WING_{i}'))
+            self.assertEqual(parser2.get_value(f'WING_{i}', 'CD'), f'{0.3 + i * 0.1:.4f}')
+
+    def test_remove_wing_section(self):
+        """Test removing a wing section from aero.ini (simulates _remove_wing logic)."""
+        parser = IniParser(self.temp_aero_ini)
+
+        # Set up 3 wings
+        for i in range(3):
+            parser.set_value(f'WING_{i}', 'CD', f'{0.3 + i * 0.1:.4f}')
+            parser.set_value(f'WING_{i}', 'CL', '0.0000')
+            parser.set_value(f'WING_{i}', 'ANGLE', '0.00')
+
+        # Simulate removing WING_1: collect remaining, remove all, re-add
+        index_to_remove = 1
+        wing_count = 3
+        remaining = [
+            parser.get_section(f'WING_{i}')
+            for i in range(wing_count)
+            if i != index_to_remove
+        ]
+        for i in range(wing_count):
+            parser.remove_section(f'WING_{i}')
+        for new_i, data in enumerate(remaining):
+            for key, val in data.items():
+                parser.set_value(f'WING_{new_i}', key, val)
+
+        parser.save(backup=False)
+
+        parser2 = IniParser(self.temp_aero_ini)
+        # Only 2 wings should remain
+        self.assertTrue(parser2.has_section('WING_0'))
+        self.assertTrue(parser2.has_section('WING_1'))
+        self.assertFalse(parser2.has_section('WING_2'))
+        # WING_0 unchanged
+        self.assertEqual(parser2.get_value('WING_0', 'CD'), '0.3000')
+        # WING_1 is old WING_2
+        self.assertEqual(parser2.get_value('WING_1', 'CD'), '0.5000')
+
+    def test_remove_section_marks_dirty(self):
+        """Test that remove_section marks the parser as dirty."""
+        parser = IniParser(self.temp_aero_ini)
+        parser.set_value('WING_0', 'CD', '0.5000')
+        parser.save(backup=False)
+
+        parser2 = IniParser(self.temp_aero_ini)
+        self.assertFalse(parser2._dirty)
+        parser2.remove_section('WING_0')
+        self.assertTrue(parser2._dirty)
+
     def test_malformed_ini_file(self):
         """Test that malformed INI files don't crash the parser"""
         # Get malformed test file

@@ -1027,14 +1027,37 @@ class CarEditorDialog(QDialog):
         info.setStyleSheet(f"color: {COLORS['text_secondary']}; font-style: italic; padding: 4px;")
         layout.addWidget(info)
 
+        # Dedicated container so new wing widgets can be appended dynamically
+        wings_container = QWidget()
+        self.aero_wings_layout = QVBoxLayout(wings_container)
+        self.aero_wings_layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(wings_container)
+
         self.wing_widgets = []
+        no_wings_msg = (
+            "No WING_N sections found in aero.ini. Use 'Add Wing' to create one."
+            if self.aero_ini else
+            "No aero.ini found or no WING_N sections detected."
+        )
+        self.no_wings_label = QLabel(no_wings_msg)
+        self.aero_wings_layout.addWidget(self.no_wings_label)
+
         if self.wing_count == 0:
-            layout.addWidget(QLabel("No aero.ini found or no WING_N sections detected."))
+            pass  # placeholder label already added above
         else:
+            self.no_wings_label.setVisible(False)
             for i in range(self.wing_count):
                 w = self._create_wing_widget(i)
                 self.wing_widgets.append(w)
-                layout.addWidget(w)
+                self.aero_wings_layout.addWidget(w)
+
+        add_wing_btn = QPushButton("➕  Add Wing")
+        add_wing_btn.clicked.connect(self._add_wing)
+        add_wing_btn.setStyleSheet(btn_primary())
+        if not self.aero_ini:
+            add_wing_btn.setEnabled(False)
+            add_wing_btn.setToolTip("No aero.ini file found — cannot add wing.")
+        layout.addWidget(add_wing_btn)
 
         import_btn = QPushButton("📥  Import Aero from Library...")
         import_btn.clicked.connect(self.import_aero_component)
@@ -1043,6 +1066,100 @@ class CarEditorDialog(QDialog):
 
         layout.addStretch()
         return widget
+
+    # Default values used when creating a new wing section
+    _WING_DEFAULT_CD    = 0.5
+    _WING_DEFAULT_CL    = 0.0
+    _WING_DEFAULT_ANGLE = 0.0
+
+    def _add_wing(self):
+        """Add a new WING_N section to aero.ini and create the corresponding UI widget."""
+        if not self.aero_ini:
+            return
+        idx = self.wing_count
+        sec = f'WING_{idx}'
+        # Write default values into the parser (marks it dirty for next save)
+        self.aero_ini.set_value(sec, 'NAME', f'Wing {idx}')
+        self.aero_ini.set_value(sec, 'CD',    f'{self._WING_DEFAULT_CD:.4f}')
+        self.aero_ini.set_value(sec, 'CL',    f'{self._WING_DEFAULT_CL:.4f}')
+        self.aero_ini.set_value(sec, 'ANGLE', f'{self._WING_DEFAULT_ANGLE:.2f}')
+        self.wing_count += 1
+        # Hide the placeholder label once at least one wing exists
+        if self.no_wings_label.isVisible():
+            self.no_wings_label.setVisible(False)
+        # Build and insert the new group-box widget
+        w = self._create_wing_widget(idx)
+        self.wing_widgets.append(w)
+        self.aero_wings_layout.addWidget(w)
+        # Populate spinboxes with the default values
+        getattr(self, f'wing_{idx}_cd').setValue(self._WING_DEFAULT_CD)
+        getattr(self, f'wing_{idx}_cl').setValue(self._WING_DEFAULT_CL)
+        getattr(self, f'wing_{idx}_angle').setValue(self._WING_DEFAULT_ANGLE)
+        show_toast(self, f"Wing {idx} added — click Save to write to aero.ini")
+
+    def _remove_wing(self, index):
+        """Remove WING_index from aero.ini, renumber remaining wings, and rebuild the UI."""
+        if not self.aero_ini:
+            return
+        reply = QMessageBox.question(
+            self, "Remove Wing",
+            f"Remove WING_{index}?\nSubsequent wings will be renumbered.",
+            QMessageBox.Yes | QMessageBox.No,
+        )
+        if reply != QMessageBox.Yes:
+            return
+
+        old_count = self.wing_count
+
+        # Collect data for every wing except the removed one
+        remaining = [
+            self.aero_ini.get_section(f'WING_{i}')
+            for i in range(old_count)
+            if i != index
+        ]
+
+        # Remove all WING_N sections from the parser
+        for i in range(old_count):
+            self.aero_ini.remove_section(f'WING_{i}')
+
+        # Re-add remaining wings with contiguous indices
+        for new_i, data in enumerate(remaining):
+            for key, val in data.items():
+                self.aero_ini.set_value(f'WING_{new_i}', key, val)
+
+        self.wing_count = len(remaining)
+
+        # Clean up spinbox attributes for the old range
+        for i in range(old_count):
+            for attr in ('_cd', '_cl', '_angle'):
+                attr_name = f'wing_{i}{attr}'
+                if hasattr(self, attr_name):
+                    delattr(self, attr_name)
+
+        # Drop stale original_values entries for wings
+        for key in list(self.original_values.keys()):
+            if key.startswith('wing_'):
+                del self.original_values[key]
+
+        # Rebuild wing group-box widgets
+        for w in self.wing_widgets:
+            self.aero_wings_layout.removeWidget(w)
+            w.setParent(None)
+        self.wing_widgets.clear()
+
+        if self.wing_count == 0:
+            self.no_wings_label.setVisible(True)
+        else:
+            self.no_wings_label.setVisible(False)
+            for i in range(self.wing_count):
+                w = self._create_wing_widget(i)
+                self.wing_widgets.append(w)
+                self.aero_wings_layout.addWidget(w)
+            self._load_aero_data()
+
+        # Persist immediately (removal is always a significant change)
+        self.aero_ini.save(backup=True)
+        show_toast(self, f"Wing {index} removed — aero.ini saved.")
 
     def _create_wing_widget(self, index):
         name = ''
@@ -1077,6 +1194,14 @@ class CarEditorDialog(QDialog):
         grp_inner = form.done()
         inner_layout = QVBoxLayout()
         inner_layout.setContentsMargins(0, 0, 0, 0)
+        btn_row = QHBoxLayout()
+        btn_row.addStretch()
+        remove_btn = QPushButton("🗑️  Remove Wing")
+        remove_btn.setStyleSheet(btn_danger())
+        remove_btn.setToolTip(f"Remove WING_{index} from aero.ini.\nSubsequent wings will be renumbered.")
+        remove_btn.clicked.connect(lambda: self._remove_wing(index))
+        btn_row.addWidget(remove_btn)
+        inner_layout.addLayout(btn_row)
         inner_layout.addWidget(grp_inner)
         gb.setLayout(inner_layout)
         return gb
