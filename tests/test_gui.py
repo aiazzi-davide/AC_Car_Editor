@@ -221,6 +221,54 @@ class TestCarEditorDialog(unittest.TestCase):
         self.assertEqual(parser2.get_value('SETTINGS', 'DRAG_COEFF'), '0.30')
         self.assertEqual(parser2.get_value('FRONT', 'LIFTCOEFF'), '-0.20')
     
+    def test_add_wing_to_aero_ini(self):
+        """Test adding a new WING_N section to aero.ini (simulates _add_wing logic)."""
+        parser = IniParser(self.temp_aero_ini)
+
+        # Initially no WING sections in the test aero.ini
+        self.assertFalse(parser.has_section('WING_0'))
+
+        # Simulate _add_wing: count existing wings, then add a new section
+        idx = 0
+        while parser.has_section(f'WING_{idx}'):
+            idx += 1
+
+        sec = f'WING_{idx}'
+        parser.set_value(sec, 'NAME', f'Wing {idx}')
+        parser.set_value(sec, 'CD', '0.5000')
+        parser.set_value(sec, 'CL', '0.0000')
+        parser.set_value(sec, 'ANGLE', '0.00')
+
+        # Section must now exist in-memory
+        self.assertTrue(parser.has_section('WING_0'))
+        self.assertEqual(parser.get_value('WING_0', 'CD'), '0.5000')
+        self.assertEqual(parser.get_value('WING_0', 'CL'), '0.0000')
+        self.assertEqual(parser.get_value('WING_0', 'ANGLE'), '0.00')
+        self.assertEqual(parser.get_value('WING_0', 'NAME'), 'Wing 0')
+
+        # Save and reload to confirm persistence
+        parser.save(backup=False)
+        parser2 = IniParser(self.temp_aero_ini)
+        self.assertTrue(parser2.has_section('WING_0'))
+        self.assertEqual(parser2.get_value('WING_0', 'CD'), '0.5000')
+
+    def test_add_multiple_wings_sequentially_persists(self):
+        """Test that multiple wings can be added sequentially."""
+        parser = IniParser(self.temp_aero_ini)
+
+        for i in range(3):
+            sec = f'WING_{i}'
+            parser.set_value(sec, 'CD', f'{0.3 + i * 0.1:.4f}')
+            parser.set_value(sec, 'CL', '0.0000')
+            parser.set_value(sec, 'ANGLE', '0.00')
+
+        parser.save(backup=False)
+
+        parser2 = IniParser(self.temp_aero_ini)
+        for i in range(3):
+            self.assertTrue(parser2.has_section(f'WING_{i}'))
+            self.assertEqual(parser2.get_value(f'WING_{i}', 'CD'), f'{0.3 + i * 0.1:.4f}')
+
     def test_malformed_ini_file(self):
         """Test that malformed INI files don't crash the parser"""
         # Get malformed test file
